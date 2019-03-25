@@ -5,8 +5,8 @@
  */
 package it.bologna.ausl.shpeck.service.controllers;
 
-import it.bologna.ausl.model.entities.pecgw.Inbox;
-import it.bologna.ausl.model.entities.pecgw.Message;
+import it.bologna.ausl.model.entities.shpeck.Inbox;
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shepck.exceptions.EmlHandlerException;
 import it.bologna.ausl.shepck.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.handlers.EmlHandler;
