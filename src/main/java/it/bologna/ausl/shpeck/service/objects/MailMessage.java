@@ -9,7 +9,7 @@ package it.bologna.ausl.shpeck.service.objects;
  *
  * @author Salo
  */
-import it.bologna.ausl.shepck.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Date;

@@ -7,8 +7,8 @@ package it.bologna.ausl.shpeck.service.controllers;
 
 import it.bologna.ausl.model.entities.shpeck.Inbox;
 import it.bologna.ausl.model.entities.shpeck.Message;
-import it.bologna.ausl.shepck.exceptions.EmlHandlerException;
-import it.bologna.ausl.shepck.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.EmlHandlerException;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.handlers.EmlHandler;
 import it.bologna.ausl.shpeck.service.objects.MailMessage;
 import java.io.File;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class InboxController {
     static org.slf4j.Logger log = LoggerFactory.getLogger(InboxController.class);
     
-    @PersistenceContext
+//    @PersistenceContext
     EntityManager em;
     
     public void saveInboxEml(File file) throws EmlHandlerException, MailMessageException {

@@ -3,20 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package it.bologna.ausl.shepck.exceptions;
+package it.bologna.ausl.shpeck.service.exceptions;
 
 /**
  *
  * @author Salo
  */
-public class EmlHandlerException extends ShpeckServiceException{
+public class PersistenceException extends ShpeckServiceException {
     
-    public EmlHandlerException(String message) {
+    public PersistenceException(String message) {
         super(message);
     }
     
-    public EmlHandlerException(String message, Throwable cause) {
+    public PersistenceException(String message, Throwable cause) {
         super(message, cause);
     }
-    
 }
