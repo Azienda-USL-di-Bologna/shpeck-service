@@ -18,13 +18,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import shpeck.service.workers.IMAPWorker;
+import it.bologna.ausl.shpeck.worker.IMAPWorker;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 
 /**
  *
  * @author Salo
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.worker")
 @EnableJpaRepositories({"it.bologna.ausl.shpeck.repository"})
 @EntityScan("it.bologna.ausl.model.entities")
 public class SpeckApplication {
@@ -34,28 +38,41 @@ public class SpeckApplication {
        
     private static final Logger log = LoggerFactory.getLogger(SpeckApplication.class);
     
+    @Autowired
+    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+    
     public static void main(String[] args) {
-        SpringApplication.run(SpeckApplication.class, args);        
+        SpringApplication.run(SpeckApplication.class, args); 
     }
     
+    
     @Bean
-    public CommandLineRunner demo(PecRepository pr) {
-        return (args) -> { 
-            log.info("SHPECK-SERVICE AVVIATO -> " + new Date());
-            ArrayList<Pec> list = (ArrayList) pr.findAll();
-            for (Pec pec : list) {
-                log.info(pec.getDescrizione() + ":");
+    public CommandLineRunner schedulingRunner() {
+        return new CommandLineRunner() {
+            public void run(String... args) throws Exception {
+                //scheduledThreadPoolExecutor.scheduleWithFixedDelay(new IMAPWorker(), 3, 10, TimeUnit.SECONDS);
+            }
+        };
+    }
+    
+//    @Bean
+//    public CommandLineRunner demo(PecRepository pr) {
+//        return (args) -> { 
+//            log.info("SHPECK-SERVICE AVVIATO -> " + new Date());
+//            ArrayList<Pec> list = (ArrayList) pr.findAll();
+//            for (Pec pec : list) {
+//                log.info(pec.getDescrizione() + ":");
 //                try {
 //                    if(pec.getIdPecProvider() != null)
 //                    {
 //                        log.info("PRENDO PECPROV");
 //                        PecProvider pp = pec.getIdPecProvider();
-//                        log.info(pp.toString());
-//                        log.info("\t provider " + pp.getDescrizione());
-//                        log.info("\t host " + pp.getHost());
-//                        log.info("\t protocol " + pp.getProtocol());
-//                        log.info("\t port" + pp.getPort());
-//                        log.info("****");
+//                        log.info(pp.getDescrizione());
+////                        log.info("\t provider " + pp.getDescrizione());
+////                        log.info("\t host " + pp.getHost());
+////                        log.info("\t protocol " + pp.getProtocol());
+////                        log.info("\t port" + pp.getPort());
+////                        log.info("****");
 //                    }
 //                    else
 //                        log.info("EHI! NON ESISTE IL PROVIDER PER " + pec.getDescrizione() );
@@ -63,11 +80,11 @@ public class SpeckApplication {
 //                    log.error("OHIO !!!! ERRORE " + e.toString());
 //                    e.printStackTrace();
 //                }
-            }
-            log.info("##############################");
-            log.info("FINNITTTO.... -> " + new Date());
-            log.info("##############################");
-        };
-    }
+//            }
+////            log.info("##############################");
+////            log.info("FINNITTTO.... -> " + new Date());
+////            log.info("##############################");
+//        };
+//    }
     
 }
