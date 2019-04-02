@@ -7,10 +7,12 @@ package it.bologna.ausl.shpeck.repository;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.QPec;
-import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdAziendaAndIdPecProvider;
-import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithPlainFields;
+import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.model.entities.baborg.QPecProvider;
 import it.bologna.ausl.model.entities.scrivania.AttivitaFatta;
 import it.bologna.ausl.model.entities.scrivania.QAttivitaFatta;
+import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithPlainFields;
+import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdAziendaAndIdPecProvider;
 import it.bologna.ausl.model.entities.scrivania.projections.generated.AttivitaFattaWithPlainFields;
 import java.util.ArrayList;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,7 +27,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
  *
  * @author Salo
  */
-@RepositoryRestResource(collectionResourceRel = "pec", path = "pec", exported = false, excerptProjection = PecWithPlainFields.class)
+@RepositoryRestResource(collectionResourceRel = "pec", path = "pec", exported = false, excerptProjection = PecWithIdAziendaAndIdPecProvider.class)
 public interface PecRepository extends JpaRepository<Pec, Integer>{
     
 }

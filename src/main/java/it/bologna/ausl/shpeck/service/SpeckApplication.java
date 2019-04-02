@@ -34,40 +34,44 @@ public class SpeckApplication {
        
     private static final Logger log = LoggerFactory.getLogger(SpeckApplication.class);
     
+    @Autowired
+    PecRepository pr;
+    
+    @Autowired
+    PecProviderRepository ppr;
+    
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);        
     }
     
     @Bean
-    public CommandLineRunner demo(PecRepository pr) {
-        return (args) -> { 
-            log.info("SHPECK-SERVICE AVVIATO -> " + new Date());
-            ArrayList<Pec> list = (ArrayList) pr.findAll();
-            for (Pec pec : list) {
-                log.info(pec.getDescrizione() + ":");
-//                try {
-//                    if(pec.getIdPecProvider() != null)
-//                    {
-//                        log.info("PRENDO PECPROV");
+    public void shpeck() {
+        log.info("SHPECK-SERVICE AVVIATO -> " + new Date());
+        ArrayList<Pec> list = (ArrayList) pr.findAll();
+        for (Pec pec : list) {
+            log.info(pec.getDescrizione() + ":");
+                try {
+                    if(pec.getIdPecProvider() != null)
+                    {
+                        log.info("PRENDO PECPROV " + pec.getIdPecProvider());
 //                        PecProvider pp = pec.getIdPecProvider();
 //                        log.info(pp.toString());
 //                        log.info("\t provider " + pp.getDescrizione());
 //                        log.info("\t host " + pp.getHost());
 //                        log.info("\t protocol " + pp.getProtocol());
 //                        log.info("\t port" + pp.getPort());
-//                        log.info("****");
-//                    }
-//                    else
-//                        log.info("EHI! NON ESISTE IL PROVIDER PER " + pec.getDescrizione() );
-//                } catch (Exception e) {
-//                    log.error("OHIO !!!! ERRORE " + e.toString());
-//                    e.printStackTrace();
-//                }
-            }
-            log.info("##############################");
-            log.info("FINNITTTO.... -> " + new Date());
-            log.info("##############################");
-        };
-    }
+                        log.info("****");
+                    }
+                    else
+                        log.info("EHI! NON ESISTE IL PROVIDER PER " + pec.getDescrizione() );
+                } catch (Exception e) {
+                    log.error("OHIO !!!! ERRORE " + e.toString());
+                    e.printStackTrace();
+                }
+        }
+        log.info("##############################");
+        log.info("FINNITTTO.... -> " + new Date());
+        log.info("##############################");
+    };
     
 }
