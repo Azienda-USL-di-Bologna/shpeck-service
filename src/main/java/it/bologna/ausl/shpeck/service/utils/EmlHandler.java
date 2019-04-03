@@ -1,7 +1,7 @@
 /*
  * E' una classe pensata per gestire il file eml sicuramente ben formato
  */
-package it.bologna.ausl.shpeck.service.handlers;
+package it.bologna.ausl.shpeck.service.utils;
 
 import it.bologna.ausl.shpeck.service.exceptions.EmlHandlerException;
 import java.io.IOException;
@@ -17,7 +17,6 @@ import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import it.bologna.ausl.shpeck.service.objects.MailMessage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
