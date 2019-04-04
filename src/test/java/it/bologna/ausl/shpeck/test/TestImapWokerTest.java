@@ -24,8 +24,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * @author Salo
  */
 
-@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.worker")
-@EnableJpaRepositories({"it.bologna.ausl.shpeck.repository"})
+@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.service")
+@EnableJpaRepositories({"it.bologna.ausl.shpeck.service.repository"})
 @EntityScan("it.bologna.ausl.model.entities")
 public class TestImapWokerTest {
 
