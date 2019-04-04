@@ -71,42 +71,7 @@ public class SpeckApplication {
 //                    testThread.start();
 //                    TimeUnit.SECONDS.sleep(2);
 //                }
-                
-               
             }
         };
-    }
-    
-//    @Bean
-//    public CommandLineRunner demo(PecRepository pr) {
-//        return (args) -> { 
-//            log.info("SHPECK-SERVICE AVVIATO -> " + new Date());
-//            ArrayList<Pec> list = (ArrayList) pr.findAll();
-//            for (Pec pec : list) {
-//                log.info(pec.getDescrizione() + ":");
-//                try {
-//                    if(pec.getIdPecProvider() != null)
-//                    {
-//                        log.info("PRENDO PECPROV");
-//                        PecProvider pp = pec.getIdPecProvider();
-//                        log.info(pp.getDescrizione());
-////                        log.info("\t provider " + pp.getDescrizione());
-////                        log.info("\t host " + pp.getHost());
-////                        log.info("\t protocol " + pp.getProtocol());
-////                        log.info("\t port" + pp.getPort());
-////                        log.info("****");
-//                    }
-//                    else
-//                        log.info("EHI! NON ESISTE IL PROVIDER PER " + pec.getDescrizione() );
-//                } catch (Exception e) {
-//                    log.error("OHIO !!!! ERRORE " + e.toString());
-//                    e.printStackTrace();
-//                }
-//            }
-////            log.info("##############################");
-////            log.info("FINNITTTO.... -> " + new Date());
-////            log.info("##############################");
-//        };
-//    }
-    
+    }   
 }
