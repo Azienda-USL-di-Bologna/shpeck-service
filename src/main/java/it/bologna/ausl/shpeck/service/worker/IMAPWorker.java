@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.worker;
+package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import java.util.Date;

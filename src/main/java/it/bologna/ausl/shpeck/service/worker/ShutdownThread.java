@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.worker;
+package it.bologna.ausl.shpeck.service.worker;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;

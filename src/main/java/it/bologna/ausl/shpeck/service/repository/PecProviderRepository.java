@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.repository;
+package it.bologna.ausl.shpeck.service.repository;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;

@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.worker;
+package it.bologna.ausl.shpeck.service.config;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.slf4j.Logger;

@@ -7,8 +7,8 @@ package it.bologna.ausl.shpeck.test;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
-import it.bologna.ausl.shpeck.repository.PecProviderRepository;
-import it.bologna.ausl.shpeck.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
+import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +24,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * @author Salo
  */
 
-@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.worker")
-@EnableJpaRepositories({"it.bologna.ausl.shpeck.repository"})
+@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.service")
+@EnableJpaRepositories({"it.bologna.ausl.shpeck.service.repository"})
 @EntityScan("it.bologna.ausl.model.entities")
 public class TestImapWokerTest {
 

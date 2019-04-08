@@ -2,8 +2,8 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
-import it.bologna.ausl.shpeck.repository.PecProviderRepository;
-import it.bologna.ausl.shpeck.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
+import it.bologna.ausl.shpeck.service.repository.PecRepository;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,9 +18,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import it.bologna.ausl.shpeck.worker.IMAPWorker;
-import it.bologna.ausl.shpeck.worker.TestThread;
-import it.bologna.ausl.shpeck.worker.ShutdownThread;
+import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.TestThread;
+import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -31,7 +31,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *
  * @author Salo
  */
-@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck.worker")
+@SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck")
 @EnableJpaRepositories({"it.bologna.ausl.shpeck.repository"})
 @EntityScan("it.bologna.ausl.model.entities")
 public class SpeckApplication {
