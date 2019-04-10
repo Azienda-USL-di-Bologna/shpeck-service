@@ -2,7 +2,6 @@ package it.bologna.ausl.shpeck.service.utils;
 
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecProvider;
 import java.util.Properties;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -15,6 +14,8 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author spritz
+ * 
+ * Crea un IMAPStore utilizzando le credenziali presenti nella PEC
  */
 
 @Component
