@@ -7,7 +7,7 @@ import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecP
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
-import it.bologna.ausl.shpeck.service.utils.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.service.utils;
+package it.bologna.ausl.shpeck.service.transformers;
 
 /**
  *
@@ -60,15 +60,15 @@ public class MailMessage {
     }
 
     public String getInReplyTo() {
-        String r[] = null;
+        String replyArray[] = null;
         try {
-            r = original.getHeader("In-Reply-To");
+            replyArray = original.getHeader("In-Reply-To");
         } catch (MessagingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        if (r != null) {
-            return r[0];
+        if (replyArray != null) {
+            return replyArray[0];
         }
         return null;
 
@@ -98,21 +98,19 @@ public class MailMessage {
     }
 
     public String getRaw_message() throws MailMessageException {
-        if (raw_message != null) {
-            return raw_message;
+        
+        if(raw_message == null){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try {
+                original.writeTo(baos);
+                raw_message = baos.toString("utf8");
+                baos.reset();
+            } catch (MessagingException e) {
+                throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", e);
+            } catch (IOException e) {
+                throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", e);
+            }
         }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            original.writeTo(baos);
-            raw_message = baos.toString("utf8");
-            baos.reset();
-
-        } catch (MessagingException e) {
-            throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", e);
-        } catch (IOException e) {
-            throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", e);
-        }
-
         return raw_message;
     }
 
@@ -146,11 +144,9 @@ public class MailMessage {
         return subject;
     }
 
-    private String getText(Part p) throws
-            MessagingException, IOException {
+    private String getText(Part p) throws MessagingException, IOException {
         if (p.isMimeType("text/*")) {
             String s = (String) p.getContent();
-            //	this.textIsHtml = p.isMimeType("text/html");
             return s;
         }
 
@@ -184,7 +180,6 @@ public class MailMessage {
                 }
             }
         }
-
         return null;
     }
 

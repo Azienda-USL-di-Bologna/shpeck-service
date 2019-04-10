@@ -3,6 +3,7 @@
  */
 package it.bologna.ausl.shpeck.service.utils;
 
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.exceptions.EmlHandlerException;
 import java.io.IOException;
 import java.util.ArrayList;

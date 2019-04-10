@@ -3,7 +3,7 @@ package it.bologna.ausl.shpeck.service.manager;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
-import it.bologna.ausl.shpeck.service.utils.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import java.util.ArrayList;
 import javax.mail.FetchProfile;
 import javax.mail.Folder;
@@ -45,11 +45,11 @@ public class IMAPManager {
        
             /**
              * FetchProfile elenca gli attributi del messaggio che si 
-             * desidera precaricare dal provider
+             * desidera precaricare dal server
              */
             FetchProfile fetchProfile = new FetchProfile();
             
-            // ENVELOPE è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
+            // ENVELOPE (=busta) è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
             fetchProfile.add(FetchProfile.Item.ENVELOPE);
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
@@ -57,6 +57,7 @@ public class IMAPManager {
             IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX");
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
+                //TODO: da vedere se va bene System.exit
                 System.exit(1);
             }
             
