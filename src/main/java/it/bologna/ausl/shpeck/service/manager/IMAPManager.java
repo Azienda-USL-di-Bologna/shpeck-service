@@ -33,11 +33,23 @@ public class IMAPManager {
         this.lastUID = lastUID;
     }
     
+    /**
+     * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
+     * @return messaggi presenti in inbox
+     * @throws ShpeckServiceException 
+     */
     public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
         try {
             this.store.connect();
 
+       
+            /**
+             * FetchProfile elenca gli attributi del messaggio che si 
+             * desidera precaricare dal provider
+             */
             FetchProfile fetchProfile = new FetchProfile();
+            
+            // ENVELOPE è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
             fetchProfile.add(FetchProfile.Item.ENVELOPE);
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
@@ -48,9 +60,10 @@ public class IMAPManager {
                 System.exit(1);
             }
             
+            // apertura della cartella in lettura/scrittura
             inbox.open(Folder.READ_WRITE);
 
-            // Get the messages from the server
+            // ottieni i messaggi dal server
             log.debug("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
             Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, IMAPFolder.LASTUID);
             
@@ -65,7 +78,7 @@ public class IMAPManager {
                 }
             }
 
-            // Close the connection but don't remove the messages from the server
+            // chiudi la connessione ma non rimuove i messaggi dal server
             close();
             return mailMessages;
 
@@ -75,7 +88,9 @@ public class IMAPManager {
         }
     }
     
-    
+    /**
+     * Chiusura dello store per connettersi al server
+     */
     public void close() {
         try {
             if (store != null && store.isConnected()) {
