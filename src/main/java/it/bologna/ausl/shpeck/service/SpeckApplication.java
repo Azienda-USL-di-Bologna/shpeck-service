@@ -1,9 +1,14 @@
 package it.bologna.ausl.shpeck.service;
 
+import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecProvider;
+import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.utils.MailMessage;
+import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,16 +28,19 @@ import it.bologna.ausl.shpeck.service.worker.TestThread;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
  * @author Salo
  */
 @SpringBootApplication(scanBasePackages = "it.bologna.ausl.shpeck")
-@EnableJpaRepositories({"it.bologna.ausl.shpeck.repository"})
+@EnableJpaRepositories({"it.bologna.ausl.shpeck.service.repository"})
 @EntityScan("it.bologna.ausl.model.entities")
 public class SpeckApplication {
     /**
@@ -48,8 +56,19 @@ public class SpeckApplication {
     ShutdownThread shutdownThread;
     
     @Autowired
-    TestThread testThread;    
-            
+    TestThread testThread;  
+    
+    @Autowired
+    ProviderConnectionHandler providerConnectionHandler;
+    
+    @Autowired
+    PecRepository pecRepository;
+    
+    @Autowired
+    ApplicationContext context;
+    
+    private ArrayList<MailMessage> messages;
+    
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args); 
     }
@@ -58,12 +77,34 @@ public class SpeckApplication {
     @Bean
     public CommandLineRunner schedulingRunner() {
         return new CommandLineRunner() {
+            @Transactional
             public void run(String... args) throws Exception {
-               
+   
+                Pec pec = pecRepository.findById(730).get();
+                PecProvider idPecProvider = pec.getIdPecProvider();
+                log.info("host: " +idPecProvider.getHost() );
+                
+                IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
+                IMAPManager manager = new IMAPManager(store);
+                
+                messages = manager.getMessages();
+                
+                for (MailMessage message : messages) {
+                    log.info("---------------------------------");
+                    log.info("ID: " + message.getId());
+                    log.info("HEADER: " + message.getString_headers());
+                    log.info("SUBJECT: " + message.getSubject());
+                    
+                }
+                
+                if (!messages.isEmpty()) {
+                    log.debug("got messages !");
+                }
+                
 //               scheduledThreadPoolExecutor.scheduleWithFixedDelay(new IMAPWorker(), 3, 10, TimeUnit.SECONDS);
 //               
 //               Runtime.getRuntime().addShutdownHook(shutdownThread);
-//              
+//
 //                
 //                for (int i = 1;i < 4; i++) {
 //                    TestThread testThread = new TestThread();

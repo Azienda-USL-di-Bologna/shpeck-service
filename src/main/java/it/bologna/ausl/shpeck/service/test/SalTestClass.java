@@ -1,3 +1,5 @@
+package it.bologna.ausl.shpeck.service.test;
+
 //package it.bologna.ausl.shpeck.test;
 //
 //

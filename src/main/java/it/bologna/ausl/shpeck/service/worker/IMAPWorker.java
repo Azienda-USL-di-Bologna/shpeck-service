@@ -12,11 +12,6 @@ import org.slf4j.LoggerFactory;
  */
 public class IMAPWorker implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(IMAPWorker.class);
-    //private static Pec pec;
-
-//    public IMAPWorker(Pec p) {
-//        this.pec = p;
-//    }
     
     @Override
     public void run() {

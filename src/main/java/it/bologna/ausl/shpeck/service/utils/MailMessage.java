@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.utils;
 
 /**
@@ -10,6 +5,7 @@ package it.bologna.ausl.shpeck.service.utils;
  * @author Salo
  */
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Date;
@@ -198,5 +194,36 @@ public class MailMessage {
 
     public void setIsPec(Boolean ispec) {
         this.ispec = ispec;
+    }
+    
+    public static MimeMessage getPecPayload(Part p) throws ShpeckServiceException {
+        try {
+            if (p.isMimeType("message/rfc822") && p.getFileName().equals("postacert.eml")) {
+                return (MimeMessage) p.getContent();
+            }
+        } catch (MessagingException e) {
+            throw new ShpeckServiceException("non possibile estrarre il payload pec", e);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (p.isMimeType("multipart/*")) {
+                Multipart mp = (Multipart) p.getContent();
+                MimeMessage res = null;
+                for (int i = 0; i < mp.getCount(); i++) {
+                    res = getPecPayload(mp.getBodyPart(i));
+                    if (res != null) {
+                        return res;
+                    }
+                }
+            }
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return (MimeMessage) null;
     }
 }
