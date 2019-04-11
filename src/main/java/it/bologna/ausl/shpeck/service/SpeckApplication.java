@@ -8,6 +8,7 @@ import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.MailProxy;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 
 import java.util.ArrayList;
@@ -88,6 +89,8 @@ public class SpeckApplication {
                 IMAPManager manager = new IMAPManager(store);
                 
                 messages = manager.getMessages();
+               // log.info("size: " + messages.size());
+                MailProxy mailProxy;
                 
                 for (MailMessage message : messages) {
                     log.info("---------------------------------");
@@ -95,6 +98,8 @@ public class SpeckApplication {
                     log.info("HEADER: " + message.getString_headers());
                     log.info("SUBJECT: " + message.getSubject());
                     
+                    mailProxy = new MailProxy(message);
+                    log.info("type: " + mailProxy.getType());
                 }
                 
                 if (!messages.isEmpty()) {

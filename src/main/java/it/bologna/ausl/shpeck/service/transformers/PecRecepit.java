@@ -1,7 +1,9 @@
 package it.bologna.ausl.shpeck.service.transformers;
 
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckIllegalRecepitException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckPecPayloadNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.mail.MessagingException;
@@ -15,25 +17,37 @@ import nu.xom.Nodes;
 import nu.xom.ParsingException;
 import nu.xom.Text;
 import org.apache.commons.text.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author spritz
  */
-public class PecRecepit {
+public class PecRecepit implements MailIdentity{
+    
+    private static final Logger log = LoggerFactory.getLogger(PecRecepit.class);
     
     private MailMessage message;
     private String reference;
     private String xRicevuta;
+    private Message.MessageType type;
 
     public PecRecepit(MailMessage m) throws ShpeckServiceException {
         message = m;
         getHeaders(m.original);
+        if(isPecRecepit(message.getOriginal())){
+            type = Message.MessageType.RECEPIT;
+        }
+        
     }
 
     public PecRecepit(MimeMessage m) throws ShpeckServiceException {
         message = new MailMessage(m);
         getHeaders(m);
+        if(isPecRecepit(message.getOriginal())){
+            type = Message.MessageType.RECEPIT;
+        }
     }
 
     private void getHeaders(MimeMessage m) throws ShpeckServiceException {
@@ -81,7 +95,7 @@ public class PecRecepit {
     
     /**
      * Dato una ricevuta Pec di accettazione in ingresso restituisce il
-     * message-id al quale la ricevuta si riferice.
+     * message-id al quale la ricevuta si riferisce.
      *
      * @param recepitMessage
      * @return String
@@ -133,5 +147,28 @@ public class PecRecepit {
             }
             return res;
         }
+    }
+
+    @Override
+    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Message.MessageType getType() throws ShpeckServiceException {
+        return type;
+    }
+
+    @Override
+    public Object getMail() throws ShpeckServiceException {
+        
+        PecRecepit pecRecepit = null;
+        
+        try {
+            pecRecepit = new PecRecepit(message);
+        }catch (ShpeckPecPayloadNotFoundException e) {
+            log.error("ricevuta non creata: ", e);
+        }
+        return pecRecepit;
     }
 }

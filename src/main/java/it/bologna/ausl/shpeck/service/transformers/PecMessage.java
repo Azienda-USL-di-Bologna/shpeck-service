@@ -4,16 +4,22 @@ package it.bologna.ausl.shpeck.service.transformers;
  *
  * @author spritz
  */
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckPecPayloadNotFoundException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class PecMessage extends MailMessage {
+public class PecMessage extends MailMessage implements MailIdentity{
 
+    private static final Logger log = LoggerFactory.getLogger(PecMessage.class);
+    
     private String xRicevuta, xTrasporto, messageStatus, messageRef = null;
     private MailMessage pecEnvelope = null;
     boolean has_payload = false;
+    private Message.MessageType type;
 
     public PecMessage(MimeMessage m) throws ShpeckServiceException {
         super(getPec(m));
@@ -47,7 +53,15 @@ public class PecMessage extends MailMessage {
     public PecMessage(MailMessage m) throws ShpeckServiceException {
         this(m.original);
         pecEnvelope = m;
-        //m.ispec = true;
+        m.ispec = true;
+        
+        if(isPecMessage(pecEnvelope.getOriginal())){
+            type = Message.MessageType.PEC;
+        } else if(PecMessage.isErrorPec(pecEnvelope.getOriginal())){
+            type = Message.MessageType.ERROR;
+        } else {
+            type = null;
+        }
     }
     
     public String getMessageRef() {
@@ -103,5 +117,42 @@ public class PecMessage extends MailMessage {
             return false;
         }
         return false;
+    }
+    
+    public static boolean isErrorPec(MimeMessage m) {
+        String t;
+        try {
+            t = m.getHeader("X-Trasporto", "");
+            if (t != null && t.toLowerCase().equals("errore")) {
+                return true;
+            }
+        } catch (MessagingException e) {
+            return false;
+        }
+        return false;
+    }
+
+    @Override
+    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Message.MessageType getType() throws ShpeckServiceException {
+       return type;
+    }
+    
+
+    @Override
+    public Object getMail() throws ShpeckServiceException {
+        
+        PecMessage pecMessage = null;
+        
+        try {
+            pecMessage = new PecMessage(pecEnvelope);
+        }catch (ShpeckPecPayloadNotFoundException e) {
+            log.error("payload non trovato: ", e);
+        }
+        return pecMessage;
     }
 }

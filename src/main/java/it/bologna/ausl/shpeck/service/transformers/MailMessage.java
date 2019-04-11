@@ -17,7 +17,7 @@ import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
 
-public class MailMessage {
+public class MailMessage implements MailIdentity{
     protected Address[] from, to, cc, reply_to;
     protected MimeMessage original;
     protected Boolean ispec = false;
@@ -220,5 +220,20 @@ public class MailMessage {
             e.printStackTrace();
         }
         return (MimeMessage) null;
+    }
+
+    @Override
+    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public it.bologna.ausl.model.entities.shpeck.Message.MessageType getType() throws ShpeckServiceException {
+        return it.bologna.ausl.model.entities.shpeck.Message.MessageType.MAIL;
+    }
+
+    @Override
+    public Object getMail() throws ShpeckServiceException {
+        return this;
     }
 }

@@ -42,7 +42,6 @@ public class IMAPManager {
         try {
             this.store.connect();
 
-       
             /**
              * FetchProfile elenca gli attributi del messaggio che si 
              * desidera precaricare dal server
@@ -76,11 +75,12 @@ public class IMAPManager {
                 mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
                 if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
                     lastUID = inbox.getUID(messagesFromInbox[i]);
+                    log.info("lastUID: " + lastUID);
                 }
             }
 
             // chiudi la connessione ma non rimuove i messaggi dal server
-            close();
+           // close();
             return mailMessages;
 
         } catch (Exception e) {
@@ -99,5 +99,7 @@ public class IMAPManager {
             }
         } catch (MessagingException e) {}
     }
+    
+    
     
 }
