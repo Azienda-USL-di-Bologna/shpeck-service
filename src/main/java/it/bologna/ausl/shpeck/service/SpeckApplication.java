@@ -1,5 +1,6 @@
 package it.bologna.ausl.shpeck.service;
 
+import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
@@ -29,6 +30,7 @@ import it.bologna.ausl.shpeck.service.worker.TestThread;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.mail.Folder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
@@ -86,6 +88,7 @@ public class SpeckApplication {
                 log.info("host: " +idPecProvider.getHost() );
                 
                 IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
+                
                 IMAPManager manager = new IMAPManager(store);
                 
                 messages = manager.getMessages();
@@ -101,10 +104,10 @@ public class SpeckApplication {
                     mailProxy = new MailProxy(message);
                     log.info("type: " + mailProxy.getType());
                 }
-                
-                if (!messages.isEmpty()) {
-                    log.debug("got messages !");
-                }
+//                
+//                if (!messages.isEmpty()) {
+//                    log.debug("got messages !");
+//                }
                 
 //               scheduledThreadPoolExecutor.scheduleWithFixedDelay(new IMAPWorker(), 3, 10, TimeUnit.SECONDS);
 //               

@@ -23,7 +23,7 @@ public class MailMessage implements MailIdentity{
     protected Boolean ispec = false;
     protected String subject, string_headers, id, raw_message, message = null;
     protected HashMap<String, String> headers;
-    protected Date send_date, receive_date; 
+    protected Date sendDate, receiveDate; 
     
     public MailMessage(MimeMessage m) throws MailMessageException {
         this.original = m;
@@ -33,8 +33,8 @@ public class MailMessage implements MailIdentity{
             this.cc = original.getRecipients(Message.RecipientType.CC);
             this.reply_to = original.getReplyTo();
             this.subject = original.getSubject();
-            this.receive_date = original.getReceivedDate();
-            this.send_date = original.getSentDate();
+            this.receiveDate = original.getReceivedDate();
+            this.sendDate = original.getSentDate();
             this.id = original.getMessageID();
 
         } catch (Exception e) {
@@ -114,8 +114,8 @@ public class MailMessage implements MailIdentity{
         return raw_message;
     }
 
-    public Date getReceive_date() {
-        return receive_date;
+    public Date getReceiveDate() {
+        return receiveDate;
     }
 
     public String[] getReferences() {
@@ -132,8 +132,8 @@ public class MailMessage implements MailIdentity{
         return reply_to;
     }
 
-    public Date getSend_date() {
-        return send_date;
+    public Date getSendDate() {
+        return sendDate;
     }
 
     public String getString_headers() {

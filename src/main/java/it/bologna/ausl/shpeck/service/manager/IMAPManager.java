@@ -40,8 +40,10 @@ public class IMAPManager {
      */
     public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
         try {
-            this.store.connect();
-
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+            
             /**
              * FetchProfile elenca gli attributi del messaggio che si 
              * desidera precaricare dal server
@@ -53,7 +55,7 @@ public class IMAPManager {
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
             
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX");
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX/f1");
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -98,6 +100,16 @@ public class IMAPManager {
                 store.close();
             }
         } catch (MessagingException e) {}
+    }
+    
+    public void printAllFoldersInAccount() throws MessagingException{
+        if (store == null || !store.isConnected()) {
+            store.connect();
+        }
+        IMAPFolder[] folders = (IMAPFolder[]) store.getDefaultFolder().list("*");
+        for(Folder folder:folders)
+            System.out.println(">> "+folder.getFullName());
+        close();
     }
     
     
