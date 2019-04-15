@@ -55,7 +55,7 @@ public class IMAPManager {
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
             
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX/f1");
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX/develop");
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit

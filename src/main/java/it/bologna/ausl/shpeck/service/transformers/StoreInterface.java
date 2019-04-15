@@ -8,5 +8,7 @@ import it.bologna.ausl.model.entities.shpeck.Message;
  * @author spritz
  */
 public interface StoreInterface {
-    public Message storeMessage(final MailMessage m, Pec pec, boolean isAccettazione);
+    public Message createMessageForStorage(final MailMessage m, Pec pec, boolean isAccettazione);
+    
+    public Message storeMessage(Message message);
 }

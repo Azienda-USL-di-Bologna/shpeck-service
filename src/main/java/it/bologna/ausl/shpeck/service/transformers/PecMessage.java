@@ -11,6 +11,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 public class PecMessage extends MailMessage implements MailIdentity{
 
@@ -53,7 +54,7 @@ public class PecMessage extends MailMessage implements MailIdentity{
     public PecMessage(MailMessage m) throws ShpeckServiceException {
         this(m.original);
         pecEnvelope = m;
-        m.ispec = true;
+        pecEnvelope.ispec = true;
         
         if(isPecMessage(pecEnvelope.getOriginal())){
             type = Message.MessageType.PEC;

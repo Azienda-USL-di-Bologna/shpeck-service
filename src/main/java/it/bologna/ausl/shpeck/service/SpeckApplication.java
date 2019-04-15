@@ -5,11 +5,15 @@ import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecProvider;
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.MailProxy;
+import it.bologna.ausl.shpeck.service.transformers.PecMessage;
+import it.bologna.ausl.shpeck.service.transformers.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 
 import java.util.ArrayList;
@@ -68,7 +72,13 @@ public class SpeckApplication {
     PecRepository pecRepository;
     
     @Autowired
+    MessageRepository messageRepository;
+    
+    @Autowired
     ApplicationContext context;
+    
+    @Autowired
+    PecMessageStoreManager pecMessageStoreManager;
     
     private ArrayList<MailMessage> messages;
     
@@ -103,6 +113,17 @@ public class SpeckApplication {
                     
                     mailProxy = new MailProxy(message);
                     log.info("type: " + mailProxy.getType());
+                    
+                    if(mailProxy.getType() == Message.MessageType.PEC){
+                        log.info("è pec: me la salvo");
+                        
+                        pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
+                        pecMessageStoreManager.setPec(pec);
+                        
+                        
+                        pecMessageStoreManager.store();
+                    }
+                        
                 }
 //                
 //                if (!messages.isEmpty()) {
