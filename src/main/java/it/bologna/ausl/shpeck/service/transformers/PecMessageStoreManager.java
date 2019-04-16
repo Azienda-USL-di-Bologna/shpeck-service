@@ -1,14 +1,9 @@
 package it.bologna.ausl.shpeck.service.transformers;
 
-import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
-import it.bologna.ausl.shpeck.service.repository.MessageRepository;
-import java.io.IOException;
-import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

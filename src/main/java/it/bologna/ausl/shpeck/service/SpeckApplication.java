@@ -123,32 +123,32 @@ public class SpeckApplication {
                     mailProxy = new MailProxy(message);
                     log.info("type: " + mailProxy.getType());
                     
-                    if(mailProxy.getType() == Message.MessageType.PEC){
-                        log.info("è PEC: me la salvo");
-                        
-                        pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
-                        pecMessageStoreManager.setPec(pec);
-                        
-                        
-                        pecMessageStoreManager.store();
-                    }
-                    else if(mailProxy.getType() == Message.MessageType.RECEPIT){
-                        log.info("è una RICEVUTA: me la salvo");
-                        recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
-                        recepitMessageStoreManager.setPec(pec);
-                        recepitMessageStoreManager.store();
-                    }
-                    else if(mailProxy.getType() == Message.MessageType.MAIL){
-                        log.info("è una REGULAR MAIL: me la salvo");
-                        regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
-                        regularMessageStoreManager.setPec(pec);
-                        regularMessageStoreManager.store();
-                    }
-                    else
+                    if(null == mailProxy.getType())
                         log.error("*** DATO SCONOSCIUTO ***");
-                        
-                    
-                        
+                    else switch (mailProxy.getType()) {
+                        case PEC:
+                            log.info("è PEC: me la salvo");
+                            pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
+                            pecMessageStoreManager.setPec(pec);
+                            pecMessageStoreManager.store();
+                            break;
+                        case RECEPIT:
+                            log.info("è una RICEVUTA: me la salvo");
+                            recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
+                            recepitMessageStoreManager.setPec(pec);
+                            recepitMessageStoreManager.store();
+                            break;
+                        case MAIL:
+                            log.info("è una REGULAR MAIL: me la salvo");
+                            regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
+                            regularMessageStoreManager.setPec(pec);
+                            regularMessageStoreManager.store();
+                            break;
+                        default:
+                            log.error("*** DATO SCONOSCIUTO ***");
+                            break;
+                    }
+                                             
                 }
 //                
 //                if (!messages.isEmpty()) {

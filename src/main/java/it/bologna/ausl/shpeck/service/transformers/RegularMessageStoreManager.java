@@ -2,7 +2,6 @@ package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
