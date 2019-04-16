@@ -12,6 +12,8 @@ import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Component;
  * @author spritz
  */
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class StoreManager implements StoreInterface{  
     private static final Logger log = LoggerFactory.getLogger(StoreManager.class);
     
@@ -53,9 +56,6 @@ public class StoreManager implements StoreInterface{
         } else {
             message.setReceiveDate(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
         }
-        message.setCreateTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
-        message.setUpdateTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
-        message.setSeen(false);
         
         return message;
     }

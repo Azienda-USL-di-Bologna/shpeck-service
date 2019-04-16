@@ -9,6 +9,8 @@ import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,12 +18,10 @@ import org.springframework.stereotype.Component;
  * @author Salo
  */
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PecMessageStoreManager extends StoreManager {
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
     
-//    @Autowired
-//    MessageRepository messageRepository;
-//    
     private PecMessage pecMessage;
     private Pec pec;
 

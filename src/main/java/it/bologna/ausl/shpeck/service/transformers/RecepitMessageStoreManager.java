@@ -6,6 +6,8 @@ import it.bologna.ausl.model.entities.shpeck.Recepit;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
  * @author Salo
  */
 @Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecepitMessageStoreManager extends StoreManager {
     private static final Logger log = LoggerFactory.getLogger(RecepitMessageStoreManager.class);
     
