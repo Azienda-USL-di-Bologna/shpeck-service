@@ -47,7 +47,7 @@ public class RegularMessageStoreManager extends StoreManager {
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         if(isPresent(regularMessage)){
-            log.info("Il messaggio è già presente: esco");
+            log.info(String.format("Il messaggio %s è già presente: non si effettua il salvataggio", String.valueOf(regularMessage.getId())));
             return;
         }
         storeMessage(regularMessage);        

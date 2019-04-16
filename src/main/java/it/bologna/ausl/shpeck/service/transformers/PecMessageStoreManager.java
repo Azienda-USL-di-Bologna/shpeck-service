@@ -49,18 +49,18 @@ public class PecMessageStoreManager extends StoreManager {
     @Transactional
     public void store() {
         log.info("Entrato in PecMessageStoreManager.store()");
-        log.info("Sbusto il messaggio");
+        log.info("Sbusto il messaggio...");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, false);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if(isPresent(messaggioSbustato)){
-            log.info("Il messaggio è già presente: esco");
+            log.info(String.format("Il messaggio %s è già presente: non si effettua il salvataggio", String.valueOf(messaggioSbustato.getId())));
             return;
         }
         storeMessage(messaggioSbustato);
-        log.info("salvato: id " + messaggioSbustato.getId());
+        log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
               
         // prendo la busta
-        log.info("Salvo la busta");
+        log.info("Salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
         Message messaggioBustato = createMessageForStorage(envelope, pec, false);
         messaggioBustato.setIdRelated(messaggioSbustato);
@@ -69,6 +69,6 @@ public class PecMessageStoreManager extends StoreManager {
         else
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         storeMessage(messaggioBustato);
-        log.info("salvato: id " + messaggioBustato.getId());
+        log.info("salvato messaggio imbustato con id: " + messaggioBustato.getId());
     }
 }

@@ -3,7 +3,6 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -51,7 +50,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if(isPresent(messaggioDiRicevuta)){
-            log.info("Il messaggio è già presente: esco");
+            log.info(String.format("ricevuta %s è già presente: non si effettua il salvataggio", String.valueOf(messaggioDiRicevuta.getIdRecepit().getId())));
             return;
         }
             
