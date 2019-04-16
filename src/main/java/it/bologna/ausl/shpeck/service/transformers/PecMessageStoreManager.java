@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -50,7 +51,7 @@ public class PecMessageStoreManager extends StoreManager {
     }
     
     
-    
+    @Transactional
     public void store() {
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio");

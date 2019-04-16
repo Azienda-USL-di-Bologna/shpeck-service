@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -40,6 +41,7 @@ public class RegularMessageStoreManager extends StoreManager {
         this.mailMessage = mailMessage;
     }
         
+    @Transactional
     public void store(){
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, false);
