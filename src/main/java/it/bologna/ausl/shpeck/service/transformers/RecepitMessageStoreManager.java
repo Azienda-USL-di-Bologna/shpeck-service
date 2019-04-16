@@ -1,0 +1,84 @@
+package it.bologna.ausl.shpeck.service.transformers;
+
+import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Recepit;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+/**
+ *
+ * @author Salo
+ */
+@Component
+public class RecepitMessageStoreManager extends StoreManager {
+    private static final Logger log = LoggerFactory.getLogger(RecepitMessageStoreManager.class);
+    
+    private PecRecepit pecRecepit;
+    private Pec pec;
+
+    public RecepitMessageStoreManager() {
+    }
+
+    public PecRecepit getPecRecepit() {
+        return pecRecepit;
+    }
+
+    public void setPecRecepit(PecRecepit pecRecepit) {
+        this.pecRecepit = pecRecepit;
+    }
+
+    public Pec getPec() {
+        return pec;
+    }
+
+    public void setPec(Pec pec) {
+        this.pec = pec;
+    }
+        
+    public void store(){
+        log.info("Entrato in RecepitMessageStoreManager.store()");
+        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec, false);
+        messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
+        messaggioDiRicevuta.setIsPec(Boolean.TRUE);
+        Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);
+        messaggioDiRicevuta.setIdRelated(relatedMessage);
+        storeMessage(messaggioDiRicevuta);
+        
+        Recepit recepit = new Recepit();
+        recepit.setIdMessage(messaggioDiRicevuta);
+        switch(pecRecepit.getxRicevuta()){ 
+            case "accettazione":
+                recepit.setRecepitType(Recepit.RecepitType.ACCETTAZIONE);
+                break;
+            case "preavviso-errore-consegna":
+                recepit.setRecepitType(Recepit.RecepitType.PREAVVISO_ERRORE_CONSEGNA);
+                break;
+            case "presa-in-carico":
+                recepit.setRecepitType(Recepit.RecepitType.PRESA_IN_CARICO);
+                break;
+            case "non-accettazione":
+                recepit.setRecepitType(Recepit.RecepitType.NON_ACCETTAZIONE);
+                break;
+            case "rilevazione-virus":
+                recepit.setRecepitType(Recepit.RecepitType.RILEVAZIONE_VIRUS);
+                break;
+            case "errore-consegna":
+                recepit.setRecepitType(Recepit.RecepitType.ERRORE_CONSEGNA);
+                break;
+            case "avvenuta-consegna":
+                recepit.setRecepitType(Recepit.RecepitType.CONSEGNA);
+                break;
+            default:
+                log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
+                break;
+        }
+        
+        
+        messaggioDiRicevuta.setIdRecepit(recepit);
+        storeMessage(messaggioDiRicevuta);
+    }
+    
+}

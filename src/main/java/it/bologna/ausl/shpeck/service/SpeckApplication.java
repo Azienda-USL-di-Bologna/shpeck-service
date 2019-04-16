@@ -14,6 +14,9 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.MailProxy;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessageStoreManager;
+import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
+import it.bologna.ausl.shpeck.service.transformers.RecepitMessageStoreManager;
+import it.bologna.ausl.shpeck.service.transformers.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 
 import java.util.ArrayList;
@@ -80,6 +83,12 @@ public class SpeckApplication {
     @Autowired
     PecMessageStoreManager pecMessageStoreManager;
     
+    @Autowired
+    RecepitMessageStoreManager recepitMessageStoreManager;
+    
+    @Autowired
+    RegularMessageStoreManager regularMessageStoreManager;
+    
     private ArrayList<MailMessage> messages;
     
     public static void main(String[] args) {
@@ -99,7 +108,7 @@ public class SpeckApplication {
                 
                 IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
                 
-                IMAPManager manager = new IMAPManager(store);
+                IMAPManager manager = new IMAPManager(store, 14);
                 
                 messages = manager.getMessages();
                // log.info("size: " + messages.size());
@@ -115,7 +124,7 @@ public class SpeckApplication {
                     log.info("type: " + mailProxy.getType());
                     
                     if(mailProxy.getType() == Message.MessageType.PEC){
-                        log.info("è pec: me la salvo");
+                        log.info("è PEC: me la salvo");
                         
                         pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                         pecMessageStoreManager.setPec(pec);
@@ -123,6 +132,22 @@ public class SpeckApplication {
                         
                         pecMessageStoreManager.store();
                     }
+                    else if(mailProxy.getType() == Message.MessageType.RECEPIT){
+                        log.info("è una RICEVUTA: me la salvo");
+                        recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
+                        recepitMessageStoreManager.setPec(pec);
+                        recepitMessageStoreManager.store();
+                    }
+                    else if(mailProxy.getType() == Message.MessageType.MAIL){
+                        log.info("è una REGULAR MAIL: me la salvo");
+                        regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
+                        regularMessageStoreManager.setPec(pec);
+                        regularMessageStoreManager.store();
+                    }
+                    else
+                        log.error("*** DATO SCONOSCIUTO ***");
+                        
+                    
                         
                 }
 //                

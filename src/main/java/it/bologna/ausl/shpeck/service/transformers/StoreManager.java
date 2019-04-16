@@ -3,7 +3,9 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
+import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
 import java.io.IOException;
 import java.util.Date;
 import javax.mail.MessagingException;
@@ -18,16 +20,17 @@ import org.springframework.stereotype.Component;
  * @author spritz
  */
 @Component
-public class StoreManager implements StoreInterface{
+public class StoreManager implements StoreInterface{  
     private static final Logger log = LoggerFactory.getLogger(StoreManager.class);
     
     @Autowired
     MessageRepository messageRepository;
+    
+    @Autowired
+    RecepitRepository recepitRepository;
 
     public StoreManager() {
     }
-    
-    
     
     @Override
     public Message createMessageForStorage(MailMessage mailMessage, Pec pec, boolean isAccettazione) {
@@ -57,8 +60,13 @@ public class StoreManager implements StoreInterface{
         return message;
     }
     
+    @Override
     public Message storeMessage(Message message){
         return messageRepository.save(message);
     }
     
+    @Override
+    public Recepit storeRecepit(Recepit recepit) {
+        return recepitRepository.save(recepit);
+    }
 }

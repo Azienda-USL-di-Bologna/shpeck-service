@@ -24,28 +24,26 @@ import org.slf4j.LoggerFactory;
  *
  * @author spritz
  */
-public class PecRecepit implements MailIdentity{
+public class PecRecepit extends MailMessage implements MailIdentity{
     
     private static final Logger log = LoggerFactory.getLogger(PecRecepit.class);
     
-    private MailMessage message;
     private String reference;
     private String xRicevuta;
     private Message.MessageType type;
 
     public PecRecepit(MailMessage m) throws ShpeckServiceException {
-        message = m;
+        super(m.original);
         getHeaders(m.original);
-        if(isPecRecepit(message.getOriginal())){
+        if(isPecRecepit(m.getOriginal())){
             type = Message.MessageType.RECEPIT;
         }
-        
     }
 
     public PecRecepit(MimeMessage m) throws ShpeckServiceException {
-        message = new MailMessage(m);
+        super(m);
         getHeaders(m);
-        if(isPecRecepit(message.getOriginal())){
+        if(isPecRecepit(m)){
             type = Message.MessageType.RECEPIT;
         }
     }
@@ -65,10 +63,6 @@ public class PecRecepit implements MailIdentity{
         } catch (MessagingException e) {
             throw new ShpeckServiceException("Error extracting recepit headers", e);
         }
-    }
-
-    public MailMessage getMessage() {
-        return message;
     }
 
     public String getReference() {
@@ -165,7 +159,7 @@ public class PecRecepit implements MailIdentity{
         PecRecepit pecRecepit = null;
         
         try {
-            pecRecepit = new PecRecepit(message);
+            pecRecepit = new PecRecepit((MailMessage) this);
         }catch (ShpeckPecPayloadNotFoundException e) {
             log.error("ricevuta non creata: ", e);
         }
