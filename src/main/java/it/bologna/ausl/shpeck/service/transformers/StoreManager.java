@@ -69,4 +69,10 @@ public class StoreManager implements StoreInterface{
     public Recepit storeRecepit(Recepit recepit) {
         return recepitRepository.save(recepit);
     }
+    
+    @Override
+    public boolean isPresent(Message message){
+        Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
+        return messaggioPresente != null;
+    }
 }

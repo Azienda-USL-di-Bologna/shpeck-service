@@ -50,6 +50,11 @@ public class RecepitMessageStoreManager extends StoreManager {
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);
         messaggioDiRicevuta.setIdRelated(relatedMessage);
+        if(isPresent(messaggioDiRicevuta)){
+            log.info("Il messaggio è già presente: esco");
+            return;
+        }
+            
         storeMessage(messaggioDiRicevuta);
         
         Recepit recepit = new Recepit();

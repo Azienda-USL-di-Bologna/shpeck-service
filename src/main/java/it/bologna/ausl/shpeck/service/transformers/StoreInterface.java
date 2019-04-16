@@ -14,4 +14,6 @@ public interface StoreInterface {
     public Message storeMessage(Message message);
     
     public Recepit storeRecepit(Recepit recepit);
+    
+    public boolean isPresent(Message message);
 }

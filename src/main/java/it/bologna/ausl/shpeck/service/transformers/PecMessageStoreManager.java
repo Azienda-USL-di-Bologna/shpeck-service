@@ -52,6 +52,10 @@ public class PecMessageStoreManager extends StoreManager {
         log.info("Sbusto il messaggio");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, false);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
+        if(isPresent(messaggioSbustato)){
+            log.info("Il messaggio è già presente: esco");
+            return;
+        }
         storeMessage(messaggioSbustato);
         log.info("salvato: id " + messaggioSbustato.getId());
               

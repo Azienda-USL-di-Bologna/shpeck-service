@@ -46,6 +46,10 @@ public class RegularMessageStoreManager extends StoreManager {
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, false);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
+        if(isPresent(regularMessage)){
+            log.info("Il messaggio è già presente: esco");
+            return;
+        }
         storeMessage(regularMessage);        
     }
     
