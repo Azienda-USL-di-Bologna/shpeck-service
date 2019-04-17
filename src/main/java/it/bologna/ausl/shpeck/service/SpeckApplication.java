@@ -35,6 +35,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.TestThread;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
+import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.mail.Folder;
@@ -91,6 +92,9 @@ public class SpeckApplication {
     
     private ArrayList<MailMessage> messages;
     
+    private ArrayList<MailMessage> messagesOk;
+    private ArrayList<MailMessage> orphans;
+    
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args); 
     }
@@ -102,6 +106,9 @@ public class SpeckApplication {
             @Transactional
             public void run(String... args) throws Exception {
    
+                messagesOk = new ArrayList<>();
+                orphans = new ArrayList<>();
+                
                 Pec pec = pecRepository.findById(730).get();
                 PecProvider idPecProvider = pec.getIdPecProvider();
                 log.info("host: " +idPecProvider.getHost() );
@@ -114,6 +121,8 @@ public class SpeckApplication {
                // log.info("size: " + messages.size());
                 MailProxy mailProxy;
                 
+                Map<String, MailMessage> res = null;
+                
                 for (MailMessage message : messages) {
                     log.info("---------------------------------");
                     log.info("ID: " + message.getId());
@@ -122,7 +131,7 @@ public class SpeckApplication {
                     
                     mailProxy = new MailProxy(message);
                     log.info("type: " + mailProxy.getType());
-                    
+                                        
                     if(null == mailProxy.getType())
                         log.error("*** DATO SCONOSCIUTO ***");
                     else switch (mailProxy.getType()) {
@@ -130,25 +139,42 @@ public class SpeckApplication {
                             log.info("è PEC: me la salvo");
                             pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                             pecMessageStoreManager.setPec(pec);
-                            pecMessageStoreManager.store();
+                            res = pecMessageStoreManager.store();
                             break;
+
                         case RECEPIT:
                             log.info("è una RICEVUTA: me la salvo");
                             recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
                             recepitMessageStoreManager.setPec(pec);
-                            recepitMessageStoreManager.store();
+                            res = recepitMessageStoreManager.store();
                             break;
                         case MAIL:
                             log.info("è una REGULAR MAIL: me la salvo");
                             regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
                             regularMessageStoreManager.setPec(pec);
-                            regularMessageStoreManager.store();
+                            res = regularMessageStoreManager.store();
                             break;
                         default:
+                            res = null;
                             log.error("*** DATO SCONOSCIUTO ***");
                             break;
                     }
+                    
+                    if(res!=null){
+                        if(res.get("ok") != null)
+                            messagesOk.add(res.get("ok"));
+                        else
+                            orphans.add(res.get("orphan"));
+                    }
                                              
+                }
+                log.info("GLI ok:");
+                for (MailMessage mailMessage : messagesOk) {
+                    System.out.println(mailMessage.getId());
+                }
+                log.info("GLI ORFANI:");
+                for (MailMessage mailMessage : orphans) {
+                    System.out.println(mailMessage.getId());
                 }
 //                
 //                if (!messages.isEmpty()) {

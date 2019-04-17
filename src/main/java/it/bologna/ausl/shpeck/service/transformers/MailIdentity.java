@@ -9,8 +9,6 @@ import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
  */
 public interface MailIdentity {
     
-    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException;
-    
     public Message.MessageType getType() throws ShpeckServiceException;
     
     public Object getMail() throws ShpeckServiceException;

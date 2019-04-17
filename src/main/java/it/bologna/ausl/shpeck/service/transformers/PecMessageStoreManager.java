@@ -2,6 +2,8 @@ package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -20,6 +22,7 @@ public class PecMessageStoreManager extends StoreManager {
     
     private PecMessage pecMessage;
     private Pec pec;
+    
 
     public PecMessageStoreManager() {
     }
@@ -47,14 +50,18 @@ public class PecMessageStoreManager extends StoreManager {
     
     
     @Transactional
-    public void store() {
+    public Map<String, MailMessage> store() {
+        
+        Map<String, MailMessage> res = new HashMap<>();
+        
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, false);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if(isPresent(messaggioSbustato)){
+            res.put("ok", pecMessage);
             log.info("Il messaggio è già presente: esco");
-            return;
+            return res;
         }
         storeMessage(messaggioSbustato);
         log.info("salvato: id " + messaggioSbustato.getId());
@@ -69,6 +76,8 @@ public class PecMessageStoreManager extends StoreManager {
         else
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         storeMessage(messaggioBustato);
+        res.put("ok", pecMessage);
         log.info("salvato: id " + messaggioBustato.getId());
+        return res;
     }
 }

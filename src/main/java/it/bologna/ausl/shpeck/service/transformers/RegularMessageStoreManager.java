@@ -2,6 +2,8 @@ package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -41,16 +43,19 @@ public class RegularMessageStoreManager extends StoreManager {
     }
         
     @Transactional
-    public void store(){
+    public Map<String, MailMessage> store(){
+        Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, false);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
-        if(isPresent(regularMessage)){
-            log.info("Il messaggio è già presente: esco");
-            return;
+        if(!isPresent(regularMessage)){
+            storeMessage(regularMessage);
         }
-        storeMessage(regularMessage);        
+        else {
+            log.info("Il messaggio è già presente: esco");
+        }
+        res.put("ok", mailMessage);
+        return res;
     }
-    
 }

@@ -223,11 +223,6 @@ public class MailMessage implements MailIdentity{
     }
 
     @Override
-    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
     public it.bologna.ausl.model.entities.shpeck.Message.MessageType getType() throws ShpeckServiceException {
         return it.bologna.ausl.model.entities.shpeck.Message.MessageType.MAIL;
     }

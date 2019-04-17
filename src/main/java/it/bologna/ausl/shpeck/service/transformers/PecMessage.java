@@ -134,11 +134,6 @@ public class PecMessage extends MailMessage implements MailIdentity{
     }
 
     @Override
-    public void isInDb(MailMessage mailMessage) throws ShpeckServiceException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
     public Message.MessageType getType() throws ShpeckServiceException {
        return type;
     }
