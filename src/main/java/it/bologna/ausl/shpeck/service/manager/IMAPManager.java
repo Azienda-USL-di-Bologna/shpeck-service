@@ -138,7 +138,7 @@ public class IMAPManager {
                 store.connect();
             }
             createWorkingFolder(BACKUP_FOLDER_NAME);
-            messageMover(store, "INBOX", "INBOX/" + BACKUP_FOLDER_NAME, list);
+            messageMover(store, "INBOX/develop", "INBOX/" + BACKUP_FOLDER_NAME, list);
         } catch (Exception e) {
             throw new ShpeckServiceException("Errore nel muovere i messaggi nella cartella di backup", e);
         }

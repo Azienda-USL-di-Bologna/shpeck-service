@@ -176,6 +176,12 @@ public class SpeckApplication {
                 for (MailMessage mailMessage : orphans) {
                     System.out.println(mailMessage.getId());
                 }
+                
+                for (MailMessage tmpMessage : messagesOk) {
+                // imap.setTreatedFlag(m.getOriginal());
+                    manager.messageMover(tmpMessage.getId());
+                }
+            }
 //                
 //                if (!messages.isEmpty()) {
 //                    log.debug("got messages !");
@@ -192,7 +198,7 @@ public class SpeckApplication {
 //                    testThread.start();
 //                    TimeUnit.SECONDS.sleep(2);
 //                }
-            }
+            
         };
     }   
 }
