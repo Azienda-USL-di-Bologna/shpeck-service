@@ -1,7 +1,6 @@
 package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.shpeck.Message;
-import it.bologna.ausl.shpeck.service.exceptions.ShpeckPecPayloadNotFoundException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

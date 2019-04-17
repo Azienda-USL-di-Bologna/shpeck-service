@@ -5,7 +5,6 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -62,7 +61,6 @@ public class RecepitMessageStoreManager extends StoreManager {
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if(isPresent(messaggioDiRicevuta)){
             res.put("ok", pecRecepit);
-            log.info("Il messaggio è già presente: esco");
             return res;
         }
         

@@ -53,7 +53,6 @@ public class RegularMessageStoreManager extends StoreManager {
             storeMessage(regularMessage);
         }
         else {
-            log.info("Il messaggio è già presente: esco");
         }
         res.put("ok", mailMessage);
         return res;
