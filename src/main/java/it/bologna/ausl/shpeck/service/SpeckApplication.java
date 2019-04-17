@@ -57,8 +57,11 @@ public class SpeckApplication {
     /**
      * Punto di partenza dell'applicazione
      */
-       
+    
     private static final Logger log = LoggerFactory.getLogger(SpeckApplication.class);
+    public static final int MESSAGE_POLICY_NONE = 0;
+    public static final int MESSAGE_POLICY_BACKUP = 1;
+    public static final int MESSAGE_POLICY_DELETE = 2;
     
     @Autowired
     ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
@@ -115,8 +118,8 @@ public class SpeckApplication {
                 
                 IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
                 
-                IMAPManager manager = new IMAPManager(store, 14);
-                
+                //IMAPManager manager = new IMAPManager(store, 14);
+                IMAPManager manager = new IMAPManager(store);
                 messages = manager.getMessages();
                // log.info("size: " + messages.size());
                 MailProxy mailProxy;
@@ -168,19 +171,36 @@ public class SpeckApplication {
                     }
                                              
                 }
-                log.info("GLI ok:");
+                log.info("GLI 'OK':");
                 for (MailMessage mailMessage : messagesOk) {
                     System.out.println(mailMessage.getId());
                 }
-                log.info("GLI ORFANI:");
+                log.info("GLI 'ORFANI':");
                 for (MailMessage mailMessage : orphans) {
                     System.out.println(mailMessage.getId());
                 }
                 
-                for (MailMessage tmpMessage : messagesOk) {
-                // imap.setTreatedFlag(m.getOriginal());
+                // le ricevute orfane si salvano sempre nella cartella di backup
+                for (MailMessage tmpMessage : orphans) {
                     manager.messageMover(tmpMessage.getId());
                 }
+                
+                log.info("Verifico la policy del provider : " + pec.getMessagePolicy());
+                
+                switch(pec.getMessagePolicy()){
+                    case (MESSAGE_POLICY_BACKUP):
+                        log.info("Message Policy BackUp : sposto nella cartella di backup.");
+                        manager.messageMover(messagesOk);
+                        break;
+                    case (MESSAGE_POLICY_DELETE):
+                        log.info("Message Policy DELETE : Cancello i messaggi salvati.");
+                        manager.deleteMessage(messagesOk);
+                        break;
+                    default:
+                        log.info("Message Policy None : non faccio nulla.");
+                        break;
+                }
+                
             }
 //                
 //                if (!messages.isEmpty()) {

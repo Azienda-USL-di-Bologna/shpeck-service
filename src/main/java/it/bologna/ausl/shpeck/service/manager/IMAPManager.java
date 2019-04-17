@@ -1,6 +1,7 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import com.sun.mail.imap.IMAPFolder;
+import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
@@ -119,6 +120,12 @@ public class IMAPManager {
         close();
     }
     
+    public void messageMover(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
+        for (MailMessage mailMessage : mailMessages) {
+            messageMover(mailMessage.getId());
+        }
+    }
+    
     public void messageMover(String messageId) throws ShpeckServiceException {
         messageMover(Arrays.asList(messageId));
     }
@@ -206,6 +213,44 @@ public class IMAPManager {
             srcFolder.expunge();
         }
         store.close();
+    }
+    
+    public void deleteMessage(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
+        for (MailMessage mailMessage : mailMessages) {
+            deleteMessage(mailMessage.getId());
+        }
+    }
+    
+    public boolean deleteMessage(String message_id) {
+        try {
+            if (!store.isConnected()) {
+                this.store.connect();
+            }
+            // Open the folder
+            Folder inbox = this.store.getFolder("INBOX");
+            if (inbox == null) {
+                log.error("CARTELLA INBOX NON PRESENTE");
+                System.exit(1);
+            }
+            inbox.open(Folder.READ_WRITE);
+            // Get the messages from the server
+            Message[] tmpmess = inbox.getMessages();
+            IMAPMessage mess;
+            String messid;
+            for (int i = 0; i < tmpmess.length; i++) {
+                mess = (IMAPMessage) tmpmess[i];
+                messid = mess.getMessageID();
+                if (messid.equals(message_id)) {
+                    tmpmess[i].setFlag(Flags.Flag.DELETED, true);
+                    inbox.close(true);
+                    return true;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
     
 }
