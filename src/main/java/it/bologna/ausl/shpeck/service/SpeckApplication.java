@@ -143,6 +143,7 @@ public class SpeckApplication {
                             pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                             pecMessageStoreManager.setPec(pec);
                             res = pecMessageStoreManager.store();
+                            //pecMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                             break;
 
                         case RECEPIT:
@@ -150,12 +151,14 @@ public class SpeckApplication {
                             recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
                             recepitMessageStoreManager.setPec(pec);
                             res = recepitMessageStoreManager.store();
+                            //recepitMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                             break;
                         case MAIL:
                             log.info("è una REGULAR MAIL: me la salvo");
                             regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
                             regularMessageStoreManager.setPec(pec);
                             res = regularMessageStoreManager.store();
+                            //regularMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                             break;
                         default:
                             res = null;
