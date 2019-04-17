@@ -5,7 +5,12 @@ import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.mail.FetchProfile;
+import javax.mail.Flags;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -20,9 +25,11 @@ import org.slf4j.LoggerFactory;
 public class IMAPManager {
     
     static Logger log = LoggerFactory.getLogger(IMAPManager.class);
+    static String BACKUP_FOLDER_NAME = "PecBackup";
     
     private IMAPStore store;
     private long lastUID = 0;
+    IMAPFolder workingFolder = null;
 
     public IMAPManager(IMAPStore store) {
         this.store = store;
@@ -112,6 +119,93 @@ public class IMAPManager {
         close();
     }
     
+    public void messageMover(String messageId) throws ShpeckServiceException {
+        messageMover(Arrays.asList(messageId));
+    }
     
+    public void messageMover(List<String> list) throws ShpeckServiceException {
+        if (list == null) {
+            log.warn("lista di messaggi da spostare è null");
+            return;
+        }
+        if (list.size() == 0) {
+            log.warn("nessun messaggio da spostare");
+            return;
+        }
+        log.debug("Spostamento di " + list.size() + " messaggi");
+        try {
+            if (!store.isConnected()) {
+                store.connect();
+            }
+            createWorkingFolder(BACKUP_FOLDER_NAME);
+            messageMover(store, "INBOX", "INBOX/" + BACKUP_FOLDER_NAME, list);
+        } catch (Exception e) {
+            throw new ShpeckServiceException("Errore nel muovere i messaggi nella cartella di backup", e);
+        }
+        log.debug("messaggi spostati");
+    }
+    
+    protected IMAPFolder createWorkingFolder(String folderName) throws ShpeckServiceException {
+        IMAPFolder f, srcfolder = null;
+        try {
+            srcfolder = (IMAPFolder) store.getFolder("INBOX");
+            srcfolder.open(Folder.READ_WRITE);
+            f = (IMAPFolder) srcfolder.getFolder(folderName);
+            if (!f.exists()) {
+                boolean res = f.create(IMAPFolder.HOLDS_MESSAGES);
+                if (!res) {
+                    throw new ShpeckServiceException("Errore nella creazione della cartella di backup");
+                }
+            }
+            workingFolder = f;
+
+            return f;
+        } catch (MessagingException e) {
+            throw new ShpeckServiceException("Error settingUp pecGW working folder", e);
+
+        } finally {
+            try {
+                srcfolder.close(false);
+            } catch (MessagingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+
+    }
+    
+    public static void messageMover(IMAPStore store, String sourceFolder, String destFolder, List<String> messageIds) throws MessagingException {
+        Set<String> idSet = new HashSet<>(messageIds);
+        if (!store.isConnected()) {
+            store.connect();
+        }
+        try (
+            IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
+            IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
+            srcFolder.open(IMAPFolder.READ_WRITE);
+            List<MimeMessage> messageToMove = new ArrayList<>(100);
+            Message[] messages = srcFolder.getMessages();
+
+            for (Message m : messages) {
+                MimeMessage tmp = (MimeMessage) m;
+                String messageId = tmp.getMessageID();
+                if (idSet.contains(messageId)) {
+                    messageToMove.add(tmp);
+                    log.debug("messaggio: " + messageId + " selezionato per lo spostamento");
+                }
+            }
+            dstFolder.open(IMAPFolder.READ_WRITE);
+            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+            for (Message m : messages) {
+                MimeMessage tmp = (MimeMessage) m;
+                String messageId = tmp.getMessageID();
+                if (idSet.contains(messageId)) {
+                    tmp.setFlag(Flags.Flag.DELETED, true);
+                }
+            }
+            srcFolder.expunge();
+        }
+        store.close();
+    }
     
 }

@@ -2,6 +2,8 @@ package it.bologna.ausl.shpeck.service.utils;
 
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import java.util.List;
 import java.util.Properties;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -62,4 +64,5 @@ public class ProviderConnectionHandler {
         log.info("URI: " + uri);
         return createIMAPStore(uri);
     }
+    
 }
