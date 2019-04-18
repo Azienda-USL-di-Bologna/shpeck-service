@@ -18,15 +18,29 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 /**
  *
  * @author spritz
  */
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPManager {
     
     static Logger log = LoggerFactory.getLogger(IMAPManager.class);
-    static String BACKUP_FOLDER_NAME = "PecBackup";
+    
+    @Value("${mailbox.backup-forlder}")
+    String BACKUP_FOLDER_NAME;
+    
+    @Value("${mailbox.inbox-forlder}")
+    String INBOX_FOLDER_NAME;
+    
+    @Value("${mailbox.backup-source-forlder}")
+    String BACKUP_SOURCE_FOLDER;
     
     private IMAPStore store;
     private long lastUID = 0;
@@ -40,6 +54,24 @@ public class IMAPManager {
         this(store);
         this.lastUID = lastUID;
     }
+
+    public IMAPStore getStore() {
+        return store;
+    }
+
+    public void setStore(IMAPStore store) {
+        this.store = store;
+    }
+
+    public long getLastUID() {
+        return lastUID;
+    }
+
+    public void setLastUID(long lastUID) {
+        this.lastUID = lastUID;
+    }
+    
+    
     
     /**
      * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
@@ -63,7 +95,7 @@ public class IMAPManager {
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
             
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder("INBOX/develop");
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -145,7 +177,7 @@ public class IMAPManager {
                 store.connect();
             }
             createWorkingFolder(BACKUP_FOLDER_NAME);
-            messageMover(store, "INBOX/develop", "INBOX/" + BACKUP_FOLDER_NAME, list);
+            messageMover(store, BACKUP_SOURCE_FOLDER, INBOX_FOLDER_NAME + "/" + BACKUP_FOLDER_NAME, list);
         } catch (Exception e) {
             throw new ShpeckServiceException("Errore nel muovere i messaggi nella cartella di backup", e);
         }
@@ -155,7 +187,7 @@ public class IMAPManager {
     protected IMAPFolder createWorkingFolder(String folderName) throws ShpeckServiceException {
         IMAPFolder f, srcfolder = null;
         try {
-            srcfolder = (IMAPFolder) store.getFolder("INBOX");
+            srcfolder = (IMAPFolder) store.getFolder(INBOX_FOLDER_NAME);
             srcfolder.open(Folder.READ_WRITE);
             f = (IMAPFolder) srcfolder.getFolder(folderName);
             if (!f.exists()) {
@@ -227,7 +259,7 @@ public class IMAPManager {
                 this.store.connect();
             }
             // Open the folder
-            Folder inbox = this.store.getFolder("INBOX");
+            Folder inbox = this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("CARTELLA INBOX NON PRESENTE");
                 System.exit(1);

@@ -6,6 +6,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecProvider;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
@@ -93,6 +94,9 @@ public class SpeckApplication {
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
     
+    @Autowired
+    IMAPManager imapManager;
+    
     private ArrayList<MailMessage> messages;
     
     private ArrayList<MailMessage> messagesOk;
@@ -119,8 +123,9 @@ public class SpeckApplication {
                 IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
                 
                 //IMAPManager manager = new IMAPManager(store, 14);
-                IMAPManager manager = new IMAPManager(store);
-                messages = manager.getMessages();
+                //IMAPManager manager = new IMAPManager(store);
+                imapManager.setStore(store);
+                messages = imapManager.getMessages();
                // log.info("size: " + messages.size());
                 MailProxy mailProxy;
                 
@@ -167,10 +172,10 @@ public class SpeckApplication {
                     }
                     
                     if(res!=null){
-                        if(res.get("ok") != null)
-                            messagesOk.add(res.get("ok"));
+                        if(res.get(ApplicationConstant.OK_KEY) != null)
+                            messagesOk.add(res.get(ApplicationConstant.OK_KEY));
                         else
-                            orphans.add(res.get("orphan"));
+                            orphans.add(res.get(ApplicationConstant.ORPHAN_KEY));
                     }
                                              
                 }
@@ -185,7 +190,7 @@ public class SpeckApplication {
                 
                 // le ricevute orfane si salvano sempre nella cartella di backup
                 for (MailMessage tmpMessage : orphans) {
-                    manager.messageMover(tmpMessage.getId());
+                    imapManager.messageMover(tmpMessage.getId());
                 }
                 
                 log.info("Verifico la policy del provider : " + pec.getMessagePolicy());
@@ -193,11 +198,11 @@ public class SpeckApplication {
                 switch(pec.getMessagePolicy()){
                     case (MESSAGE_POLICY_BACKUP):
                         log.info("Message Policy BackUp : sposto nella cartella di backup.");
-                        manager.messageMover(messagesOk);
+                        imapManager.messageMover(messagesOk);
                         break;
                     case (MESSAGE_POLICY_DELETE):
                         log.info("Message Policy DELETE : Cancello i messaggi salvati.");
-                        manager.deleteMessage(messagesOk);
+                        imapManager.deleteMessage(messagesOk);
                         break;
                     default:
                         log.info("Message Policy None : non faccio nulla.");

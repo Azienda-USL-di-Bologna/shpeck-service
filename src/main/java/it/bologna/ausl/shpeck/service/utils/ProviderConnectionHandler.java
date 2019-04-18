@@ -2,8 +2,6 @@ package it.bologna.ausl.shpeck.service.utils;
 
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
-import java.util.List;
 import java.util.Properties;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -24,6 +22,9 @@ import org.springframework.stereotype.Component;
 public class ProviderConnectionHandler {
     
     private static final Logger log = LoggerFactory.getLogger(ProviderConnectionHandler.class);
+    
+    @Value("${mailbox.inbox-forlder}")
+    String INBOX_FOLDER_NAME;
     
     private final Properties properties;
 
@@ -55,7 +56,7 @@ public class ProviderConnectionHandler {
         if (host == null || port < 0 || port > 65535 || username == null || password == null || protocol == null) {
             throw new IllegalArgumentException("Parameters are not good");
         }
-        uri = protocol.toLowerCase() + "://" + username + ":" + password + "@" + host + ":" + Integer.toString(port) + "/INBOX";
+        uri = protocol.toLowerCase() + "://" + username + ":" + password + "@" + host + ":" + Integer.toString(port) + "/" + INBOX_FOLDER_NAME;
         return uri;
     }
     

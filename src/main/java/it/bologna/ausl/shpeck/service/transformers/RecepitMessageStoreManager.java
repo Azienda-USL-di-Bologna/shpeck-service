@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
+import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -54,13 +55,13 @@ public class RecepitMessageStoreManager extends StoreManager {
         
         if(relatedMessage==null){
             log.error("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());
-            res.put("orphan", pecRecepit);
+            res.put(ApplicationConstant.ORPHAN_KEY, pecRecepit);
             return res;
         }
         
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if(isPresent(messaggioDiRicevuta)){
-            res.put("ok", pecRecepit);
+            res.put(ApplicationConstant.OK_KEY, pecRecepit);
             return res;
         }
         
@@ -97,7 +98,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         
         messaggioDiRicevuta.setIdRecepit(recepit);
         storeMessage(messaggioDiRicevuta);
-        res.put("ok", pecRecepit);
+        res.put(ApplicationConstant.OK_KEY, pecRecepit);
         return res;
     }
     

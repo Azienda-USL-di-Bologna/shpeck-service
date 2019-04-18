@@ -2,6 +2,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public class RegularMessageStoreManager extends StoreManager {
         }
         else {
         }
-        res.put("ok", mailMessage);
+        res.put(ApplicationConstant.OK_KEY, mailMessage);
         return res;
     }
 }
