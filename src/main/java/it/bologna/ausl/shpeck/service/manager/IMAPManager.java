@@ -46,6 +46,9 @@ public class IMAPManager {
     private long lastUID = 0;
     IMAPFolder workingFolder = null;
 
+    public IMAPManager() {
+    }
+    
     public IMAPManager(IMAPStore store) {
         this.store = store;
     }

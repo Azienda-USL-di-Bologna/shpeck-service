@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.mail.Folder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
@@ -101,7 +102,7 @@ public class SpeckApplication {
     
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> orphans;
-    
+       
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args); 
     }
@@ -109,6 +110,7 @@ public class SpeckApplication {
     
     @Bean
     public CommandLineRunner schedulingRunner() {
+        
         return new CommandLineRunner() {
             @Transactional
             public void run(String... args) throws Exception {

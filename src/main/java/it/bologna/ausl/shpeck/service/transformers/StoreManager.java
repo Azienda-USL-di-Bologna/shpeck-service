@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
+import it.bologna.ausl.model.entities.shpeck.RawMessage;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import org.slf4j.Logger;
@@ -38,6 +41,9 @@ public class StoreManager implements StoreInterface{
     
     @Autowired
     AddessRepository addessRepository;
+    
+    @Autowired
+    RawMessageRepository rawMessageRepository;
    
     public StoreManager() {
     }
@@ -82,6 +88,15 @@ public class StoreManager implements StoreInterface{
         Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
         return messaggioPresente != null;
     }
+    
+    public void insertRawMessage(Message message, String rawData) throws ShpeckServiceException {
+
+        RawMessage rawMessage = new RawMessage();
+        rawMessage.setIdMessage(message);
+        rawMessage.setRawData(rawData);
+        rawMessageRepository.save(rawMessage);       
+    }
+
     
     public void upsertAddresses(MailMessage mailMessage){
         if(mailMessage.getFrom() != null){   
