@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -51,8 +52,8 @@ public class PecMessageStoreManager extends StoreManager {
     }
     
     
-    @Transactional
-    public Map<String, MailMessage> store() {
+    @Transactional(rollbackFor = MailMessageException.class)
+    public Map<String, MailMessage> store() throws MailMessageException {
         
         Map<String, MailMessage> res = new HashMap<>();
         
@@ -65,6 +66,14 @@ public class PecMessageStoreManager extends StoreManager {
             return res;
         }
         storeMessage(messaggioSbustato);
+        try{
+            log.info("Salvo il RawMessage dello SBUSTATO");
+            storeRawMessage(messaggioSbustato, pecMessage.getRaw_message());
+        } catch (MailMessageException e){
+            log.error("Errore nel retrieving data del rawMessage dal pecMessage " +  e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
         log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
         log.info("Salvo gli indirizzi dello sbustato");
         HashMap mapSbustato = upsertAddresses(pecMessage);
@@ -82,6 +91,14 @@ public class PecMessageStoreManager extends StoreManager {
         else
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         storeMessage(messaggioBustato);
+        try{
+            log.info("Salvo il RawMessage della BUSTA");
+            storeRawMessage(messaggioBustato, envelope.getRaw_message());
+        } catch (MailMessageException e){
+            log.error("Errore nel retrieving data del rawMessage dal pecMessage " +  e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
         log.info("salvato messaggio busta con id: " + messaggioBustato.getId());
         log.info("Salvo gli indirizzi dello sbustato");
         HashMap mapBusta = upsertAddresses(envelope);

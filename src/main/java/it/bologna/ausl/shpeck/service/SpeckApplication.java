@@ -91,7 +91,7 @@ public class SpeckApplication {
                 log.info("worker_object: " + imapWorker.toString());
 
                 scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, 3, 3, TimeUnit.SECONDS);
-                imapManager.setLastUID(68);
+                
                 
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }

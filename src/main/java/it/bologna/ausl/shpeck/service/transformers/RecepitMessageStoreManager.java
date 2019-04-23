@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -45,8 +46,8 @@ public class RecepitMessageStoreManager extends StoreManager {
         this.pec = pec;
     }
         
-    @Transactional
-    public Map<String, MailMessage> store(){
+    @Transactional(rollbackFor = MailMessageException.class)
+    public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RecepitMessageStoreManager.store()");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec, false);
@@ -67,6 +68,15 @@ public class RecepitMessageStoreManager extends StoreManager {
         }
         
         storeMessage(messaggioDiRicevuta);
+        
+        try{
+            log.info("Salvo il RawMessage della RICEVUTA");
+            storeRawMessage(messaggioDiRicevuta, pecRecepit.getRaw_message());
+        } catch (MailMessageException e){
+            log.error("Errore nel retrieving data del rawMessage dal pecRecepit " +  e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
         
         log.info("Salvo gli indirizzi della ricevuta");
         HashMap mapRicevuta = upsertAddresses(pecRecepit);

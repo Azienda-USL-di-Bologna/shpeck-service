@@ -94,90 +94,89 @@ public class IMAPWorker implements Runnable {
             //IMAPManager manager = new IMAPManager(store, 14);
             //IMAPManager manager = new IMAPManager(store);
             imapManager.setStore(store);
+            imapManager.setLastUID(75);
             messages = imapManager.getMessages();
             MailProxy mailProxy;
                 
-                Map<String, MailMessage> res = null;
-                
-                for (MailMessage message : messages) {
-                    log.info("---------------------------------");
-                    log.info("ID: " + message.getId());
-                    log.info("HEADER: " + message.getString_headers());
-                    log.info("SUBJECT: " + message.getSubject());
-                    
-                    mailProxy = new MailProxy(message);
-                    log.info("type: " + mailProxy.getType());
-                                        
-                    if(null == mailProxy.getType())
-                        log.error("*** DATO SCONOSCIUTO ***");
-                    else switch (mailProxy.getType()) {
-                        case PEC:
-                            log.info("è PEC: me la salvo");
-                            pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
-                            pecMessageStoreManager.setPec(pec);
-                            res = pecMessageStoreManager.store();
-                            //pecMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
-                            break;
+            Map<String, MailMessage> res = null;
 
-                        case RECEPIT:
-                            log.info("è una RICEVUTA: me la salvo");
-                            recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
-                            recepitMessageStoreManager.setPec(pec);
-                            res = recepitMessageStoreManager.store();
-                            //recepitMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
-                            break;
-                        case MAIL:
-                            log.info("è una REGULAR MAIL: me la salvo");
-                            regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
-                            regularMessageStoreManager.setPec(pec);
-                            res = regularMessageStoreManager.store();
-                            //regularMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
-                            break;
-                        default:
-                            res = null;
-                            log.error("*** DATO SCONOSCIUTO ***");
-                            break;
-                    }
-                    
-                    if(res!=null){
-                        if(res.get(ApplicationConstant.OK_KEY) != null)
-                            messagesOk.add(res.get(ApplicationConstant.OK_KEY));
-                        else
-                            orphans.add(res.get(ApplicationConstant.ORPHAN_KEY));
-                    }
-                                             
-                }
-                log.info("GLI 'OK':");
-                for (MailMessage mailMessage : messagesOk) {
-                    System.out.println(mailMessage.getId());
-                }
-                log.info("GLI 'ORFANI':");
-                for (MailMessage mailMessage : orphans) {
-                    System.out.println(mailMessage.getId());
-                }
-                
-                // le ricevute orfane si salvano sempre nella cartella di backup
-                for (MailMessage tmpMessage : orphans) {
-                    imapManager.messageMover(tmpMessage.getId());
-                }
-                
-                log.info("Verifico la policy del provider : " + pec.getMessagePolicy());
-                
-                switch(pec.getMessagePolicy()){
-                    case (MESSAGE_POLICY_BACKUP):
-                        log.info("Message Policy BackUp : sposto nella cartella di backup.");
-                        imapManager.messageMover(messagesOk);
+            for (MailMessage message : messages) {
+                log.info("---------------------------------");
+                log.info("ID: " + message.getId());
+                log.info("HEADER: " + message.getString_headers());
+                log.info("SUBJECT: " + message.getSubject());
+
+                mailProxy = new MailProxy(message);
+                log.info("type: " + mailProxy.getType());
+
+                if(null == mailProxy.getType())
+                    log.error("*** DATO SCONOSCIUTO ***");
+                else switch (mailProxy.getType()) {
+                    case PEC:
+                        log.info("è PEC: me la salvo");
+                        pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
+                        pecMessageStoreManager.setPec(pec);
+                        res = pecMessageStoreManager.store();
+                        //pecMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                         break;
-                    case (MESSAGE_POLICY_DELETE):
-                        log.info("Message Policy DELETE : Cancello i messaggi salvati.");
-                        imapManager.deleteMessage(messagesOk);
+
+                    case RECEPIT:
+                        log.info("è una RICEVUTA: me la salvo");
+                        recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
+                        recepitMessageStoreManager.setPec(pec);
+                        res = recepitMessageStoreManager.store();
+                        //recepitMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
+                        break;
+                    case MAIL:
+                        log.info("è una REGULAR MAIL: me la salvo");
+                        regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
+                        regularMessageStoreManager.setPec(pec);
+                        res = regularMessageStoreManager.store();
+                        //regularMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                         break;
                     default:
-                        log.info("Message Policy None : non faccio nulla.");
+                        res = null;
+                        log.error("*** DATO SCONOSCIUTO ***");
                         break;
                 }
-             
-            
+
+                if(res!=null){
+                    if(res.get(ApplicationConstant.OK_KEY) != null)
+                        messagesOk.add(res.get(ApplicationConstant.OK_KEY));
+                    else
+                        orphans.add(res.get(ApplicationConstant.ORPHAN_KEY));
+                }
+
+            }
+            log.info("GLI 'OK':");
+            for (MailMessage mailMessage : messagesOk) {
+                System.out.println(mailMessage.getId());
+            }
+            log.info("GLI 'ORFANI':");
+            for (MailMessage mailMessage : orphans) {
+                System.out.println(mailMessage.getId());
+            }
+
+            // le ricevute orfane si salvano sempre nella cartella di backup
+            for (MailMessage tmpMessage : orphans) {
+                imapManager.messageMover(tmpMessage.getId());
+            }
+
+            log.info("Verifico la policy del provider : " + pec.getMessagePolicy());
+
+            switch(pec.getMessagePolicy()){
+                case (MESSAGE_POLICY_BACKUP):
+                    log.info("Message Policy BackUp : sposto nella cartella di backup.");
+                    imapManager.messageMover(messagesOk);
+                    break;
+                case (MESSAGE_POLICY_DELETE):
+                    log.info("Message Policy DELETE : Cancello i messaggi salvati.");
+                    imapManager.deleteMessage(messagesOk);
+                    break;
+                default:
+                    log.info("Message Policy None : non faccio nulla.");
+                    break;
+            }
             
         //    TimeUnit.SECONDS.sleep(5);
         } catch(Throwable e){

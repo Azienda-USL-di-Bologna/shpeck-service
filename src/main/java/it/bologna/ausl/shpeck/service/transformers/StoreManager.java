@@ -93,6 +93,11 @@ public class StoreManager implements StoreInterface{
     @Override
     public boolean isPresent(Message message){
         Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
+        if(messaggioPresente != null)
+            log.info("Messaggio GIA' trovato in casella");
+        else
+            log.info("Messaggio NON trovato in casella");
+        
         return messaggioPresente != null;
     }
     
@@ -235,5 +240,15 @@ public class StoreManager implements StoreInterface{
         }
         log.info("Ritorno la mappa " +  map.toString());
         return map;
+    }
+
+    @Override
+    public RawMessage storeRawMessage(Message message, String raw) {
+        log.info("Metodo storeRawMessage");
+        RawMessage rawMessage = new RawMessage();
+        rawMessage.setIdMessage(message);
+        rawMessage.setRawData(raw);
+        log.info("salvataggio del raw");
+        return rawMessageRepository.save(rawMessage);
     }
 }

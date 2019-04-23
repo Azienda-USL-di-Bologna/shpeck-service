@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -44,8 +45,8 @@ public class RegularMessageStoreManager extends StoreManager {
         this.mailMessage = mailMessage;
     }
         
-    @Transactional
-    public Map<String, MailMessage> store(){
+    @Transactional(rollbackFor = MailMessageException.class)
+    public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, false);
@@ -53,6 +54,15 @@ public class RegularMessageStoreManager extends StoreManager {
         regularMessage.setIsPec(Boolean.FALSE);
         if(!isPresent(regularMessage)){
             storeMessage(regularMessage);
+            try{
+                log.info("Salvo il RawMessage del REGULARMESSAGE");
+                storeRawMessage(regularMessage, mailMessage.getRaw_message());
+            }
+            catch (MailMessageException e){
+                log.error("Errore nel retrieving data del rawMessage dal mailMessage " +  e.getMessage());
+                e.printStackTrace();
+                throw e;
+            }
         }
         else {
         }

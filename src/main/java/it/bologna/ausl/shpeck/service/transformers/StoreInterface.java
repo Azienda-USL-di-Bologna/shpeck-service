@@ -2,6 +2,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 
 /**
@@ -16,4 +17,6 @@ public interface StoreInterface {
     public Recepit storeRecepit(Recepit recepit);
     
     public boolean isPresent(Message message);
+    
+    public RawMessage storeRawMessage(Message message, String rawMessage);
 }
