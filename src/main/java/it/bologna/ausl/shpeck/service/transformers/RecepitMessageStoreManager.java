@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecepitMessageStoreManager extends StoreManager {
+    
     private static final Logger log = LoggerFactory.getLogger(RecepitMessageStoreManager.class);
     
     private PecRecepit pecRecepit;

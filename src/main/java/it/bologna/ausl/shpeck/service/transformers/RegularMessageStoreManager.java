@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RegularMessageStoreManager extends StoreManager {
+    
     private static final Logger log = LoggerFactory.getLogger(RegularMessageStoreManager.class);
     
     private MailMessage mailMessage;
