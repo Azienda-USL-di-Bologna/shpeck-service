@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.repository.AddessRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
@@ -13,7 +14,10 @@ import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.repository.MessageAddressRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
+import java.util.HashMap;
+import java.util.List;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import org.slf4j.Logger;
@@ -35,6 +39,9 @@ public class StoreManager implements StoreInterface{
     
     @Autowired
     MessageRepository messageRepository;
+    
+    @Autowired
+    MessageAddressRepository messageAddressRepository;
     
     @Autowired
     RecepitRepository recepitRepository;
@@ -96,75 +103,137 @@ public class StoreManager implements StoreInterface{
         rawMessage.setRawData(rawData);
         rawMessageRepository.save(rawMessage);       
     }
+    
+    public MessageAddress storeMessageAddress(Message m, Address a, MessageAddress.AddressRoleType type){
+        MessageAddress messageAddress = new MessageAddress();
+        messageAddress.setIdAddress(a);
+        messageAddress.setIdMessage(m);
+        messageAddress.setRecipientType(type);
+        return messageAddressRepository.save(messageAddress);
+    }
+    
+    public void storeMessagesAddresses(Message message, HashMap addresses){
+        log.info("Entrato in storeMessagesAddress");
+        log.info("Prendo gli indirizzi FROM");
+        ArrayList<Address> list = (ArrayList<Address>) addresses.get("from");
+        if(list!=null && list.size() > 0){
+            log.info("Ciclo gli indirizzi FROM e li salvo su messages_addresses");
+            for (Address address : list) {
+                MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.FROM);
+                log.info("Salvato message_address " + ma);
+            }
+        }
+        
+        list = (ArrayList<Address>) addresses.get("to");
+        if(list!=null && list.size() > 0){
+            log.info("Ciclo gli indirizzi TO e li salvo su messages_addresses");
+            for (Address address : list) {
+                MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.TO);
+                log.info("Salvato message_address " + ma);
+            }
+        }
+        list = (ArrayList<Address>) addresses.get("cc");
+        if(list!=null && list.size() > 0){
+            log.info("Ciclo gli indirizzi CC e li salvo su messages_addresses");
+            for (Address address : list) {
+                MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.CC);
+                log.info("Salvato message_address " + ma);
+            }
+        }
+            
+    }
+    
+    public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses){
+        ArrayList<Address> list = new ArrayList<Address>();
+        for (int i = 0; i < addresses.length; i++){
+            InternetAddress internetAddress = (InternetAddress) addresses[i];
+                Address address = new Address();
+                log.info("verifico presenza di " + internetAddress.getAddress());
+                address = addessRepository.findByMailAddress(internetAddress.getAddress());
+                if(address == null){
+                    log.info("indirizzo non trovato: lo salvo");
+                    address = new Address();
+                    address.setMailAddress(internetAddress.getAddress());
+                    address.setOriginalAddress(internetAddress.getPersonal());
+                    address.setRecipientType(Address.RecipientType.UNKNOWN);
+                    try{
+                        addessRepository.save(address);
+                    }
+                    catch(Exception ex){
+                        log.error("Indirizzo già presente: " + address.getMailAddress());
+                    }
+                }
+                log.info("Aggiungo indirizzo all'array da tornare");
+                list.add(address);
+            }
+        return list;
+    }
 
     
-    public void upsertAddresses(MailMessage mailMessage){
-        if(mailMessage.getFrom() != null){   
+    public HashMap upsertAddresses(MailMessage mailMessage){
+        log.info("Entrato in upsertAddresses");
+        HashMap<String,ArrayList> map = new HashMap<String,ArrayList>();
+        log.info("Verifico presenza di mittenti");
+        if(mailMessage.getFrom() != null){
+            ArrayList<Address> fromArrayList = new ArrayList<Address>();
             javax.mail.Address[] from = mailMessage.getFrom();
-            for (int i = 0; i < from.length; i++) {
-                InternetAddress internetAddress = (InternetAddress) from[i];
-                Address address = new Address();
-                address.setMailAddress(internetAddress.getAddress());
-                address.setOriginalAddress(internetAddress.getPersonal());
-                address.setRecipientType(Address.RecipientType.UNKNOWN);
-                try{
-                    addessRepository.save(address);
-                }
-                catch(Exception ex){
-                    log.error("Indirizzo già presente: " + address.getMailAddress());
-                }
+            log.info("ciclo gli indirizzi from e li salvo");
+            fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from);
+            // inserisco l'arraylist nella mappa con chiave 'from'
+            if(fromArrayList.size() > 0){
+                log.info("FROM: " + fromArrayList.toString());
+                log.info("Aggiungo l'array degli indirizzi from alla mappa con chiave 'from'");
+                map.put("from", fromArrayList);
             }
+            else
+                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI FROM");
         }
         
-        if(mailMessage.getTo() != null){            
+        log.info("Verifico presenza di destinatari TO");
+        if(mailMessage.getTo() != null){     
+            ArrayList<Address> toArrayList = new ArrayList<Address>();
             javax.mail.Address[] to = mailMessage.getTo();
-            for (int i = 0; i < to.length; i++) {
-                InternetAddress internetAddress = (InternetAddress) to[i];
-                Address address = new Address();
-                address.setMailAddress(internetAddress.getAddress());
-                address.setOriginalAddress(internetAddress.getPersonal());
-                address.setRecipientType(Address.RecipientType.UNKNOWN);
-                try{
-                    addessRepository.save(address);
-                }
-                catch(Exception ex){
-                    log.error("Indirizzo già presente: " + address.getMailAddress());
-                }
+            log.info("ciclo gli indirizzi to e li salvo");
+            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to);
+            if(toArrayList.size() > 0){
+                log.info("TO: " + toArrayList.toString());
+                log.info("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
+                map.put("to", toArrayList);
             }
+            else
+                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI TO");
         }
         
-        if(mailMessage.getCc() != null){            
+        log.info("Verifico presenza di destinatari CC");
+        if(mailMessage.getCc() != null){
+            ArrayList<Address> ccArrayList = new ArrayList<Address>();
             javax.mail.Address[] cc = mailMessage.getCc();
-            for (int i = 0; i < cc.length; i++) {
-                InternetAddress internetAddress = (InternetAddress) cc[i];
-                Address address = new Address();
-                address.setMailAddress(internetAddress.getAddress());
-                address.setOriginalAddress(internetAddress.getPersonal());
-                address.setRecipientType(Address.RecipientType.UNKNOWN);
-                try{
-                    addessRepository.save(address);
-                }
-                catch(Exception ex){
-                    log.error("Indirizzo già presente: " + address.getMailAddress());
-                }
+            log.info("ciclo gli indirizzi cc e li salvo");
+            ccArrayList = (ArrayList<Address>) saveAndReturnAddresses(cc);
+            if(ccArrayList.size() > 0){
+                log.info("CC: " + ccArrayList.toString());
+                log.info("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
+                map.put("cc", ccArrayList);
             }
+            else
+                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI CC");
         }
         
+        log.info("Verifico presenza di destinatari Reply_To");
         if(mailMessage.getReply_to() != null){
+            ArrayList<Address> replyArrayList = new ArrayList<Address>();
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
-            for (int i = 0; i < replyTo.length; i++) {
-                InternetAddress internetAddress = (InternetAddress) replyTo[i];
-                Address address = new Address();
-                address.setMailAddress(internetAddress.getAddress());
-                address.setOriginalAddress(internetAddress.getPersonal());
-                address.setRecipientType(Address.RecipientType.UNKNOWN);
-                try{
-                    addessRepository.save(address);
-                }
-                catch(Exception ex){
-                    log.error("Indirizzo già presente: " + address.getMailAddress());
-                }
+            log.info("ciclo gli indirizzi reply_to e li salvo");
+            replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo);
+            if(replyArrayList.size() > 0){
+                log.info("REPLY_TO: " + replyArrayList.toString());
+                log.info("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
+                map.put("replyTo", replyArrayList);
             }
+            else
+                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI REPLY_TO");
         }
+        log.info("Ritorno la mappa " +  map.toString());
+        return map;
     }
 }

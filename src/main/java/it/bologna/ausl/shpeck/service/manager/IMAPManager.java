@@ -98,7 +98,7 @@ public class IMAPManager {
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
             
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(BACKUP_SOURCE_FOLDER);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -109,7 +109,7 @@ public class IMAPManager {
             inbox.open(Folder.READ_WRITE);
 
             // ottieni i messaggi dal server
-            log.debug("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
+            log.info("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
             Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, IMAPFolder.LASTUID);
             
             inbox.fetch(messagesFromInbox, fetchProfile);

@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * nome tutto in minuscolo
  */
 @RepositoryRestResource(collectionResourceRel = "address", path = "address", exported = false, excerptProjection = AddressWithPlainFields.class)
-public interface AddessRepository extends
-        JpaRepository<Address, Integer> {
+public interface AddessRepository extends JpaRepository<Address, Integer> {
+    
+    Address findByMailAddress(String mailAddress);
+    
 }

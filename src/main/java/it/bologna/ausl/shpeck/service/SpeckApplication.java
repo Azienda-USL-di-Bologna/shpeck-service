@@ -126,6 +126,7 @@ public class SpeckApplication {
                 
                 //IMAPManager manager = new IMAPManager(store, 14);
                 //IMAPManager manager = new IMAPManager(store);
+                imapManager.setLastUID(68);
                 imapManager.setStore(store);
                 messages = imapManager.getMessages();
                // log.info("size: " + messages.size());

@@ -65,7 +65,12 @@ public class PecMessageStoreManager extends StoreManager {
         }
         storeMessage(messaggioSbustato);
         log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
-              
+        log.info("Salvo gli indirizzi dello sbustato");
+        HashMap mapSbustato = upsertAddresses(pecMessage);
+        
+        log.info("Salvo sulla cross messaggio SBUstato e indirizzi");
+        storeMessagesAddresses(messaggioSbustato, mapSbustato);
+        
         // prendo la busta
         log.info("Salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
@@ -76,6 +81,12 @@ public class PecMessageStoreManager extends StoreManager {
         else
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         storeMessage(messaggioBustato);
+        log.info("salvato messaggio busta con id: " + messaggioBustato.getId());
+        log.info("Salvo gli indirizzi dello sbustato");
+        HashMap mapBusta = upsertAddresses(envelope);
+        log.info("Salvo sulla cross messaggio bustato e indirizzi");
+        storeMessagesAddresses(messaggioBustato, mapBusta);
+        
         res.put(ApplicationConstant.OK_KEY, pecMessage);
         return res;
     }

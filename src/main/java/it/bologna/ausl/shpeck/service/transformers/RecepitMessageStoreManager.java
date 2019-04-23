@@ -67,6 +67,12 @@ public class RecepitMessageStoreManager extends StoreManager {
         
         storeMessage(messaggioDiRicevuta);
         
+        log.info("Salvo gli indirizzi della ricevuta");
+        HashMap mapRicevuta = upsertAddresses(pecRecepit);
+        
+        log.info("Salvo sulla cross messaggio ricevuta e indirizzi");
+        storeMessagesAddresses(messaggioDiRicevuta, mapRicevuta);
+        
         Recepit recepit = new Recepit();
         recepit.setIdMessage(messaggioDiRicevuta);
         switch(pecRecepit.getxRicevuta()){ 

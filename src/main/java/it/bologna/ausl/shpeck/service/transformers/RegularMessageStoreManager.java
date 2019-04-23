@@ -55,6 +55,11 @@ public class RegularMessageStoreManager extends StoreManager {
         }
         else {
         }
+        log.info("Salvo gli indirizzi del regular message");
+        HashMap mapBusta = upsertAddresses(mailMessage);
+        log.info("Salvo sulla cross il regular message e indirizzi");
+        storeMessagesAddresses(regularMessage, mapBusta);
+        
         res.put(ApplicationConstant.OK_KEY, mailMessage);
         return res;
     }
