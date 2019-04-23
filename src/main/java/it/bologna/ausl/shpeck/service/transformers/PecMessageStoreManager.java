@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PecMessageStoreManager extends StoreManager {
+    
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
     
     private PecMessage pecMessage;
