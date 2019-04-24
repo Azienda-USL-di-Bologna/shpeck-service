@@ -170,7 +170,7 @@ public class IMAPManager {
             log.warn("lista di messaggi da spostare è null");
             return;
         }
-        if (list.size() == 0) {
+        if (list.isEmpty()) {
             log.warn("nessun messaggio da spostare");
             return;
         }
@@ -261,7 +261,7 @@ public class IMAPManager {
             if (!store.isConnected()) {
                 this.store.connect();
             }
-            // Open the folder
+            // apertura cartella
             Folder inbox = this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("CARTELLA INBOX NON PRESENTE");

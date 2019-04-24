@@ -17,7 +17,6 @@ import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +61,8 @@ public class IMAPWorker implements Runnable {
     
  
     private ArrayList<MailMessage> messages;
-    private ArrayList<MailMessage> messagesOk;
-    private ArrayList<MailMessage> orphans;
+    private final ArrayList<MailMessage> messagesOk;
+    private final ArrayList<MailMessage> orphans;
 
     public IMAPWorker() {
         messagesOk = new ArrayList<>();
