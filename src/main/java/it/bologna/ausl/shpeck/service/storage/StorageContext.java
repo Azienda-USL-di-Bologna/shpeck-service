@@ -1,5 +1,8 @@
 package it.bologna.ausl.shpeck.service.storage;
 
+import it.bologna.ausl.model.entities.shpeck.UploadQueue;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+
 /**
  *
  * @author spritz
@@ -12,8 +15,9 @@ public class StorageContext {
         this.storageStrategy = storageStrategy;
     }
     
-    public UploadMessage store(String folderName, UploadMessage uploadMessage){
-        return storageStrategy.storeMessage(folderName, uploadMessage);
+    
+    public UploadQueue store(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException{
+        return storageStrategy.storeMessage(folderName, objectToUpload);
     }
     
 }

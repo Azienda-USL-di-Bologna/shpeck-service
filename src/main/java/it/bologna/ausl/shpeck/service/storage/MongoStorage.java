@@ -1,8 +1,10 @@
 package it.bologna.ausl.shpeck.service.storage;
 
+import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,8 +38,8 @@ public class MongoStorage implements StorageStrategy{
     }
 
     @Override
-    public UploadMessage storeMessage(String folderName, UploadMessage uploadMessage) throws ShpeckServiceException{
-        MimeMessage mimeMessage = uploadMessage.getMessage();
+    public UploadQueue storeMessage(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException {
+         MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         if (folderName == null) {
@@ -53,7 +55,7 @@ public class MongoStorage implements StorageStrategy{
             } catch (Exception e) {
                 from = "NONE";
             }
-            String filename; // = from + "  " + mimeMessage.getSubject() + "" + mimeMessage.getMessageID() + "";
+            String filename; 
 
             if (mimeMessage.getSentDate() != null) {
                 SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
@@ -63,24 +65,68 @@ public class MongoStorage implements StorageStrategy{
                 filename = mimeMessage.getMessageID() + " " + from + ".eml";
             }
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
-            //be sure to get an unique name
-            filename = uploadMessage.getMessageId() + "_" + filename;
-            uploadMessage.setPath(this.folderPath + "/" + folderName);
-            uploadMessage.setName(filename);
+            //assicurarsi che sia un nome unico
+            filename = objectToUpload.getIdRawMessage().getIdMessage().getUuidMessage() + "_" + filename;
+            objectToUpload.setPath(this.folderPath + "/" + folderName);
+            objectToUpload.setName(filename);
             res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, this.folderPath + "/" + folderName, false);
 
-            uploadMessage.setStatus(UPSTATUS_UPLOADED);
-            uploadMessage.setUuid(res);
+            objectToUpload.setUploaded(Boolean.TRUE);
+            objectToUpload.setUuid(res);
 
         } catch (MessagingException e) {
-            throw new ShpeckServiceException("Error Uploading Mime message", e);
+            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
         } catch (IOException e) {
-            throw new ShpeckServiceException("Error serializing Mime message", e);
+            throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
         }
 
-        return uploadMessage;
+        return objectToUpload;
     }
-
     
+    //VECCHIA VERSIONE DA ELIMINARE    @Override
+//    public UploadMessage storeMessage(String folderName, UploadMessage uploadMessage) throws ShpeckServiceException{
+//        MimeMessage mimeMessage = uploadMessage.getMessage();
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//
+//        if (folderName == null) {
+//            folderName = "";
+//        }
+//        
+//        String res = null;
+//        try {
+//            mimeMessage.writeTo(baos);
+//            String from = null;
+//            try {
+//                from = mimeMessage.getFrom()[0].toString();
+//            } catch (Exception e) {
+//                from = "NONE";
+//            }
+//            String filename; // = from + "  " + mimeMessage.getSubject() + "" + mimeMessage.getMessageID() + "";
+//
+//            if (mimeMessage.getSentDate() != null) {
+//                SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
+//                String asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
+//                filename = asGmt + " " + from + ".eml";
+//            } else {
+//                filename = mimeMessage.getMessageID() + " " + from + ".eml";
+//            }
+//            filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
+//            //be sure to get an unique name
+//            filename = uploadMessage.getMessageId() + "_" + filename;
+//            uploadMessage.setPath(this.folderPath + "/" + folderName);
+//            uploadMessage.setName(filename);
+//            res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, this.folderPath + "/" + folderName, false);
+//
+//            uploadMessage.setStatus(UPSTATUS_UPLOADED);
+//            uploadMessage.setUuid(res);
+//
+//        } catch (MessagingException e) {
+//            throw new ShpeckServiceException("Error Uploading Mime message", e);
+//        } catch (IOException e) {
+//            throw new ShpeckServiceException("Error serializing Mime message", e);
+//        }
+//
+//        return uploadMessage;
+//    }
     
 }

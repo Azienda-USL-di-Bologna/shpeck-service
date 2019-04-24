@@ -1,13 +1,25 @@
 package it.bologna.ausl.shpeck.service.worker;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
+import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
+import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
+import it.bologna.ausl.shpeck.service.storage.MongoStorage;
 import it.bologna.ausl.shpeck.service.storage.StorageContext;
+import it.bologna.ausl.shpeck.service.storage.StorageStrategy;
 import it.bologna.ausl.shpeck.service.storage.UploadMessage;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  *
@@ -20,19 +32,58 @@ public class UploadWorker implements Runnable{
     private BlockingQueue<Integer> queue;
     private StorageContext storageContext;
     
+    @Value("${mailbox.inbox-forlder}")
+    String inboxForlder;
     
-
+    @Autowired
+    UploadQueueRepository uploadQueueRepository;
+    
+    @Autowired
+    ObjectMapper objectMapper;
+    
+    @Autowired
+    MessageRepository messageRepository;
+    
+    
     public UploadWorker() {
     }
-
+    
    
     private void doWork() throws ShpeckServiceException, UnknownHostException {
-//        log.info("inizio upload");
-//        
-//        ArrayList<UploadMessage> messages;
-//        
-//        do {
-//                messages = db.getInboxMessageToUpload();
+        log.info("inizio upload");
+     
+        ArrayList<UploadQueue> messagesToUpload;
+        
+        do {
+            messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE, Message.InOut.IN.toString());
+                
+            for (UploadQueue uploadQueue : messagesToUpload) {
+                try {
+                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getIdAzienda().getParametri());          
+                    AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
+
+                    storageContext = new StorageContext(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
+//                    UploadMessage uploadMessage = new UploadMessage(uploadQueue.getIdRawMessage().getRawData());
+//                    uploadMessage.setMessage(MessageBuilder.buildMailMessageFromString(uploadQueue.getIdRawMessage().getRawData()));
+//                    uploadMessage.setConfigId(uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getId());
+//                    uploadMessage.setMessageId(uploadQueue.getIdRawMessage().getIdMessage().getId());
+                    UploadQueue objectUploaded = storageContext.store(inboxForlder, uploadQueue);
+                    
+                    Optional<Message> message = messageRepository.findById(uploadQueue.getIdRawMessage().getIdMessage().getId());
+                    Message messageToUpdate = null;
+                    if(message.isPresent()){
+                        messageToUpdate = message.get();
+                        messageToUpdate.setUuidRepository(objectUploaded.getUuid());
+                        messageToUpdate.setPathRepository(objectUploaded.getPath());
+                    
+                        messageRepository.save(messageToUpdate);
+                    }
+                } catch (Exception e) {
+                }
+            }
+                
+                
+                
 //                for (UploadMessage m : messages) {
 //                    try {
 //                        sm.setFolderPath(rootPath + "/" + db.getMailConfigDescription(m.getConfigId()));
@@ -52,8 +103,8 @@ public class UploadWorker implements Runnable{
 //                    db.deleteRawMessage(m.getMessageId());
 //                    db.commit();
 //                }
-//
-//            } while (!messages.isEmpty());
+
+            } while (!messagesToUpload.isEmpty());
     }
     
 
