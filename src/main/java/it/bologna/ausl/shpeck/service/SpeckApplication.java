@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
+import it.bologna.ausl.shpeck.service.worker.UploadWorker;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.ApplicationContext;
@@ -39,6 +40,9 @@ public class SpeckApplication {
     @Autowired
     ApplicationContext context;
     
+    @Autowired
+    UploadWorker uploadWorker;
+    
 //    @Autowired
 //    TestThread testThread;  
        
@@ -58,7 +62,10 @@ public class SpeckApplication {
                 imapWorker.setThreadName("worker1");
                 log.info("worker_object: " + imapWorker.toString());
 
-                scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, 3, 3, TimeUnit.SECONDS);
+                Thread t = new Thread(uploadWorker);
+                t.start();
+                
+                //scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, 3, 3, TimeUnit.SECONDS);
                 
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }

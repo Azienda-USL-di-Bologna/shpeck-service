@@ -39,7 +39,7 @@ public class MongoStorage implements StorageStrategy{
 
     @Override
     public UploadQueue storeMessage(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException {
-         MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
+        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         if (folderName == null) {
@@ -66,10 +66,11 @@ public class MongoStorage implements StorageStrategy{
             }
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
             //assicurarsi che sia un nome unico
-            filename = objectToUpload.getIdRawMessage().getIdMessage().getUuidMessage() + "_" + filename;
-            objectToUpload.setPath(this.folderPath + "/" + folderName);
+            filename = objectToUpload.getIdRawMessage().getIdMessage().getId()+ "_" + filename;
+            String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo()+ "/" + folderName;
+            objectToUpload.setPath(path);
             objectToUpload.setName(filename);
-            res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, this.folderPath + "/" + folderName, false);
+            res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, path, false);
 
             objectToUpload.setUploaded(Boolean.TRUE);
             objectToUpload.setUuid(res);

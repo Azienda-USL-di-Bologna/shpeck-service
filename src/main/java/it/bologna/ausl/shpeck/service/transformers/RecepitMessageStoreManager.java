@@ -71,7 +71,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         
         try{
             log.info("Salvo il RawMessage della RICEVUTA");
-            storeRawMessage(messaggioDiRicevuta, pecRecepit.getRaw_message());
+            storeRawMessageAndUploadQueue(messaggioDiRicevuta, pecRecepit.getRaw_message());
         } catch (MailMessageException e){
             log.error("Errore nel retrieving data del rawMessage dal pecRecepit " +  e.getMessage());
             e.printStackTrace();

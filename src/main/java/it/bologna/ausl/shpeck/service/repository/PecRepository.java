@@ -6,22 +6,8 @@
 package it.bologna.ausl.shpeck.service.repository;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.baborg.QPec;
-import it.bologna.ausl.model.entities.baborg.PecProvider;
-import it.bologna.ausl.model.entities.baborg.QPecProvider;
-import it.bologna.ausl.model.entities.scrivania.AttivitaFatta;
-import it.bologna.ausl.model.entities.scrivania.QAttivitaFatta;
 import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithPlainFields;
-import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdAziendaAndIdPecProvider;
-import it.bologna.ausl.model.entities.baborg.projections.generated.PecWithIdPecProvider;
-import it.bologna.ausl.model.entities.scrivania.projections.generated.AttivitaFattaWithPlainFields;
-import java.util.ArrayList;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.querydsl.QuerydslPredicateExecutor;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.repository.Repository;
-import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 /**

@@ -18,5 +18,5 @@ public interface StoreInterface {
     
     public boolean isPresent(Message message);
     
-    public RawMessage storeRawMessage(Message message, String rawMessage);
+    public RawMessage storeRawMessageAndUploadQueue(Message message, String rawMessage);
 }

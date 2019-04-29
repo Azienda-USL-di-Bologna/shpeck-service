@@ -13,9 +13,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
+import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.MessageAddressRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
+import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import java.util.HashMap;
 import java.util.List;
 import javax.mail.MessagingException;
@@ -51,6 +53,9 @@ public class StoreManager implements StoreInterface{
     
     @Autowired
     RawMessageRepository rawMessageRepository;
+    
+    @Autowired
+    UploadQueueRepository uploadQueueRepository;
    
     public StoreManager() {
     }
@@ -243,12 +248,18 @@ public class StoreManager implements StoreInterface{
     }
 
     @Override
-    public RawMessage storeRawMessage(Message message, String raw) {
+    public RawMessage storeRawMessageAndUploadQueue(Message message, String raw) {
         log.info("Metodo storeRawMessage");
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);
         rawMessage.setRawData(raw);
         log.info("salvataggio del raw");
-        return rawMessageRepository.save(rawMessage);
+        rawMessage = rawMessageRepository.save(rawMessage);
+        
+        UploadQueue uploadQueue = new UploadQueue();
+        uploadQueue.setIdRawMessage(rawMessage);
+        uploadQueueRepository.save(uploadQueue);
+        
+        return rawMessage;
     }
 }

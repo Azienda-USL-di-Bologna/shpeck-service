@@ -56,7 +56,7 @@ public class RegularMessageStoreManager extends StoreManager {
             storeMessage(regularMessage);
             try{
                 log.info("Salvo il RawMessage del REGULARMESSAGE");
-                storeRawMessage(regularMessage, mailMessage.getRaw_message());
+                storeRawMessageAndUploadQueue(regularMessage, mailMessage.getRaw_message());
             }
             catch (MailMessageException e){
                 log.error("Errore nel retrieving data del rawMessage dal mailMessage " +  e.getMessage());

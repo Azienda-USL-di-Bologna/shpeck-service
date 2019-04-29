@@ -1,6 +1,7 @@
 package it.bologna.ausl.shpeck.service.worker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
@@ -9,9 +10,6 @@ import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.storage.MongoStorage;
 import it.bologna.ausl.shpeck.service.storage.StorageContext;
-import it.bologna.ausl.shpeck.service.storage.StorageStrategy;
-import it.bologna.ausl.shpeck.service.storage.UploadMessage;
-import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -20,11 +18,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
  * @author spritz
  */
+@Component
 public class UploadWorker implements Runnable{
     
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
@@ -48,7 +49,7 @@ public class UploadWorker implements Runnable{
     public UploadWorker() {
     }
     
-   
+    @Transactional
     private void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("inizio upload");
      
@@ -59,7 +60,7 @@ public class UploadWorker implements Runnable{
                 
             for (UploadQueue uploadQueue : messagesToUpload) {
                 try {
-                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getIdAzienda().getParametri());          
+                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());          
                     AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
 
                     storageContext = new StorageContext(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
@@ -75,8 +76,12 @@ public class UploadWorker implements Runnable{
                         messageToUpdate = message.get();
                         messageToUpdate.setUuidRepository(objectUploaded.getUuid());
                         messageToUpdate.setPathRepository(objectUploaded.getPath());
+                        messageToUpdate.setName(objectUploaded.getName());
                     
                         messageRepository.save(messageToUpdate);
+                        objectUploaded.setUploaded(Boolean.TRUE);
+                        uploadQueueRepository.save(objectUploaded);
+                        
                     }
                 } catch (Exception e) {
                 }
@@ -111,7 +116,8 @@ public class UploadWorker implements Runnable{
     @Override
     public void run() {
         try {
-            Thread.currentThread().setName("UploadWorker");
+            //Thread.currentThread().setName("UploadWorker");
+            doWork();
         } catch (Exception e) {
         }
     }

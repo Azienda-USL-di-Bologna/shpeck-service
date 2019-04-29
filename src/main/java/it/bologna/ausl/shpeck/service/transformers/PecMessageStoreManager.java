@@ -68,7 +68,7 @@ public class PecMessageStoreManager extends StoreManager {
         storeMessage(messaggioSbustato);
         try{
             log.info("Salvo il RawMessage dello SBUSTATO");
-            storeRawMessage(messaggioSbustato, pecMessage.getRaw_message());
+            storeRawMessageAndUploadQueue(messaggioSbustato, pecMessage.getRaw_message());
         } catch (MailMessageException e){
             log.error("Errore nel retrieving data del rawMessage dal pecMessage " +  e.getMessage());
             e.printStackTrace();
@@ -93,7 +93,7 @@ public class PecMessageStoreManager extends StoreManager {
         storeMessage(messaggioBustato);
         try{
             log.info("Salvo il RawMessage della BUSTA");
-            storeRawMessage(messaggioBustato, envelope.getRaw_message());
+            storeRawMessageAndUploadQueue(messaggioBustato, envelope.getRaw_message());
         } catch (MailMessageException e){
             log.error("Errore nel retrieving data del rawMessage dal pecMessage " +  e.getMessage());
             e.printStackTrace();
