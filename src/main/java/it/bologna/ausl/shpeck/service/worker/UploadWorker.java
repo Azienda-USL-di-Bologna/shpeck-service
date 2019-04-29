@@ -56,29 +56,35 @@ public class UploadWorker implements Runnable{
         ArrayList<UploadQueue> messagesToUpload;
         
         do {
+            // prendi i messaggi da caricare presenti in upload_queue
             messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE, Message.InOut.IN.toString());
                 
             for (UploadQueue uploadQueue : messagesToUpload) {
                 try {
+                    // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
                     AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());          
                     AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
 
+                    // inizializzazione del context storage
                     storageContext = new StorageContext(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
-//                    UploadMessage uploadMessage = new UploadMessage(uploadQueue.getIdRawMessage().getRawData());
-//                    uploadMessage.setMessage(MessageBuilder.buildMailMessageFromString(uploadQueue.getIdRawMessage().getRawData()));
-//                    uploadMessage.setConfigId(uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getId());
-//                    uploadMessage.setMessageId(uploadQueue.getIdRawMessage().getIdMessage().getId());
+
+                    // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
                     UploadQueue objectUploaded = storageContext.store(inboxForlder, uploadQueue);
                     
+                    // ottieni in messaggio associato al contenuto appena caricato
                     Optional<Message> message = messageRepository.findById(uploadQueue.getIdRawMessage().getIdMessage().getId());
                     Message messageToUpdate = null;
+                    
+                    // se messaggio è presente, si settano le proprietà relative al messaggio appena salvato nello storage
                     if(message.isPresent()){
                         messageToUpdate = message.get();
                         messageToUpdate.setUuidRepository(objectUploaded.getUuid());
                         messageToUpdate.setPathRepository(objectUploaded.getPath());
                         messageToUpdate.setName(objectUploaded.getName());
-                    
+                        // update del mesaggio con i nuovi parametri                    
                         messageRepository.save(messageToUpdate);
+                        
+                        // set come file già trattato nella tabella upload_queue
                         objectUploaded.setUploaded(Boolean.TRUE);
                         uploadQueueRepository.save(objectUploaded);
                         
@@ -87,9 +93,8 @@ public class UploadWorker implements Runnable{
                 }
             }
                 
-                
-                
-//                for (UploadMessage m : messages) {
+// TODO: caso SMTP
+//          for (UploadMessage m : messages) {
 //                    try {
 //                        sm.setFolderPath(rootPath + "/" + db.getMailConfigDescription(m.getConfigId()));
 //                        sm.storeMessage("INBOX", m);
@@ -109,7 +114,7 @@ public class UploadWorker implements Runnable{
 //                    db.commit();
 //                }
 
-            } while (!messagesToUpload.isEmpty());
+        } while (!messagesToUpload.isEmpty());
     }
     
 

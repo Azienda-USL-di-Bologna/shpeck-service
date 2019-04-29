@@ -39,6 +39,10 @@ public class MongoStorage implements StorageStrategy{
 
     @Override
     public UploadQueue storeMessage(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException {
+        
+        String res = null;
+        String filename; 
+        
         MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -46,7 +50,6 @@ public class MongoStorage implements StorageStrategy{
             folderName = "";
         }
         
-        String res = null;
         try {
             mimeMessage.writeTo(baos);
             String from = null;
@@ -55,7 +58,6 @@ public class MongoStorage implements StorageStrategy{
             } catch (Exception e) {
                 from = "NONE";
             }
-            String filename; 
 
             if (mimeMessage.getSentDate() != null) {
                 SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
@@ -67,6 +69,7 @@ public class MongoStorage implements StorageStrategy{
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
             //assicurarsi che sia un nome unico
             filename = objectToUpload.getIdRawMessage().getIdMessage().getId()+ "_" + filename;
+            
             String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo()+ "/" + folderName;
             objectToUpload.setPath(path);
             objectToUpload.setName(filename);
@@ -83,51 +86,4 @@ public class MongoStorage implements StorageStrategy{
 
         return objectToUpload;
     }
-    
-    //VECCHIA VERSIONE DA ELIMINARE    @Override
-//    public UploadMessage storeMessage(String folderName, UploadMessage uploadMessage) throws ShpeckServiceException{
-//        MimeMessage mimeMessage = uploadMessage.getMessage();
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//
-//        if (folderName == null) {
-//            folderName = "";
-//        }
-//        
-//        String res = null;
-//        try {
-//            mimeMessage.writeTo(baos);
-//            String from = null;
-//            try {
-//                from = mimeMessage.getFrom()[0].toString();
-//            } catch (Exception e) {
-//                from = "NONE";
-//            }
-//            String filename; // = from + "  " + mimeMessage.getSubject() + "" + mimeMessage.getMessageID() + "";
-//
-//            if (mimeMessage.getSentDate() != null) {
-//                SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
-//                String asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
-//                filename = asGmt + " " + from + ".eml";
-//            } else {
-//                filename = mimeMessage.getMessageID() + " " + from + ".eml";
-//            }
-//            filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
-//            //be sure to get an unique name
-//            filename = uploadMessage.getMessageId() + "_" + filename;
-//            uploadMessage.setPath(this.folderPath + "/" + folderName);
-//            uploadMessage.setName(filename);
-//            res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, this.folderPath + "/" + folderName, false);
-//
-//            uploadMessage.setStatus(UPSTATUS_UPLOADED);
-//            uploadMessage.setUuid(res);
-//
-//        } catch (MessagingException e) {
-//            throw new ShpeckServiceException("Error Uploading Mime message", e);
-//        } catch (IOException e) {
-//            throw new ShpeckServiceException("Error serializing Mime message", e);
-//        }
-//
-//        return uploadMessage;
-//    }
-    
 }

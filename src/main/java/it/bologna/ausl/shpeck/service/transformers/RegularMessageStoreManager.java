@@ -60,8 +60,7 @@ public class RegularMessageStoreManager extends StoreManager {
             }
             catch (MailMessageException e){
                 log.error("Errore nel retrieving data del rawMessage dal mailMessage " +  e.getMessage());
-                e.printStackTrace();
-                throw e;
+                throw new MailMessageException("Errore nel retrieving data del rawMessage dal mailMessage", e);
             }
         }
         else {
