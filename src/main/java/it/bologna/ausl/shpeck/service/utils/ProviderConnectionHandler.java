@@ -57,7 +57,7 @@ public class ProviderConnectionHandler {
     private String build_uri(String host, int port, String username, String password, String protocol) {
         String uri;
         if (host == null || port < 0 || port > 65535 || username == null || password == null || protocol == null) {
-            throw new IllegalArgumentException("Parameters are not good");
+            throw new IllegalArgumentException("Parametri errati");
         }
         uri = protocol.toLowerCase() + "://" + username + ":" + password + "@" + host + ":" + Integer.toString(port) + "/" + INBOX_FOLDER_NAME;
         return uri;
@@ -65,7 +65,7 @@ public class ProviderConnectionHandler {
     
     public IMAPStore createProviderConnectionHandler(Pec pec) throws NoSuchProviderException{
         String uri = build_uri(pec.getIdPecProvider().getHost(), pec.getIdPecProvider().getPort(), pec.getUsername(), pec.getPassword(), pec.getIdPecProvider().getProtocol());
-        log.info("URI: " + uri);
+        log.info("URI creato per creazione di IMAPStore: " + uri);
         return createIMAPStore(uri);
     }
     

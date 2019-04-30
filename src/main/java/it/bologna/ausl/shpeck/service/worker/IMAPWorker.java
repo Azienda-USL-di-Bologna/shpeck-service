@@ -98,9 +98,9 @@ public class IMAPWorker implements Runnable {
             log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
             Pec pec = pecRepository.findById(idPec).get();
             PecProvider idPecProvider = pec.getIdPecProvider();
-            log.info("host: " +idPecProvider.getHost() );
+            log.info("host: " +idPecProvider.getHost());
 
-            // ottenimento dell'oggeto IMAPStore
+            // ottenimento dell'oggetto IMAPStore
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
 
             //IMAPManager manager = new IMAPManager(store, 14);
@@ -113,39 +113,41 @@ public class IMAPWorker implements Runnable {
             Map<String, MailMessage> res = null;
 
             for (MailMessage message : messages) {
-                log.info("---------------------------------");
-                log.info("ID: " + message.getId());
-                log.info("HEADER: " + message.getString_headers());
-                log.info("SUBJECT: " + message.getSubject());
+                log.info("gestione messageId: " + message.getId());
 
                 mailProxy = new MailProxy(message);
-                log.info("type: " + mailProxy.getType());
 
                 if(null == mailProxy.getType())
-                    log.error("*** DATO SCONOSCIUTO ***");
+                    log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                 else switch (mailProxy.getType()) {
                     case PEC:
-                        log.info("è PEC: me la salvo");
+                        log.info("tipo calcolato: PEC");
                         pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                         pecMessageStoreManager.setPec(pec);
+                        log.info("salvataggio dei metadati...");
                         res = pecMessageStoreManager.store();
+                        log.info("salvataggio dei metadati -> OK");
                         break;
 
                     case RECEPIT:
-                        log.info("è una RICEVUTA: me la salvo");
+                        log.info("tipo calcolato: RICEVUTA");
                         recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
                         recepitMessageStoreManager.setPec(pec);
+                        log.info("salvataggio dei metadati...");
                         res = recepitMessageStoreManager.store();
+                        log.info("salvataggio dei metadati -> OK");
                         break;
                     case MAIL:
-                        log.info("è una REGULAR MAIL: me la salvo");
+                        log.info("tipo calcolato: REGULAR MAIL");
                         regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
                         regularMessageStoreManager.setPec(pec);
+                        log.info("salvataggio dei metadati...");
                         res = regularMessageStoreManager.store();
+                        log.info("salvataggio dei metadati -> OK");
                         break;
                     default:
                         res = null;
-                        log.error("*** DATO SCONOSCIUTO ***");
+                        log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                         break;
                 }
                 
@@ -192,6 +194,7 @@ public class IMAPWorker implements Runnable {
             
         //    TimeUnit.SECONDS.sleep(5);
         } catch(Throwable e){
+            log.debug("eccezione : " + e);
             e.printStackTrace();
         }
         

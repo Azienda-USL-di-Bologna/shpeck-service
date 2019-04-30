@@ -78,7 +78,7 @@ public class UploadWorker implements Runnable{
     
     @Transactional
     private void doWork() throws ShpeckServiceException, UnknownHostException {
-        log.info("inizio doWork() per storage");
+        log.info("START doWork() per storage");
      
         ArrayList<UploadQueue> messagesToUpload;
         
@@ -142,7 +142,7 @@ public class UploadWorker implements Runnable{
 //                }
 
         } while (!messagesToUpload.isEmpty());
-        log.info("fine doWork() per storage");
+        log.info("STOP doWork() per storage");
     }
     
 
