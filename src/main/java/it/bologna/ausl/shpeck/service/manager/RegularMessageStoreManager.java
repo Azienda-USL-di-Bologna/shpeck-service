@@ -1,9 +1,10 @@
-package it.bologna.ausl.shpeck.service.transformers;
+package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;

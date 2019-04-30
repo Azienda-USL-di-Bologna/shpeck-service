@@ -13,14 +13,11 @@ public class MailProxy implements MailIdentity{
 
     private static final Logger log = LoggerFactory.getLogger(MailProxy.class);
     
-    private MailIdentity mailIdentity;
-    private Message.MessageType type;
-    private MailMessage mailMessage;
-    
-    public MailProxy(MailMessage mailMessage) throws ShpeckServiceException{
+    private final MailIdentity mailIdentity;
 
-        this.mailMessage = mailMessage;
         
+    public MailProxy(MailMessage mailMessage) throws ShpeckServiceException{
+    
         if(PecMessage.isPecMessage(mailMessage.getOriginal())){
             mailIdentity = new PecMessage(mailMessage);
         } else if(PecRecepit.isPecRecepit(mailMessage.getOriginal())){
@@ -28,8 +25,6 @@ public class MailProxy implements MailIdentity{
         } else{
             mailIdentity = new MailMessage(mailMessage.getOriginal());
         }
-        
-        
     }
 
     @Override

@@ -1,7 +1,5 @@
 package it.bologna.ausl.shpeck.service.repository;
 
-import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.MessageAddressWithPlainFields;
 import org.springframework.data.jpa.repository.JpaRepository;

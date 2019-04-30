@@ -1,6 +1,5 @@
 package it.bologna.ausl.shpeck.service.repository;
 
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.UploadQueueWithPlainFields;
 import java.util.ArrayList;

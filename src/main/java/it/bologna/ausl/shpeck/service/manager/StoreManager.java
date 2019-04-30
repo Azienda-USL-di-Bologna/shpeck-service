@@ -1,4 +1,4 @@
-package it.bologna.ausl.shpeck.service.transformers;
+package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
@@ -18,6 +18,8 @@ import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.MessageAddressRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.StoreInterface;
 import java.util.HashMap;
 import java.util.List;
 import javax.mail.MessagingException;

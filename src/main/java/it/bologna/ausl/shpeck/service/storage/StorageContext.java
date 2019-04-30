@@ -9,7 +9,7 @@ import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
  */
 public class StorageContext {
     
-    private StorageStrategy storageStrategy;
+    private final StorageStrategy storageStrategy;
 
     public StorageContext(StorageStrategy storageStrategy) {
         this.storageStrategy = storageStrategy;

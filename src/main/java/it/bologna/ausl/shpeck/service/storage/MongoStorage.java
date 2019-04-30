@@ -21,8 +21,6 @@ public class MongoStorage implements StorageStrategy{
     
     private String folderPath;
     private MongoWrapper mongo;
-    
-    public static final int UPSTATUS_UPLOADED = 1;
 
     public MongoStorage() {
     }

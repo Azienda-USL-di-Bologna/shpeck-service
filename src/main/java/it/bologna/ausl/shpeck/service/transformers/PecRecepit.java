@@ -55,7 +55,7 @@ public class PecRecepit extends MailMessage implements MailIdentity{
             if (reference == null) {
                 try {
                     reference = getReferredMessageIdFromRecepit(m);
-                } catch (Exception e) {}
+                } catch (ShpeckServiceException e) {}
             }
             if (reference == null || xRicevuta == null) {
                 throw new ShpeckIllegalRecepitException("Can't find valid recepit headers");

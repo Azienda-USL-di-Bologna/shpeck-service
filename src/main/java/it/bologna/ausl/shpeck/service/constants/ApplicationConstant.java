@@ -3,6 +3,8 @@ package it.bologna.ausl.shpeck.service.constants;
 /**
  *
  * @author spritz
+ * 
+ * classe contenente le costanti dell'applicazione
  */
 public class ApplicationConstant {
     
@@ -12,7 +14,5 @@ public class ApplicationConstant {
     
     public static final String ORPHAN_KEY = "orphan";
     public static final String OK_KEY = "ok";
-    
-    
     
 }
