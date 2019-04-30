@@ -41,6 +41,7 @@ public class IMAPWorker implements Runnable {
     public static final int MESSAGE_POLICY_DELETE = 2;
     
     private String threadName;
+    private Integer idPec;
     
     @Autowired
     PecRepository pecRepository;
@@ -80,24 +81,32 @@ public class IMAPWorker implements Runnable {
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
+
+    public Integer getIdPec() {
+        return idPec;
+    }
+
+    public void setIdPec(Integer idPec) {
+        this.idPec = idPec;
+    }
     
     @Transactional
     @Override
     public void run() {
         try{
             Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
-            log.info("START -> " + Thread.currentThread().getName() + " time: " + new Date());
-            
-            Pec pec = pecRepository.findById(730).get();
+            log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+            Pec pec = pecRepository.findById(idPec).get();
             PecProvider idPecProvider = pec.getIdPecProvider();
             log.info("host: " +idPecProvider.getHost() );
 
+            // ottenimento dell'oggeto IMAPStore
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
 
             //IMAPManager manager = new IMAPManager(store, 14);
             //IMAPManager manager = new IMAPManager(store);
             imapManager.setStore(store);
-            imapManager.setLastUID(75);
+            //imapManager.setLastUID(75);
             messages = imapManager.getMessages();
             MailProxy mailProxy;
                 
@@ -120,7 +129,6 @@ public class IMAPWorker implements Runnable {
                         pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                         pecMessageStoreManager.setPec(pec);
                         res = pecMessageStoreManager.store();
-                        //pecMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                         break;
 
                     case RECEPIT:
@@ -128,14 +136,12 @@ public class IMAPWorker implements Runnable {
                         recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
                         recepitMessageStoreManager.setPec(pec);
                         res = recepitMessageStoreManager.store();
-                        //recepitMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                         break;
                     case MAIL:
                         log.info("è una REGULAR MAIL: me la salvo");
                         regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
                         regularMessageStoreManager.setPec(pec);
                         res = regularMessageStoreManager.store();
-                        //regularMessageStoreManager.upsertAddresses((MailMessage) mailProxy.getMail());
                         break;
                     default:
                         res = null;
@@ -156,11 +162,11 @@ public class IMAPWorker implements Runnable {
             }
             log.info("GLI 'OK':");
             for (MailMessage mailMessage : messagesOk) {
-                System.out.println(mailMessage.getId());
+                log.info(mailMessage.getId());
             }
             log.info("GLI 'ORFANI':");
             for (MailMessage mailMessage : orphans) {
-                System.out.println(mailMessage.getId());
+                log.info(mailMessage.getId());
             }
 
             // le ricevute orfane si salvano sempre nella cartella di backup
@@ -168,19 +174,19 @@ public class IMAPWorker implements Runnable {
                 imapManager.messageMover(tmpMessage.getId());
             }
 
-            log.info("Verifico la policy del provider : " + pec.getMessagePolicy());
+            log.info("Verifico la policy del provider: " + pec.getMessagePolicy());
 
             switch(pec.getMessagePolicy()){
                 case (MESSAGE_POLICY_BACKUP):
-                    log.info("Message Policy BackUp : sposto nella cartella di backup.");
+                    log.info("Message Policy BackUp: sposto nella cartella di backup.");
                     imapManager.messageMover(messagesOk);
                     break;
                 case (MESSAGE_POLICY_DELETE):
-                    log.info("Message Policy DELETE : Cancello i messaggi salvati.");
+                    log.info("Message Policy DELETE: Cancello i messaggi salvati.");
                     imapManager.deleteMessage(messagesOk);
                     break;
                 default:
-                    log.info("Message Policy None : non faccio nulla.");
+                    log.info("Message Policy None: non faccio nulla.");
                     break;
             }
             
@@ -189,13 +195,6 @@ public class IMAPWorker implements Runnable {
             e.printStackTrace();
         }
         
-        log.info("STOP -> " + Thread.currentThread().getName() + " time: " + new Date());
-        
-        
-        
-        //log.info("Partito IMAPWorker per " + pec.getDescrizione() + " - ore " + new Date().toString());
-        
-        //log.info("Esco dal worker");
+        log.info("STOP -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
     }
-    
 }

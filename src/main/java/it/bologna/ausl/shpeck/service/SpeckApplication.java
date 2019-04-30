@@ -1,5 +1,7 @@
 package it.bologna.ausl.shpeck.service;
 
+import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +14,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
+import java.util.ArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -41,7 +45,13 @@ public class SpeckApplication {
     ApplicationContext context;
     
     @Autowired
+    BeanFactory beanFactory;
+        
+    @Autowired
     UploadWorker uploadWorker;
+    
+    @Autowired
+    PecRepository pecRepository;
     
 //    @Autowired
 //    TestThread testThread;  
@@ -58,27 +68,28 @@ public class SpeckApplication {
         return new CommandLineRunner() {
 
             public void run(String... args) throws Exception {
-                IMAPWorker imapWorker = (IMAPWorker) context.getBean(IMAPWorker.class);
-                imapWorker.setThreadName("worker1");
-                log.info("worker_object: " + imapWorker.toString());
-
-                Thread t = new Thread(uploadWorker);
-                t.start();
                 
-                //scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, 3, 3, TimeUnit.SECONDS);
+                // avvio del thread di UploadWorker
+//                Thread t = new Thread(uploadWorker);
+//                t.start();
+                
+                // recupera le mail attive
+                ArrayList<Pec> pecAttive = pecRepository.findByAttiva(true);
+                
+                // lancio di IMAPWorker per ogni casella PEC attiva
+                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
+                for (int i = 0; i < pecAttive.size(); i++) {   
+                    IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
+                    imapWorker.setThreadName("IMAPWorker_" + i + " PEC: " + pecAttive.get(i).getIndirizzo());
+                    imapWorker.setIdPec(pecAttive.get(i).getId());
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, 60, TimeUnit.SECONDS);
+                    log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
+                }
+                log.info("creazione degli IMAPWorker eseguita con successo");
                 
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
-            }
-//                
-//                if (!messages.isEmpty()) {
-//                    log.debug("got messages !");
-//                }
-                
-//               scheduledThreadPoolExecutor.scheduleWithFixedDelay(new IMAPWorker(), 3, 10, TimeUnit.SECONDS);
-//               
-              
-//
-//                
+            }          
+         
 //                for (int i = 1;i < 4; i++) {
 //                    TestThread testThread = new TestThread();
 //                    testThread.setName("Thread " + i);
