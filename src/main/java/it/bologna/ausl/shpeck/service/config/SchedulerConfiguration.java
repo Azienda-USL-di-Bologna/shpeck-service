@@ -1,6 +1,7 @@
 package it.bologna.ausl.shpeck.service.config;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,11 @@ public class SchedulerConfiguration {
         executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
         executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
         return executor;
+    }
+    
+    @Bean
+    public Semaphore messageSemaphore() {
+        return new Semaphore(0);
     }
     
 //    @Bean

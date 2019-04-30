@@ -17,6 +17,7 @@ import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,9 @@ public class IMAPWorker implements Runnable {
     
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
+    
+    @Autowired
+    Semaphore messageSemaphore;
     
  
     private ArrayList<MailMessage> messages;
@@ -138,6 +142,9 @@ public class IMAPWorker implements Runnable {
                         log.error("*** DATO SCONOSCIUTO ***");
                         break;
                 }
+                
+                // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
+                messageSemaphore.release();
 
                 if(res!=null){
                     if(res.get(ApplicationConstant.OK_KEY) != null)

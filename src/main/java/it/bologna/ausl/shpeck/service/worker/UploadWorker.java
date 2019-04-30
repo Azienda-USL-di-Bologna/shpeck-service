@@ -1,7 +1,6 @@
 package it.bologna.ausl.shpeck.service.worker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
@@ -13,7 +12,7 @@ import it.bologna.ausl.shpeck.service.storage.StorageContext;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +29,6 @@ public class UploadWorker implements Runnable{
     
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
     
-    private BlockingQueue<Integer> queue;
     private StorageContext storageContext;
     
     @Value("${mailbox.inbox-forlder}")
@@ -45,13 +43,42 @@ public class UploadWorker implements Runnable{
     @Autowired
     MessageRepository messageRepository;
     
+    @Autowired
+    Semaphore messageSemaphore;
+    
     
     public UploadWorker() {
     }
     
+    @Override
+    public void run() {
+        try {
+            /**
+             * esegue un primo doWork() perchè se il sistema riparte, 
+             * si potrebbe avere dei record in upload_queue ancora da uploadare
+             */
+            doWork();
+            while (true) {
+                try {
+                    // aspetta dal semaforo di avere elementi disponibili sulla tabella upload_queue
+                    log.info("attesa di acquisizione del semaforo per gestire nuovi messaggi...");
+                    messageSemaphore.acquire();
+                    log.info("semaforo preso");
+                    messageSemaphore.drainPermits();
+                    doWork();
+                   
+                } catch (InterruptedException e) {
+                    log.warn("InterruptedException: continue");
+                    continue;
+                }
+            }
+        } catch (Exception e) {
+        }
+    }
+    
     @Transactional
     private void doWork() throws ShpeckServiceException, UnknownHostException {
-        log.info("inizio upload");
+        log.info("inizio doWork() per storage");
      
         ArrayList<UploadQueue> messagesToUpload;
         
@@ -115,16 +142,10 @@ public class UploadWorker implements Runnable{
 //                }
 
         } while (!messagesToUpload.isEmpty());
+        log.info("fine doWork() per storage");
     }
     
 
-    @Override
-    public void run() {
-        try {
-            //Thread.currentThread().setName("UploadWorker");
-            doWork();
-        } catch (Exception e) {
-        }
-    }
+   
     
 }
