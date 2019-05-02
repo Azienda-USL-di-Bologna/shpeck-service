@@ -151,6 +151,7 @@ public class StoreManager implements StoreInterface{
                 log.info("Salvato message_address " + ma);
             }
         }  
+        log.info("Uscito da storeMessagesAddress");
     }
     
     public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses){

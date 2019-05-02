@@ -67,6 +67,7 @@ public class SpeckApplication {
         
         return new CommandLineRunner() {
 
+            @Override
             public void run(String... args) throws Exception {
                 
                 // avvio del thread di UploadWorker

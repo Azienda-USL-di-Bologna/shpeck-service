@@ -42,8 +42,7 @@ public class MongoStorage implements StorageStrategy{
         
         String res = null;
         String filename; 
-        
-        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
+        MimeMessage mimeMessage;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         if (folderName == null) {
@@ -51,6 +50,7 @@ public class MongoStorage implements StorageStrategy{
         }
         
         try {
+            mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
             mimeMessage.writeTo(baos);
             String from = null;
             try {
@@ -77,7 +77,7 @@ public class MongoStorage implements StorageStrategy{
 
             objectToUpload.setUploaded(Boolean.TRUE);
             objectToUpload.setUuid(res);
-
+            
         } catch (MessagingException e) {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
         } catch (IOException e) {

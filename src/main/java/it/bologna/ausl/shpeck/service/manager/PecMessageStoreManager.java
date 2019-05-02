@@ -72,14 +72,14 @@ public class PecMessageStoreManager extends StoreManager {
             log.info("Salvo il RawMessage dello SBUSTATO");
             storeRawMessageAndUploadQueue(messaggioSbustato, pecMessage.getRaw_message());
         } catch (MailMessageException e){
-            log.error("Errore nel retrieving data del rawMessage dal pecMessage " +  e.getMessage());
-            throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecMessage", e);
+            log.error("Errore nel reperimento del rawMessage dal pecMessage " +  e.getMessage());
+            throw new MailMessageException("Errore nel reperimento del rawMessage dal pecMessage", e);
         }
         log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
         log.info("Salvo gli indirizzi dello sbustato");
         HashMap mapSbustato = upsertAddresses(pecMessage);
         
-        log.info("Salvo sulla cross messaggio SBUstato e indirizzi");
+        log.info("Salvo sulla cross messaggio Sbustato e indirizzi");
         storeMessagesAddresses(messaggioSbustato, mapSbustato);
         
         // prendo la busta
