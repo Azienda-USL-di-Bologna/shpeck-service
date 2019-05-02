@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
+import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.storage.MongoStorage;
 import it.bologna.ausl.shpeck.service.storage.StorageContext;
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -76,7 +78,7 @@ public class UploadWorker implements Runnable{
         }
     }
     
-    @Transactional(rollbackFor = Throwable.class)
+    //@Transactional(rollbackFor = Throwable.class)
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("START doWork() per storage");
      
@@ -86,20 +88,20 @@ public class UploadWorker implements Runnable{
             // prendi i messaggi da caricare presenti in upload_queue
             messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE, Message.InOut.IN.toString());
                 
-            for (UploadQueue uploadQueue : messagesToUpload) {
+            for (UploadQueue messageToStore : messagesToUpload) {
                 try {
                     // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
-                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, uploadQueue.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());          
+                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());          
                     AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
 
                     // inizializzazione del context storage
                     storageContext = new StorageContext(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
 
                     // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
-                    UploadQueue objectUploaded = storageContext.store(inboxForlder, uploadQueue);
+                    UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
                     
                     // ottieni in messaggio associato al contenuto appena caricato
-                    Optional<Message> message = messageRepository.findById(uploadQueue.getIdRawMessage().getIdMessage().getId());
+                    Optional<Message> message = messageRepository.findById(messageToStore.getIdRawMessage().getIdMessage().getId());
                     Message messageToUpdate = null;
                     
                     // se messaggio è presente, si settano le proprietà relative al messaggio appena salvato nello storage
@@ -110,16 +112,21 @@ public class UploadWorker implements Runnable{
                         messageToUpdate.setName(objectUploaded.getName());
                         // update del mesaggio con i nuovi parametri                    
                         messageRepository.save(messageToUpdate);
-                        
+
                         // set come file già trattato nella tabella upload_queue
                         objectUploaded.setUploaded(Boolean.TRUE);
                         uploadQueueRepository.save(objectUploaded);
                         
                     }
-                } catch (Exception e) {
+                } catch (MongoWrapperException | ShpeckServiceException | IOException ex) {
+                    log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
+                    log.error("con errore: " + ex);
                 }
             }
-                
+        } while (!messagesToUpload.isEmpty());
+        log.info("STOP doWork() per storage");
+    }
+    
 // TODO: caso SMTP
 //          for (UploadMessage m : messages) {
 //                    try {
@@ -140,12 +147,5 @@ public class UploadWorker implements Runnable{
 //                    db.deleteRawMessage(m.getMessageId());
 //                    db.commit();
 //                }
-
-        } while (!messagesToUpload.isEmpty());
-        log.info("STOP doWork() per storage");
-    }
-    
-
    
-    
 }
