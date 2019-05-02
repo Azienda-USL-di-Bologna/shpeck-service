@@ -48,7 +48,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         this.pec = pec;
     }
         
-    @Transactional(rollbackFor = MailMessageException.class)
+    @Transactional(rollbackFor = Throwable.class)
     public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RecepitMessageStoreManager.store()");

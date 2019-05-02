@@ -62,22 +62,22 @@ public class UploadWorker implements Runnable{
                 try {
                     // aspetta dal semaforo di avere elementi disponibili sulla tabella upload_queue
                     log.info("attesa di acquisizione del semaforo per gestire nuovi messaggi...");
-                   // messageSemaphore.acquire();
+                    messageSemaphore.acquire();
                     log.info("semaforo preso");
-                    //messageSemaphore.drainPermits();
+                    messageSemaphore.drainPermits();
                     doWork();
                    
-                } catch (Exception e) {
-                    log.warn("InterruptedException: continue");
-                    continue;
+                } catch (Exception ex) {
+                    log.warn("InterruptedException: continue. " + ex);
+                    //continue;
                 }
             }
         } catch (Exception e) {
         }
     }
     
-    @Transactional
-    private void doWork() throws ShpeckServiceException, UnknownHostException {
+    @Transactional(rollbackFor = Throwable.class)
+    public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("START doWork() per storage");
      
         ArrayList<UploadQueue> messagesToUpload;

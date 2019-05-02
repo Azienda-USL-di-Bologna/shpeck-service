@@ -46,7 +46,7 @@ public class RegularMessageStoreManager extends StoreManager {
         this.mailMessage = mailMessage;
     }
         
-    @Transactional(rollbackFor = MailMessageException.class)
+    @Transactional(rollbackFor = Throwable.class)
     public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RegularMessageStoreManager.store()");

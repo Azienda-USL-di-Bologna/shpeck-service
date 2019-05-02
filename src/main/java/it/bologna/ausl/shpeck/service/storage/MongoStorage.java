@@ -12,6 +12,7 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -35,6 +36,7 @@ public class MongoStorage implements StorageStrategy{
         this.folderPath = folderPath;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public UploadQueue storeMessage(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException {
         

@@ -54,7 +54,7 @@ public class PecMessageStoreManager extends StoreManager {
     }
     
     
-    @Transactional(rollbackFor = MailMessageException.class)
+    @Transactional(rollbackFor = Throwable.class)
     public Map<String, MailMessage> store() throws MailMessageException {
         
         Map<String, MailMessage> res = new HashMap<>();
@@ -64,7 +64,7 @@ public class PecMessageStoreManager extends StoreManager {
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, false);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if(isPresent(messaggioSbustato)){
-            res.put("ok", pecMessage);
+            res.put(ApplicationConstant.OK_KEY, pecMessage);
             return res;
         }
         storeMessage(messaggioSbustato);

@@ -16,6 +16,7 @@ import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
+import  it.bologna.ausl.model.entities.shpeck.Message.MessageType;
 
 public class MailMessage implements MailIdentity{
     protected Address[] from, to, cc, reply_to;
@@ -37,9 +38,8 @@ public class MailMessage implements MailIdentity{
             this.sendDate = original.getSentDate();
             this.id = original.getMessageID();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new MailMessageException("Errore nella creazione del MailMessage", e);
+        } catch (Exception ex) {
+            throw new MailMessageException("Errore nella creazione del MailMessage", ex);
         }
     }
     
@@ -71,7 +71,6 @@ public class MailMessage implements MailIdentity{
             return replyArray[0];
         }
         return null;
-
     }
 
     public Boolean getIsPec() {
@@ -84,10 +83,10 @@ public class MailMessage implements MailIdentity{
         }
         try {
             message = getText(original);
-        } catch (MessagingException e) {
-            throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", e);
-        } catch (IOException e) {
-            throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", e);
+        } catch (MessagingException ex) {
+            throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", ex);
+        } catch (IOException ex) {
+            throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", ex);
         }
         return message;
 
@@ -105,10 +104,10 @@ public class MailMessage implements MailIdentity{
                 original.writeTo(baos);
                 raw_message = baos.toString("utf8");
                 baos.reset();
-            } catch (MessagingException e) {
-                throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", e);
-            } catch (IOException e) {
-                throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", e);
+            } catch (MessagingException ex) {
+                throw new MailMessageException("errore nell'estrazione del testo del messaggio (MessagingException)", ex);
+            } catch (IOException ex) {
+                throw new MailMessageException("errore nell'estrazione del testo del messaggio (IOException)", ex);
             }
         }
         return raw_message;
@@ -160,7 +159,7 @@ public class MailMessage implements MailIdentity{
                     if (text == null) {
                         text = getText(bp);
                     }
-                    continue;
+                    //continue;
                 } else if (bp.isMimeType("text/html")) {
                     String s = getText(bp);
                     if (s != null) {
@@ -212,19 +211,17 @@ public class MailMessage implements MailIdentity{
                     }
                 }
             }
-        } catch (MessagingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (MessagingException | IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        // TODO Auto-generated catch block
         return (MimeMessage) null;
     }
 
     @Override
-    public it.bologna.ausl.model.entities.shpeck.Message.MessageType getType() throws ShpeckServiceException {
-        return it.bologna.ausl.model.entities.shpeck.Message.MessageType.MAIL;
+    public MessageType getType() throws ShpeckServiceException {
+        return MessageType.MAIL;
     }
 
     @Override

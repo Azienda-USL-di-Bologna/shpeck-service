@@ -15,9 +15,7 @@ public class StorageContext {
         this.storageStrategy = storageStrategy;
     }
     
-    
     public UploadQueue store(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException{
         return storageStrategy.storeMessage(folderName, objectToUpload);
     }
-    
 }

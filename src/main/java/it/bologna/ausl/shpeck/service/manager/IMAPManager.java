@@ -82,6 +82,9 @@ public class IMAPManager {
      * @throws ShpeckServiceException 
      */
     public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
+        
+        ArrayList<MailMessage> mailMessages = new ArrayList<>();
+        
         try {
             if (store == null || !store.isConnected()) {
                 this.store.connect();
@@ -114,7 +117,7 @@ public class IMAPManager {
             
             inbox.fetch(messagesFromInbox, fetchProfile);
             
-            ArrayList<MailMessage> mailMessages = new ArrayList<>();
+            
             
             for (int i = 0; i < messagesFromInbox.length; i++) {
                 mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
@@ -128,7 +131,7 @@ public class IMAPManager {
            // close();
             return mailMessages;
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("error getting messages from imap server " + store.getURLName().toString(), e);
             throw new ShpeckServiceException("error getting messages from imap server", e);
         }
@@ -142,7 +145,9 @@ public class IMAPManager {
             if (store != null && store.isConnected()) {
                 store.close();
             }
-        } catch (MessagingException e) {}
+        } catch (MessagingException ex) {
+            log.error("errore nella chiusura di IMAPStore", ex);
+        }
     }
     
     public void printAllFoldersInAccount() throws MessagingException{
@@ -150,8 +155,10 @@ public class IMAPManager {
             store.connect();
         }
         IMAPFolder[] folders = (IMAPFolder[]) store.getDefaultFolder().list("*");
+        
+        log.info("stampa di tutte le cartelle dell'account");
         for(Folder folder:folders)
-            System.out.println(">> "+folder.getFullName());
+            log.info(">> "+folder.getFullName());
         close();
     }
     
@@ -202,18 +209,15 @@ public class IMAPManager {
             workingFolder = f;
 
             return f;
-        } catch (MessagingException e) {
-            throw new ShpeckServiceException("Error settingUp pecGW working folder", e);
-
+        } catch (MessagingException ex) {
+            throw new ShpeckServiceException("Errore di setting della directory di PECGW", ex);
         } finally {
             try {
                 srcfolder.close(false);
             } catch (MessagingException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
-
     }
     
     public static void messageMover(IMAPStore store, String sourceFolder, String destFolder, List<String> messageIds) throws MessagingException {
@@ -281,11 +285,9 @@ public class IMAPManager {
                     return true;
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
     }
-    
 }

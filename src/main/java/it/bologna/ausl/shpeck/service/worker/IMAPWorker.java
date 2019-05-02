@@ -90,12 +90,13 @@ public class IMAPWorker implements Runnable {
         this.idPec = idPec;
     }
     
-    @Transactional
+    //@Transactional
     @Override
     public void run() {
-        try{
-            Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
-            log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
+        log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        
+        try{        
             Pec pec = pecRepository.findById(idPec).get();
             PecProvider idPecProvider = pec.getIdPecProvider();
             log.info("host: " +idPecProvider.getHost());
@@ -160,8 +161,8 @@ public class IMAPWorker implements Runnable {
                     else
                         orphans.add(res.get(ApplicationConstant.ORPHAN_KEY));
                 }
-
             }
+            
             log.info("GLI 'OK':");
             for (MailMessage mailMessage : messagesOk) {
                 log.info(mailMessage.getId());
@@ -180,7 +181,7 @@ public class IMAPWorker implements Runnable {
 
             switch(pec.getMessagePolicy()){
                 case (MESSAGE_POLICY_BACKUP):
-                    log.info("Message Policy BackUp: sposto nella cartella di backup.");
+                    log.info("Message Policy BACKUP: sposto nella cartella di backup.");
                     imapManager.messageMover(messagesOk);
                     break;
                 case (MESSAGE_POLICY_DELETE):
@@ -191,13 +192,11 @@ public class IMAPWorker implements Runnable {
                     log.info("Message Policy None: non faccio nulla.");
                     break;
             }
-            
-        //    TimeUnit.SECONDS.sleep(5);
         } catch(Throwable e){
             log.debug("eccezione : " + e);
-            e.printStackTrace();
+            // TODO: gestione errore e pensare se metterlo anche in db
+            log.info("STOP CON -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
-        
         log.info("STOP -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
     }
 }
