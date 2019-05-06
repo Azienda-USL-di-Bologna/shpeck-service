@@ -266,4 +266,21 @@ public class StoreManager implements StoreInterface{
         
         return rawMessage;
     }
+
+    /** Inserisce il messaggio raw nella coda di upload*/
+    @Override
+    public void insertToUploadQueue(RawMessage raw) {
+        // dal raw -> prendo il messaggio -> prendo la pec -> prendo l'azienda -> prendo il tipo di connessione repository
+        // setto in un nuovo UploadQueue        
+    }
+
+    /** Rimuove il messaggio dalla coda di upload e il raw messagge*/
+    @Override
+    public void removeFromUploadQueue(UploadQueue uq) {
+        // prendo il raw message in una variabile
+        // elimino la riga di uploadqueue
+        // elimino il raw message
+    }
+    
+    
 }

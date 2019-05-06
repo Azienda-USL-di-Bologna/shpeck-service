@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
+import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 
 /**
  *
@@ -19,4 +20,8 @@ public interface StoreInterface {
     public boolean isPresent(Message message);
     
     public RawMessage storeRawMessageAndUploadQueue(Message message, String rawMessage);
+    
+    public void insertToUploadQueue(RawMessage raw);
+    
+    public void removeFromUploadQueue(UploadQueue uq);
 }
