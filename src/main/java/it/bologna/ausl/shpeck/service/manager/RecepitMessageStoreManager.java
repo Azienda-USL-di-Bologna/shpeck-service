@@ -52,7 +52,7 @@ public class RecepitMessageStoreManager extends StoreManager {
     public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RecepitMessageStoreManager.store()");
-        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec, false);
+        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec, Message.InOut.IN);
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);

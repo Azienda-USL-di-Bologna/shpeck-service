@@ -7,16 +7,19 @@ package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
+import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import javax.mail.Session;
 import org.slf4j.Logger;
@@ -36,6 +39,9 @@ public class SMTPWorker implements Runnable {
         
     @Autowired
     PecRepository pecRepository;
+    
+    @Autowired
+    OutboxRepository outboxRepository;
         
     @Autowired
     Semaphore messageSemaphore;
@@ -83,7 +89,14 @@ public class SMTPWorker implements Runnable {
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
             // creo un'istanza del manager
-            smtpManager.buildSmtpManagerFromPec(pec);
+            List<Outbox> messagesToSend = outboxRepository.findByIdPec(pec);
+            if(messagesToSend.size() > 0){
+                smtpManager.buildSmtpManagerFromPec(pec);
+                for (Outbox outbox : messagesToSend) {
+                    smtpManager.sendMessage(outbox.getRawData());
+                }
+            }
+            
             // ciclo i messaggi:
                 // carico i raw_message con associato il messaggio
                 // se tutto ok, salvo che è stato inviato:

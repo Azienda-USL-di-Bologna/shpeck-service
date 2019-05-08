@@ -6,11 +6,17 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
+import javax.mail.Address;
+import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,18 +67,26 @@ public class SMTPManager {
         log.info("buildSmtpManagerFromPec " + pec.toString());
         try{
             log.info("Creo un SmtpConnectionHandler");
-            smtpConnectionHandler.createSmtpSession(pec);
-            Session s = smtpConnectionHandler.getSession();
-            log.info("setto la session");
-            setSession(s);
-            log.info("setto il transport che prendo dalla session");
-            Transport t = smtpConnectionHandler.getTransport();
-            setTransport(t);
+            smtpConnectionHandler.createSmtpSession(pec);            
         }catch(Exception e){
             log.error("Errore: " + e.getMessage() + "\n"
                     + "Non posso creare l'SMTPManager per pec " + pec.toString() + "\n"
                     + "Rilancio errore");
             throw e;
         }
+    }
+    
+    public void sendMessage(String rawData) throws ShpeckServiceException, MessagingException{
+        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
+        log.info("TO:");
+        for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.TO)) {
+            log.info("\t" + recipient.toString());
+        }
+        log.info("CC:");
+        for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.CC)) {
+            log.info("\t" + recipient.toString());
+        }
+        smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        log.info("Messaggio inviato!");
     }
 }

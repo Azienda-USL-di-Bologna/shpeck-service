@@ -63,14 +63,27 @@ public class StoreManager implements StoreInterface{
     }
     
     @Override
-    public Message createMessageForStorage(MailMessage mailMessage, Pec pec, boolean isAccettazione) {
+    public Message createMessageForStorage(MailMessage mailMessage, Pec pec, Message.InOut inout) {
         Message message = new Message();
         message.setUuidMessage(mailMessage.getId());
         message.setIdPec(pec);
         message.setSubject(mailMessage.getSubject()!=null ? mailMessage.getSubject() : "");
-        message.setMessageStatus(Message.MessageStatus.RECEIVED);
-        message.setInOut(Message.InOut.IN);
-        message.setIsPec(mailMessage.getIsPec());
+        if(Message.InOut.IN == inout) {
+            message.setMessageStatus(Message.MessageStatus.RECEIVED);
+            message.setInOut(Message.InOut.IN);
+            message.setIsPec(mailMessage.getIsPec());
+            if (mailMessage.getSendDate() != null) {
+                message.setReceiveDate(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+            } else {
+                message.setReceiveDate(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
+            }
+        }
+        else{
+            message.setMessageStatus(Message.MessageStatus.TO_SEND);
+            message.setInOut(Message.InOut.OUT);
+            message.setIsPec(false);
+            message.setMessageType(Message.MessageType.MAIL);
+        }
 
         try {
             message.setAttachmentsNumber(EmlHandlerUtils.getAttachments(mailMessage.getOriginal(), null).length);
@@ -78,12 +91,6 @@ public class StoreManager implements StoreInterface{
             log.error("Errore dello stabilire il numero di allegati", ex);
             message.setAttachmentsNumber(0);
         }
-        if (mailMessage.getSendDate() != null) {
-            message.setReceiveDate(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
-        } else {
-            message.setReceiveDate(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
-        }
-        
         return message;
     }
     

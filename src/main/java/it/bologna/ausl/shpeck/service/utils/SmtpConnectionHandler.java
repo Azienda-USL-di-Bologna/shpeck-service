@@ -140,11 +140,9 @@ public class SmtpConnectionHandler  {
         log.info("\n######\nconfigurate le properties: \n" + properties.toString() + "\n######\n");
     }
     
-    public Session createSmtpSession(Pec pec) throws NoSuchProviderException, SmtpConnectionInitializationException {
+    public void createSmtpSession(Pec pec) throws NoSuchProviderException, SmtpConnectionInitializationException {
         log.info("entrato in createSmtpSession con pec " + pec.getIndirizzo());
         init(pec);
-        log.info("ritorno session " + session.toString());
-        return session;
     }
     
     public void close() {

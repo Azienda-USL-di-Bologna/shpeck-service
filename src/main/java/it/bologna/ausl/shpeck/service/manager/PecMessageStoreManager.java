@@ -61,7 +61,7 @@ public class PecMessageStoreManager extends StoreManager {
         
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio...");
-        Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, false);
+        Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, Message.InOut.IN);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if(isPresent(messaggioSbustato)){
             res.put(ApplicationConstant.OK_KEY, pecMessage);
@@ -85,7 +85,7 @@ public class PecMessageStoreManager extends StoreManager {
         // prendo la busta
         log.info("Salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
-        Message messaggioBustato = createMessageForStorage(envelope, pec, false);
+        Message messaggioBustato = createMessageForStorage(envelope, pec, Message.InOut.IN);
         messaggioBustato.setIdRelated(messaggioSbustato);
         if(pecMessage.getxTrasporto().equals("errore"))
             messaggioBustato.setMessageType(Message.MessageType.ERROR);

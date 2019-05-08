@@ -11,7 +11,7 @@ import it.bologna.ausl.model.entities.shpeck.UploadQueue;
  * @author spritz
  */
 public interface StoreInterface {
-    public Message createMessageForStorage(final MailMessage m, Pec pec, boolean isAccettazione);
+    public Message createMessageForStorage(final MailMessage m, Pec pec, Message.InOut inout);
     
     public Message storeMessage(Message message);
     

@@ -50,7 +50,7 @@ public class RegularMessageStoreManager extends StoreManager {
     public Map<String, MailMessage> store() throws MailMessageException{
         Map<String, MailMessage> res = new HashMap<>();
         log.info("Entrato in RegularMessageStoreManager.store()");
-        Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, false);
+        Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, Message.InOut.IN);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         if(!isPresent(regularMessage)){
