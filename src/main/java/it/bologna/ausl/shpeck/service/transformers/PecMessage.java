@@ -12,7 +12,7 @@ import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PecMessage extends MailMessage implements MailIdentity{
+public class PecMessage extends MailMessage {
 
     private static final Logger log = LoggerFactory.getLogger(PecMessage.class);
     

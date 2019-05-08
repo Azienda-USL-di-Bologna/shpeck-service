@@ -90,7 +90,7 @@ public class SMTPWorker implements Runnable {
             // prendo il provider
             // creo un'istanza del manager
             List<Outbox> messagesToSend = outboxRepository.findByIdPec(pec);
-            if(messagesToSend.size() > 0){
+            if(messagesToSend != null && messagesToSend.size() > 0){
                 smtpManager.buildSmtpManagerFromPec(pec);
                 for (Outbox outbox : messagesToSend) {
                     smtpManager.sendMessage(outbox.getRawData());

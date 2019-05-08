@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author spritz
  */
-public class PecRecepit extends MailMessage implements MailIdentity{
+public class PecRecepit extends MailMessage {
     
     private static final Logger log = LoggerFactory.getLogger(PecRecepit.class);
     
