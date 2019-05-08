@@ -31,10 +31,11 @@ public class UploadWorker implements Runnable{
     
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
     
-    private StorageContext storageContext;
-    
     @Value("${mailbox.inbox-forlder}")
     String inboxForlder;
+    
+    @Autowired
+    StorageContext storageContext;
     
     @Autowired
     UploadQueueRepository uploadQueueRepository;
@@ -95,7 +96,7 @@ public class UploadWorker implements Runnable{
                     AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
 
                     // inizializzazione del context storage
-                    storageContext = new StorageContext(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
+                    storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
 
                     // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
                     UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
