@@ -6,6 +6,7 @@ import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
+import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -55,17 +56,13 @@ public class PecMessageStoreManager extends StoreManager {
     
     
     @Transactional(rollbackFor = Throwable.class)
-    public Map<String, MailMessage> store() throws MailMessageException {
-        
-        Map<String, MailMessage> res = new HashMap<>();
-        
+    public StoreResponse store() throws MailMessageException {        
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio...");
-        Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec, Message.InOut.IN);
+        Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if(isPresent(messaggioSbustato)){
-            res.put(ApplicationConstant.OK_KEY, pecMessage);
-            return res;
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato);
         }
         storeMessage(messaggioSbustato);
         try{
@@ -85,7 +82,7 @@ public class PecMessageStoreManager extends StoreManager {
         // prendo la busta
         log.info("Salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
-        Message messaggioBustato = createMessageForStorage(envelope, pec, Message.InOut.IN);
+        Message messaggioBustato = createMessageForStorage(envelope, pec);
         messaggioBustato.setIdRelated(messaggioSbustato);
         if(pecMessage.getxTrasporto().equals("errore"))
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
@@ -104,8 +101,7 @@ public class PecMessageStoreManager extends StoreManager {
         HashMap mapBusta = upsertAddresses(envelope);
         log.info("Salvo sulla cross messaggio bustato e indirizzi");
         storeMessagesAddresses(messaggioBustato, mapBusta);
-        
-        res.put(ApplicationConstant.OK_KEY, pecMessage);
-        return res;
+
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato);
     }
 }

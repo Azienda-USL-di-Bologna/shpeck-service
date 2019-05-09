@@ -13,6 +13,7 @@ import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
+import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
@@ -111,7 +112,7 @@ public class IMAPWorker implements Runnable {
             messages = imapManager.getMessages();
             MailProxy mailProxy;
                 
-            Map<String, MailMessage> res = null;
+            StoreResponse res = null;
 
             for (MailMessage message : messages) {
                 log.info("gestione messageId: " + message.getId());
@@ -156,10 +157,10 @@ public class IMAPWorker implements Runnable {
                 messageSemaphore.release();
 
                 if(res!=null){
-                    if(res.get(ApplicationConstant.OK_KEY) != null)
-                        messagesOk.add(res.get(ApplicationConstant.OK_KEY));
+                    if(res.getStatus().equals(ApplicationConstant.OK_KEY))
+                        messagesOk.add(res.getMailMessage());
                     else
-                        orphans.add(res.get(ApplicationConstant.ORPHAN_KEY));
+                        orphans.add(res.getMailMessage());
                 }
             }
             

@@ -7,6 +7,7 @@ import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
+import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -49,24 +50,21 @@ public class RecepitMessageStoreManager extends StoreManager {
     }
         
     @Transactional(rollbackFor = Throwable.class)
-    public Map<String, MailMessage> store() throws MailMessageException{
-        Map<String, MailMessage> res = new HashMap<>();
+    public StoreResponse store() throws MailMessageException{
         log.info("Entrato in RecepitMessageStoreManager.store()");
-        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec, Message.InOut.IN);
+        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);
         
         if(relatedMessage==null){
             log.error("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());
-            res.put(ApplicationConstant.ORPHAN_KEY, pecRecepit);
-            return res;
+            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta);
         }
         
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if(isPresent(messaggioDiRicevuta)){
-            res.put(ApplicationConstant.OK_KEY, pecRecepit);
-            return res;
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
         }
         
         storeMessage(messaggioDiRicevuta);
@@ -116,8 +114,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         
         messaggioDiRicevuta.setIdRecepit(recepit);
         storeMessage(messaggioDiRicevuta);
-        res.put(ApplicationConstant.OK_KEY, pecRecepit);
-        return res;
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
     }
     
 }

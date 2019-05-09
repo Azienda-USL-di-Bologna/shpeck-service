@@ -76,17 +76,25 @@ public class SMTPManager {
         }
     }
     
-    public void sendMessage(String rawData) throws ShpeckServiceException, MessagingException{
-        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
-        log.info("TO:");
-        for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.TO)) {
-            log.info("\t" + recipient.toString());
+    public boolean sendMessage(String rawData){
+        boolean sent = false;
+        try{
+            MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
+            log.info("TO:");
+            for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.TO)) {
+                log.info("\t" + recipient.toString());
+            }
+            log.info("CC:");
+            for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.CC)) {
+                log.info("\t" + recipient.toString());
+            }
+            smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+            log.info("Messaggio inviato!");
+            sent = true;
         }
-        log.info("CC:");
-        for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.CC)) {
-            log.info("\t" + recipient.toString());
+        catch(Exception e){
+            log.error("Messaggio non inviato correttamente: " + e);
         }
-        smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-        log.info("Messaggio inviato!");
+        return sent;
     }
 }

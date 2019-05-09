@@ -41,6 +41,8 @@ import org.springframework.stereotype.Component;
 public class StoreManager implements StoreInterface{  
     private static final Logger log = LoggerFactory.getLogger(StoreManager.class);
     
+    private Message.InOut inout = Message.InOut.IN;
+    
     @Autowired
     MessageRepository messageRepository;
     
@@ -63,7 +65,7 @@ public class StoreManager implements StoreInterface{
     }
     
     @Override
-    public Message createMessageForStorage(MailMessage mailMessage, Pec pec, Message.InOut inout) {
+    public Message createMessageForStorage(MailMessage mailMessage, Pec pec) {
         Message message = new Message();
         message.setUuidMessage(mailMessage.getId());
         message.setIdPec(pec);
@@ -272,6 +274,14 @@ public class StoreManager implements StoreInterface{
         log.info("inserimento in upload_queue avvenuto con successo");
         
         return rawMessage;
+    }
+
+    public Message.InOut getInout() {
+        return inout;
+    }
+
+    public void setInout(Message.InOut inout) {
+        this.inout = inout;
     }
 
     /** Inserisce il messaggio raw nella coda di upload*/

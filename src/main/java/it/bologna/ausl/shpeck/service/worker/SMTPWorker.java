@@ -7,7 +7,10 @@ package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
+import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
@@ -15,12 +18,15 @@ import it.bologna.ausl.shpeck.service.manager.SMTPManager;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -48,6 +55,9 @@ public class SMTPWorker implements Runnable {
     
     @Autowired
     SmtpConnectionHandler smtpConnectionHandler;
+    
+    @Autowired
+    RegularMessageStoreManager regularMessageStoreManager;
     
     @Autowired
     SMTPManager smtpManager;
@@ -80,7 +90,7 @@ public class SMTPWorker implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("SmptWorker::mailbox: " + threadName);
+        Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
         log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
         try{
             // Prendo la pec
@@ -93,7 +103,28 @@ public class SMTPWorker implements Runnable {
             if(messagesToSend != null && messagesToSend.size() > 0){
                 smtpManager.buildSmtpManagerFromPec(pec);
                 for (Outbox outbox : messagesToSend) {
-                    smtpManager.sendMessage(outbox.getRawData());
+                    StoreResponse response = null;
+                    try{
+                        response = saveMessageAndUploadQueue(outbox);
+                        boolean sent = smtpManager.sendMessage(outbox.getRawData());
+                        if(!sent){
+                            log.error("Errore nell'invio del messaggio: metadati già salvati: " + response.getMessage().toString());
+                            log.error("setto l'outbox come da ignorare");
+                            outbox.setIgnore(Boolean.TRUE);
+                            outboxRepository.save(outbox);
+                        }
+                        else{
+                            log.info("Messaggio inviato correttamente, elimino da outbox...");
+                            outboxRepository.delete(outbox);
+                            log.info("Eliminato");
+                        }  
+                    }
+                    catch (BeforeSendOuboxException e){
+                        log.error("ERRORE: " + e.getMessage());
+                    }
+                    catch (Exception e){
+                        log.error("Errore: " + e.getMessage());
+                    }
                 }
             }
             
@@ -110,5 +141,21 @@ public class SMTPWorker implements Runnable {
             e.printStackTrace();
         }
         log.info("STOP -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+    }
+    
+    @Transactional(rollbackFor = Throwable.class)
+    public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException{
+        StoreResponse storeResponse = null;
+        try{
+            MailMessage mailMessage = new MailMessage(MessageBuilder.buildMailMessageFromString(outbox.getRawData()));
+            regularMessageStoreManager.setInout(Message.InOut.OUT);
+            regularMessageStoreManager.setPec(outbox.getIdPec());
+            regularMessageStoreManager.setMailMessage(mailMessage);
+            storeResponse = regularMessageStoreManager.store();
+        }
+        catch (Exception e){
+            throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
+        }
+        return storeResponse;
     }
 }

@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -47,14 +48,14 @@ public class RegularMessageStoreManager extends StoreManager {
     }
         
     @Transactional(rollbackFor = Throwable.class)
-    public Map<String, MailMessage> store() throws MailMessageException{
-        Map<String, MailMessage> res = new HashMap<>();
+    public StoreResponse store() throws MailMessageException{
         log.info("Entrato in RegularMessageStoreManager.store()");
-        Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec, Message.InOut.IN);
+        Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         if(!isPresent(regularMessage)){
-            storeMessage(regularMessage);
+            regularMessage = storeMessage(regularMessage);
+            log.info("Messaggio salvato " + regularMessage.toString());
             try{
                 log.info("Salvo il RawMessage del REGULARMESSAGE");
                 storeRawMessageAndUploadQueue(regularMessage, mailMessage.getRaw_message());
@@ -65,13 +66,13 @@ public class RegularMessageStoreManager extends StoreManager {
             }
         }
         else {
+            log.info("Messaggio già presente in tabella Messages con uuid: " + regularMessage.getUuidMessage());
         }
         log.info("Salvo gli indirizzi del regular message");
-        HashMap mapBusta = upsertAddresses(mailMessage);
+        HashMap mapMessagesAddress = upsertAddresses(mailMessage);
         log.info("Salvo sulla cross il regular message e indirizzi");
-        storeMessagesAddresses(regularMessage, mapBusta);
+        storeMessagesAddresses(regularMessage, mapMessagesAddress);
         
-        res.put(ApplicationConstant.OK_KEY, mailMessage);
-        return res;
+        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage);
     }
 }
