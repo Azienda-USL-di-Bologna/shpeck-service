@@ -153,7 +153,7 @@ public class SMTPWorker implements Runnable {
             regularMessageStoreManager.setMailMessage(mailMessage);
             storeResponse = regularMessageStoreManager.store();
         }
-        catch (Exception e){
+        catch (ShpeckServiceException e){
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
         }
         return storeResponse;
