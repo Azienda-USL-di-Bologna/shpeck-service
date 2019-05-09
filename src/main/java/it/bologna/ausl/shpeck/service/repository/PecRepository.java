@@ -13,6 +13,6 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(collectionResourceRel = "pec", path = "pec", exported = false, excerptProjection = PecWithPlainFields.class)
 public interface PecRepository extends JpaRepository<Pec, Integer>{
     
-    ArrayList<Pec> findByAttiva(boolean attiva);
+    ArrayList<Pec> findByAttivaTrue();
     
 }

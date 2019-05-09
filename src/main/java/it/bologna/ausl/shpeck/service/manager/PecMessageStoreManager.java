@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
@@ -56,12 +57,12 @@ public class PecMessageStoreManager extends StoreManager {
     
     
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse store() throws MailMessageException {        
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption {        
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio...");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec);
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
-        if(isPresent(messaggioSbustato)){
+        if(getMessageFromDb(messaggioSbustato) != null){
             return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato);
         }
         storeMessage(messaggioSbustato);

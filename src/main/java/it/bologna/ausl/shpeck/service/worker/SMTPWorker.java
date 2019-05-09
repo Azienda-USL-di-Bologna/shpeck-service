@@ -99,13 +99,15 @@ public class SMTPWorker implements Runnable {
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
             // creo un'istanza del manager
-            List<Outbox> messagesToSend = outboxRepository.findByIdPec(pec);
+            List<Outbox> messagesToSend = outboxRepository.findByIdPecAndIgnoreFalse(pec);
             if(messagesToSend != null && messagesToSend.size() > 0){
                 smtpManager.buildSmtpManagerFromPec(pec);
+                log.info("Numero messaggi : " + messagesToSend.size() + " --> ciclo...");
                 for (Outbox outbox : messagesToSend) {
                     StoreResponse response = null;
                     try{
                         response = saveMessageAndUploadQueue(outbox);
+                        log.info("Salvataggio eseguito: provo a inviare...");
                         boolean sent = smtpManager.sendMessage(outbox.getRawData());
                         if(!sent){
                             log.error("Errore nell'invio del messaggio: metadati già salvati: " + response.getMessage().toString());
@@ -145,12 +147,15 @@ public class SMTPWorker implements Runnable {
     
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException{
+        log.info("Entrato in saveMessageAndUploadQueue...");
         StoreResponse storeResponse = null;
         try{
+            log.info("Buildo il mailMessage dal raw");
             MailMessage mailMessage = new MailMessage(MessageBuilder.buildMailMessageFromString(outbox.getRawData()));
             regularMessageStoreManager.setInout(Message.InOut.OUT);
             regularMessageStoreManager.setPec(outbox.getIdPec());
             regularMessageStoreManager.setMailMessage(mailMessage);
+            log.info("Salvo i metadati...");
             storeResponse = regularMessageStoreManager.store();
         }
         catch (ShpeckServiceException e){

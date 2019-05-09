@@ -13,6 +13,9 @@ public class StorageContext {
     
     private StorageStrategy storageStrategy;
 
+    public StorageContext() {
+    }
+
     public StorageContext(StorageStrategy storageStrategy) {
         this.storageStrategy = storageStrategy;
     }

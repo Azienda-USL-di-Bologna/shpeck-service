@@ -76,7 +76,7 @@ public class SpeckApplication {
 //                t.start();
                 
                 // recupera le mail attive
-                ArrayList<Pec> pecAttive = pecRepository.findByAttiva(true);
+                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
                 
                 // lancio di IMAPWorker per ogni casella PEC attiva
 //                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");

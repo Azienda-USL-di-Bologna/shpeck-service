@@ -12,7 +12,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
  */
 @RepositoryRestResource(collectionResourceRel = "message", path = "message", exported = false, excerptProjection = MessageWithPlainFields.class)
 public interface MessageRepository extends JpaRepository<Message, Integer>{
-    Message findByUuidMessageAndIsPec(String uuid, boolean isPec);
+    Message findByUuidMessageAndIsPecFalse(String uuid);
     
     Message findByUuidMessageAndIdPecAndMessageType(String uuid, Pec pec, String messageType);
 }

@@ -14,4 +14,6 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(collectionResourceRel = "outbox", path = "outbox", exported = false, excerptProjection = OutboxWithPlainFields.class)
 public interface OutboxRepository extends JpaRepository<Outbox, Integer> {
     public List<Outbox> findByIdPec(Pec pec);
+    
+    public List<Outbox> findByIdPecAndIgnoreFalse(Pec pec);
 }

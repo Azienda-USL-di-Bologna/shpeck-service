@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
@@ -50,12 +51,12 @@ public class RecepitMessageStoreManager extends StoreManager {
     }
         
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse store() throws MailMessageException{
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption{
         log.info("Entrato in RecepitMessageStoreManager.store()");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
-        Message relatedMessage = messageRepository.findByUuidMessageAndIsPec(pecRecepit.getReference(), false);
+        Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(pecRecepit.getReference());
         
         if(relatedMessage==null){
             log.error("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());
@@ -63,7 +64,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         }
         
         messaggioDiRicevuta.setIdRelated(relatedMessage);
-        if(isPresent(messaggioDiRicevuta)){
+        if(getMessageFromDb(messaggioDiRicevuta) != null){
             return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
         }
         

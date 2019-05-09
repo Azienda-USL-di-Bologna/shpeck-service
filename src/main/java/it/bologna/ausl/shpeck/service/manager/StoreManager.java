@@ -15,6 +15,7 @@ import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.repository.MessageAddressRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
@@ -107,14 +108,14 @@ public class StoreManager implements StoreInterface{
     }
     
     @Override
-    public boolean isPresent(Message message){
+    public Message getMessageFromDb(Message message){
         Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
         if(messaggioPresente != null)
-            log.info("Messaggio GIA' trovato in casella");
+            log.info("Messaggio GIA' presente su database");
         else
-            log.info("Messaggio NON trovato in casella");
+            log.info("Messaggio NON presente su database");
         
-        return messaggioPresente != null;
+        return messaggioPresente;
     }
     
     public void insertRawMessage(Message message, String rawData) throws ShpeckServiceException {
@@ -128,7 +129,7 @@ public class StoreManager implements StoreInterface{
         MessageAddress messageAddress = new MessageAddress();
         messageAddress.setIdAddress(a);
         messageAddress.setIdMessage(m);
-        messageAddress.setRecipientType(type);
+        messageAddress.setAddressRole(type);
         return messageAddressRepository.save(messageAddress);
     }
     
@@ -190,23 +191,28 @@ public class StoreManager implements StoreInterface{
     }
 
     
-    public HashMap upsertAddresses(MailMessage mailMessage){
+    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption {
         log.info("Entrato in upsertAddresses");
         HashMap<String,ArrayList> map = new HashMap<>();
-        log.info("Verifico presenza di mittenti");
+        log.info("Verifico presenza di mittenti...");
         if(mailMessage.getFrom() != null){
             ArrayList<Address> fromArrayList = new ArrayList<>();
             javax.mail.Address[] from = mailMessage.getFrom();
-            log.info("ciclo gli indirizzi from e li salvo");
+            log.info("Mittenti presenti: ciclo gli indirizzi from e li salvo");
             fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from);
             // inserisco l'arraylist nella mappa con chiave 'from'
-            if(fromArrayList.size() > 0){
-                log.info("FROM: " + fromArrayList.toString());
-                log.info("Aggiungo l'array degli indirizzi from alla mappa con chiave 'from'");
-                map.put("from", fromArrayList);
-            }
-            else
-                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI FROM");
+            log.info("Aggiungo l'array degli indirizzi from alla mappa con chiave 'from'");
+            map.put("from", fromArrayList);
+        }
+        else{
+            log.info("Mittenti non presenti");
+            throw new StoreManagerExeption("upsertAddresses: Mittenti non presenti");
+        }
+        
+        // Se non ho neanche un destinatario devo lanciare l'errore il mestiere
+        if(mailMessage.getTo() == null && mailMessage.getCc() == null && mailMessage.getReply_to() == null){
+            log.info("Destinatari non presenti");
+            throw new StoreManagerExeption("upsertAddresses: Destinatari non presenti");
         }
         
         log.info("Verifico presenza di destinatari TO");
@@ -215,14 +221,10 @@ public class StoreManager implements StoreInterface{
             javax.mail.Address[] to = mailMessage.getTo();
             log.info("ciclo gli indirizzi to e li salvo");
             toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to);
-            if(toArrayList.size() > 0){
-                log.info("TO: " + toArrayList.toString());
-                log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
-                map.put("to", toArrayList);
-            }
-            else
-                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI TO");
+            log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
+            map.put("to", toArrayList);
         }
+        
         
         log.info("Verifico presenza di destinatari CC");
         if(mailMessage.getCc() != null){
@@ -230,13 +232,8 @@ public class StoreManager implements StoreInterface{
             javax.mail.Address[] cc = mailMessage.getCc();
             log.debug("ciclo gli indirizzi cc e li salvo");
             ccArrayList = (ArrayList<Address>) saveAndReturnAddresses(cc);
-            if(ccArrayList.size() > 0){
-                log.info("CC: " + ccArrayList.toString());
-                log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
-                map.put("cc", ccArrayList);
-            }
-            else
-                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI CC");
+            log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
+            map.put("cc", ccArrayList);
         }
         
         log.info("Verifico presenza di destinatari Reply_To");
@@ -245,15 +242,9 @@ public class StoreManager implements StoreInterface{
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
             log.info("ciclo gli indirizzi reply_to e li salvo");
             replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo);
-            if(replyArrayList.size() > 0){
-                log.info("REPLY_TO: " + replyArrayList.toString());
-                log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
-                map.put("replyTo", replyArrayList);
-            }
-            else
-                log.error("ATTENZIONE: PROBLEMI CON LA GESTIONE DEGLI INDIRIZZI REPLY_TO");
+            log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
+            map.put("replyTo", replyArrayList);
         }
-        log.info("Ritorno la mappa " +  map.toString());
         return map;
     }
 

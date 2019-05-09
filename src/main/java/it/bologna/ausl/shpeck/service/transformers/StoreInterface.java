@@ -17,7 +17,7 @@ public interface StoreInterface {
     
     public Recepit storeRecepit(Recepit recepit);
     
-    public boolean isPresent(Message message);
+    public Message getMessageFromDb(Message message);
     
     public RawMessage storeRawMessageAndUploadQueue(Message message, String rawMessage);
     

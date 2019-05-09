@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
@@ -48,12 +49,13 @@ public class RegularMessageStoreManager extends StoreManager {
     }
         
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse store() throws MailMessageException{
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption{
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
-        if(!isPresent(regularMessage)){
+        Message messagePresentInDB = getMessageFromDb(regularMessage);
+        if(messagePresentInDB == null){
             regularMessage = storeMessage(regularMessage);
             log.info("Messaggio salvato " + regularMessage.toString());
             try{
@@ -66,7 +68,8 @@ public class RegularMessageStoreManager extends StoreManager {
             }
         }
         else {
-            log.info("Messaggio già presente in tabella Messages con uuid: " + regularMessage.getUuidMessage());
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
+            regularMessage = messagePresentInDB;
         }
         log.info("Salvo gli indirizzi del regular message");
         HashMap mapMessagesAddress = upsertAddresses(mailMessage);
