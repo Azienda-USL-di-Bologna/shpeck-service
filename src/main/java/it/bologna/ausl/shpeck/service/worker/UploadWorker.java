@@ -87,7 +87,7 @@ public class UploadWorker implements Runnable{
         
         do {
             // prendi i messaggi da caricare presenti in upload_queue
-            messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE, Message.InOut.IN.toString());
+            messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
                 
             for (UploadQueue messageToStore : messagesToUpload) {
                 try {

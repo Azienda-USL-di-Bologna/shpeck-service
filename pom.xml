@@ -107,6 +107,12 @@
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>it.nextsw</groupId>
+            <artifactId>next-spring-data-rest-framework</artifactId>
+            <version>1.5.alfa</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     
     <build>

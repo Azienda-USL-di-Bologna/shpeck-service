@@ -15,6 +15,7 @@ import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
@@ -46,6 +47,9 @@ public class SMTPWorker implements Runnable {
         
     @Autowired
     PecRepository pecRepository;
+    
+    @Autowired
+    MessageRepository messageRepository;
     
     @Autowired
     OutboxRepository outboxRepository;
@@ -116,9 +120,14 @@ public class SMTPWorker implements Runnable {
                             outboxRepository.save(outbox);
                         }
                         else{
-                            log.info("Messaggio inviato correttamente, elimino da outbox...");
+                            log.info("Messaggio inviato correttamente, setto il messaggio come spedito...");
+                            Message m = response.getMessage();
+                            m.setMessageStatus(Message.MessageStatus.SENT);
+                            messageRepository.save(m);
+                            log.info("Stato settato, ora elimino da outbox...");
                             outboxRepository.delete(outbox);
                             log.info("Eliminato");
+                            
                         }  
                     }
                     catch (BeforeSendOuboxException e){

@@ -72,8 +72,8 @@ public class SpeckApplication {
             public void run(String... args) throws Exception {
                 
                 // avvio del thread di UploadWorker
-//                Thread t = new Thread(uploadWorker);
-//                t.start();
+                Thread t = new Thread(uploadWorker);
+                t.start();
                 
                 // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
