@@ -129,7 +129,7 @@ public class SMTPWorker implements Runnable {
                             outboxRepository.delete(outbox);
                             log.info("Eliminato");
                         }  
-                        log.info("Aggiorno lo stato di message a " + m.getMessageType().toString());
+                        log.info("Aggiorno lo stato di message a " + m.getMessageStatus().toString());
                         messageRepository.save(m);
                         log.info("Aggiornato");
                     }
