@@ -31,6 +31,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -94,8 +95,9 @@ public class SMTPWorker implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
-        log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        //MDC.put("logFileName", threadName);
+        //Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
+        log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
         try{
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
@@ -154,7 +156,8 @@ public class SMTPWorker implements Runnable {
                     + "---> " + e.getMessage());
             e.printStackTrace();
         }
-        log.info("STOP -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
+        //MDC.remove("logFileName");
     }
     
     @Transactional(rollbackFor = Throwable.class)

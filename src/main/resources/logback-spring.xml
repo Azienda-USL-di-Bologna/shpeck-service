@@ -2,6 +2,7 @@
 <configuration>
  
     <property name="LOG_DIR" value="./logs" />
+    <property name="LOG_DIR_ARCHIVE" value="./logs/archived" />
  
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -10,36 +11,42 @@
             </Pattern>
         </layout>
     </appender>
- 
-<!--    <appender name="Scheduler_example" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/scheduler.log</file>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>
-                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
-            </pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">    	
-             daily rollover: /logs/example.%d  
-            daily rollover, time and date pattern for the %d token specifier is omitted. 
-            So the default pattern is “yyyy-MM-dd”, which corresponds to daily rollover.
-            <fileNamePattern>${LOG_DIR}/archived/scheduler.%d.log</fileNamePattern>
-            
-            controllo del numero massimo di file da tenere, cancellando i vecchi.
-            Se si specifica un rollover giornaliero e si setta il maxHistory a 31
-            allora tutti i file più vecchi di 31 giorni, saranno eliminati
-            <maxHistory>31</maxHistory>
-            
-    	</rollingPolicy>
-    </appender> -->
-     
-    <!-- LOG everything at INFO level -->
+    
+<!--    <appender name="File-Thread" class="ch.qos.logback.classic.sift.SiftingAppender">
+
+         This is MDC value 
+         We will assign a value to 'logFileName' via Java code 
+        <discriminator>
+            <key>logFileName</key>
+            <defaultValue>head0</defaultValue>
+        </discriminator>
+
+        <sift>
+             A standard RollingFileAppender, the log file is based on 'logFileName' at runtime  
+            <appender name="FILE-${logFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${LOG_DIR}/${logFileName}.log</file>
+
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <Pattern>
+                        %d{yyyy-MM-dd HH:mm:ss} %mdc [%thread] %level %logger{35} - %msg%n
+                    </Pattern>
+                </encoder>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
+                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}.%d{yyyy-MM-dd HH:mm:ss}.log.gz</fileNamePattern>
+                    <maxHistory>30</maxHistory>
+                </rollingPolicy>
+            </appender>
+        </sift>
+    </appender>-->
+
     <root level="info">
         <appender-ref ref="Console" />
     </root>
     
-<!--    <logger name="it.bologna.ausl.shpeck.service.worker">
-        <level value="all" />
-        <appender-ref ref="Scheduler_example"/>
-    </logger>-->
+<!--    <logger name="it.bologna.ausl.shpeck.service.worker" level="debug" additivity="false">
+        <appender-ref ref="File-Thread" />
+        <appender-ref ref="Console" />
+    </logger>    -->
  
 </configuration>

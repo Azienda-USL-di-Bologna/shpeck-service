@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -98,8 +99,9 @@ public class IMAPWorker implements Runnable {
     //@Transactional
     @Override
     public void run() {
-        Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
-        log.info("START -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        //MDC.put("logFileName", threadName);
+        //Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
+        log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
         
         try{        
             Pec pec = pecRepository.findById(idPec).get();
@@ -203,6 +205,7 @@ public class IMAPWorker implements Runnable {
             // TODO: gestione errore e pensare se metterlo anche in db
             log.info("STOP CON -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
-        log.info("STOP -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
+        log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
+        //MDC.remove("logFileName");
     }
 }
