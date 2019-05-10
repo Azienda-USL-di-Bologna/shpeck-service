@@ -111,24 +111,27 @@ public class SMTPWorker implements Runnable {
                     StoreResponse response = null;
                     try{
                         response = saveMessageAndUploadQueue(outbox);
+                        Message m = response.getMessage();
                         log.info("Salvataggio eseguito: provo a inviare...");
                         boolean sent = smtpManager.sendMessage(outbox.getRawData());
                         if(!sent){
                             log.error("Errore nell'invio del messaggio: metadati già salvati: " + response.getMessage().toString());
+                            log.error("Metto in stato di errore il messaggio " + m.getId());
+                            m.setMessageStatus(Message.MessageStatus.ERROR);
                             log.error("setto l'outbox come da ignorare");
                             outbox.setIgnore(Boolean.TRUE);
                             outboxRepository.save(outbox);
                         }
                         else{
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito...");
-                            Message m = response.getMessage();
                             m.setMessageStatus(Message.MessageStatus.SENT);
-                            messageRepository.save(m);
                             log.info("Stato settato, ora elimino da outbox...");
                             outboxRepository.delete(outbox);
                             log.info("Eliminato");
-                            
                         }  
+                        log.info("Aggiorno lo stato di message a " + m.getMessageType().toString());
+                        messageRepository.save(m);
+                        log.info("Aggiornato");
                     }
                     catch (BeforeSendOuboxException e){
                         log.error("ERRORE: " + e.getMessage());

@@ -13,6 +13,7 @@ import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
+import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
@@ -46,6 +47,9 @@ public class IMAPWorker implements Runnable {
     
     @Autowired
     PecRepository pecRepository;
+    
+    @Autowired
+    PecProviderRepository pecProviderRepository;
     
     @Autowired
     ProviderConnectionHandler providerConnectionHandler;
@@ -99,7 +103,8 @@ public class IMAPWorker implements Runnable {
         
         try{        
             Pec pec = pecRepository.findById(idPec).get();
-            PecProvider idPecProvider = pec.getIdPecProvider();
+            PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
+            pec.setIdPecProvider(idPecProvider);
             log.info("host: " +idPecProvider.getHost());
 
             // ottenimento dell'oggetto IMAPStore
@@ -194,7 +199,7 @@ public class IMAPWorker implements Runnable {
                     break;
             }
         } catch(Throwable e){
-            log.debug("eccezione : " + e);
+            log.error("eccezione : " + e);
             // TODO: gestione errore e pensare se metterlo anche in db
             log.info("STOP CON -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
         }

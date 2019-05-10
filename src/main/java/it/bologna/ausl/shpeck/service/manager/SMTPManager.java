@@ -88,12 +88,14 @@ public class SMTPManager {
             for (Address recipient : mimeMessage.getRecipients(Message.RecipientType.CC)) {
                 log.info("\t" + recipient.toString());
             }
+            //TODO: capire cosa è saveChanges
+            //mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("Messaggio inviato!");
             sent = true;
         }
         catch(Exception e){
-            log.error("Messaggio non inviato correttamente: " + e);
+            log.error("Messaggio non inviato: " + e);
         }
         return sent;
     }
