@@ -2,9 +2,9 @@
 <configuration>
  
     <property name="LOG_DIR" value="./logs" />
-    <property name="LOG_DIR_ARCHIVE" value="./logs/archived" />
+    <property name="LOG_DIR_ARCHIVE" value="./logs/archive" />
  
-    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <Pattern>
                 %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %blue(%C{1.}): %msg%n%throwable
@@ -12,18 +12,15 @@
         </layout>
     </appender>
     
-<!--    <appender name="File-Thread" class="ch.qos.logback.classic.sift.SiftingAppender">
-
-         This is MDC value 
-         We will assign a value to 'logFileName' via Java code 
+    <!--<appender name="thread-file" class="ch.qos.logback.classic.sift.SiftingAppender">
+ 
         <discriminator>
             <key>logFileName</key>
-            <defaultValue>head0</defaultValue>
+            <defaultValue>logFileName0</defaultValue>
         </discriminator>
 
-        <sift>
-             A standard RollingFileAppender, the log file is based on 'logFileName' at runtime  
-            <appender name="FILE-${logFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <sift> 
+            <appender name="${logFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
                 <file>${LOG_DIR}/${logFileName}.log</file>
 
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -33,8 +30,7 @@
                 </encoder>
 
                 <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
-                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}.%d{yyyy-MM-dd HH:mm:ss}.log.gz</fileNamePattern>
-                    <maxHistory>30</maxHistory>
+                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}_%d{yyyy-MM-dd HHmm}.log.gz</fileNamePattern>
                 </rollingPolicy>
             </appender>
         </sift>
@@ -44,9 +40,9 @@
         <appender-ref ref="Console" />
     </root>
     
-<!--    <logger name="it.bologna.ausl.shpeck.service.worker" level="debug" additivity="false">
-        <appender-ref ref="File-Thread" />
-        <appender-ref ref="Console" />
-    </logger>    -->
+    <!--<logger name="it.bologna.ausl.shpeck.service.worker" level="debug" additivity="false">
+        <appender-ref ref="thread-file" />
+        <appender-ref ref="console" />
+    </logger> -->   
  
 </configuration>
