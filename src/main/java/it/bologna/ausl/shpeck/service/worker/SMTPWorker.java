@@ -172,6 +172,8 @@ public class SMTPWorker implements Runnable {
             regularMessageStoreManager.setMailMessage(mailMessage);
             log.info("Salvo i metadati...");
             storeResponse = regularMessageStoreManager.store();
+            // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
+            messageSemaphore.release();
         }
         catch (ShpeckServiceException e){
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
