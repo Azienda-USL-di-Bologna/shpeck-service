@@ -4,6 +4,7 @@ import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
@@ -200,6 +201,12 @@ public class IMAPWorker implements Runnable {
                     log.info("Message Policy None: non faccio nulla.");
                     break;
             }
+        } catch (ShpeckServiceException e){
+            String message = "";
+            if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
+                message = "\n\t" + e.getCause().getMessage();
+            }
+            log.error("Errore: " + message, e);
         } catch(Throwable e){
             log.error("eccezione : " + e);
             // TODO: gestione errore e pensare se metterlo anche in db

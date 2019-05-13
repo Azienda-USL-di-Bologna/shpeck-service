@@ -132,8 +132,8 @@ public class IMAPManager {
             return mailMessages;
 
         } catch (Throwable e) {
-            log.error("error getting messages from imap server " + store.getURLName().toString(), e);
-            throw new ShpeckServiceException("error getting messages from imap server", e);
+            log.error("errore durante il recupero dei messaggi da imap server " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server ", e);
         }
     }
     
@@ -210,12 +210,12 @@ public class IMAPManager {
 
             return f;
         } catch (MessagingException ex) {
-            throw new ShpeckServiceException("Errore di setting della directory di PECGW", ex);
+            throw new ShpeckServiceException("Errore di setting della directory: ", ex);
         } finally {
             try {
                 srcfolder.close(false);
             } catch (MessagingException e) {
-                e.printStackTrace();
+                throw new ShpeckServiceException("Errore di chiusura della source folder INBOX della casella: ", e);
             }
         }
     }
@@ -260,7 +260,7 @@ public class IMAPManager {
         }
     }
     
-    public boolean deleteMessage(String message_id) {
+    public boolean deleteMessage(String message_id) throws ShpeckServiceException {
         try {
             if (!store.isConnected()) {
                 this.store.connect();
@@ -286,7 +286,7 @@ public class IMAPManager {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new ShpeckServiceException("errore: ",e);
         }
         return false;
     }
