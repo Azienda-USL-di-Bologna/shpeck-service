@@ -37,7 +37,7 @@
     </appender>-->
 
     <root level="info">
-        <appender-ref ref="Console" />
+        <appender-ref ref="console" />
     </root>
     
     <!--<logger name="it.bologna.ausl.shpeck.service.worker" level="debug" additivity="false">
