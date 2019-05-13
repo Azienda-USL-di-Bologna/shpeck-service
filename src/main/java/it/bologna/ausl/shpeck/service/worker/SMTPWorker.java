@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
@@ -11,8 +6,6 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
-import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
-import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
@@ -21,17 +14,12 @@ import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
-import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
-import javax.mail.MessagingException;
-import javax.mail.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -151,10 +139,9 @@ public class SMTPWorker implements Runnable {
                 // altrimenti setto m.message_status error
                 // comunque aggiungo il raw tra quelli da caricare su mongo
         }
-        catch(Exception e){
+        catch(Throwable e){
             log.error("Errore del thread " + Thread.currentThread().getName()  + "\n"
                     + "---> " + e.getMessage());
-            e.printStackTrace();
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         //MDC.remove("logFileName");

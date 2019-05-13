@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -75,11 +74,10 @@ public class UploadWorker implements Runnable{
                     //continue;
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
         }
     }
     
-    //@Transactional(rollbackFor = Throwable.class)
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("START doWork() per storage");
      
