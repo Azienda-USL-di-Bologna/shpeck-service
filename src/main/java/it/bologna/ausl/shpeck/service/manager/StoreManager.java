@@ -32,46 +32,46 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-
 /**
  *
  * @author spritz
  */
 @Component
 //@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class StoreManager implements StoreInterface{  
+public class StoreManager implements StoreInterface {
+
     private static final Logger log = LoggerFactory.getLogger(StoreManager.class);
-    
+
     private Message.InOut inout = Message.InOut.IN;
-    
+
     @Autowired
     MessageRepository messageRepository;
-    
+
     @Autowired
     MessageAddressRepository messageAddressRepository;
-    
+
     @Autowired
     RecepitRepository recepitRepository;
-    
+
     @Autowired
     AddessRepository addessRepository;
-    
+
     @Autowired
     RawMessageRepository rawMessageRepository;
-    
+
     @Autowired
     UploadQueueRepository uploadQueueRepository;
-   
+
     public StoreManager() {
     }
-    
+
     @Override
     public Message createMessageForStorage(MailMessage mailMessage, Pec pec) {
         Message message = new Message();
         message.setUuidMessage(mailMessage.getId());
         message.setIdPec(pec);
-        message.setSubject(mailMessage.getSubject()!=null ? mailMessage.getSubject() : "");
-        if(Message.InOut.IN == inout) {
+        message.setSubject(mailMessage.getSubject() != null ? mailMessage.getSubject() : "");
+        if (Message.InOut.IN == inout) {
             message.setMessageStatus(Message.MessageStatus.RECEIVED);
             message.setInOut(Message.InOut.IN);
             message.setIsPec(mailMessage.getIsPec());
@@ -80,8 +80,7 @@ public class StoreManager implements StoreInterface{
             } else {
                 message.setReceiveDate(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
             }
-        }
-        else{
+        } else {
             message.setMessageStatus(Message.MessageStatus.TO_SEND);
             message.setInOut(Message.InOut.OUT);
             message.setIsPec(false);
@@ -94,59 +93,66 @@ public class StoreManager implements StoreInterface{
             log.error("Errore dello stabilire il numero di allegati", ex);
             message.setAttachmentsNumber(0);
         }
+
+        String inReplyTo = mailMessage.getInReplyTo();
+        if (inReplyTo != null) {
+            message.setInReplyTo(inReplyTo);
+        }
+
         return message;
     }
-    
+
     @Override
-    public Message storeMessage(Message message){
+    public Message storeMessage(Message message) {
         return messageRepository.save(message);
     }
-    
+
     @Override
     public Recepit storeRecepit(Recepit recepit) {
         return recepitRepository.save(recepit);
     }
-    
+
     @Override
-    public Message getMessageFromDb(Message message){
+    public Message getMessageFromDb(Message message) {
         Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
-        if(messaggioPresente != null)
+        if (messaggioPresente != null) {
             log.info("Messaggio GIA' presente su database");
-        else
+        } else {
             log.info("Messaggio NON presente su database");
-        
+        }
+
         return messaggioPresente;
     }
-    
+
     public void insertRawMessage(Message message, String rawData) throws ShpeckServiceException {
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);
         rawMessage.setRawData(rawData);
-        rawMessageRepository.save(rawMessage);       
+        rawMessageRepository.save(rawMessage);
     }
-    
-    public MessageAddress storeMessageAddress(Message m, Address a, MessageAddress.AddressRoleType type){
+
+    public MessageAddress storeMessageAddress(Message m, Address a, MessageAddress.AddressRoleType type) {
         MessageAddress messageAddress = new MessageAddress();
         messageAddress.setIdAddress(a);
         messageAddress.setIdMessage(m);
         messageAddress.setAddressRole(type);
         return messageAddressRepository.save(messageAddress);
     }
-    
-    public void storeMessagesAddresses(Message message, HashMap addresses){
+
+    public void storeMessagesAddresses(Message message, HashMap addresses) {
         log.info("Entrato in storeMessagesAddress");
         log.info("Prendo gli indirizzi FROM");
         ArrayList<Address> list = (ArrayList<Address>) addresses.get("from");
-        if(list!=null && list.size() > 0){
+        if (list != null && list.size() > 0) {
             log.info("Ciclo gli indirizzi FROM e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.FROM);
                 log.info("Salvato message_address " + ma);
             }
         }
-        
+
         list = (ArrayList<Address>) addresses.get("to");
-        if(list!=null && list.size() > 0){
+        if (list != null && list.size() > 0) {
             log.info("Ciclo gli indirizzi TO e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.TO);
@@ -154,48 +160,46 @@ public class StoreManager implements StoreInterface{
             }
         }
         list = (ArrayList<Address>) addresses.get("cc");
-        if(list!=null && list.size() > 0){
+        if (list != null && list.size() > 0) {
             log.info("Ciclo gli indirizzi CC e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.CC);
                 log.info("Salvato message_address " + ma);
             }
-        }  
+        }
         log.info("Uscito da storeMessagesAddress");
     }
-    
-    public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses){
+
+    public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses) {
         ArrayList<Address> list = new ArrayList<Address>();
-        for (int i = 0; i < addresses.length; i++){
+        for (int i = 0; i < addresses.length; i++) {
             InternetAddress internetAddress = (InternetAddress) addresses[i];
-                Address address = new Address();
-                log.info("verifico presenza di " + internetAddress.getAddress());
-                address = addessRepository.findByMailAddress(internetAddress.getAddress());
-                if(address == null){
-                    log.info("indirizzo non trovato: lo salvo");
-                    address = new Address();
-                    address.setMailAddress(internetAddress.getAddress());
-                    address.setOriginalAddress(internetAddress.getPersonal());
-                    address.setRecipientType(Address.RecipientType.UNKNOWN);
-                    try{
-                        addessRepository.save(address);
-                    }
-                    catch(Exception ex){
-                        log.error("Indirizzo già presente: " + address.getMailAddress());
-                    }
+            Address address = new Address();
+            log.info("verifico presenza di " + internetAddress.getAddress());
+            address = addessRepository.findByMailAddress(internetAddress.getAddress());
+            if (address == null) {
+                log.info("indirizzo non trovato: lo salvo");
+                address = new Address();
+                address.setMailAddress(internetAddress.getAddress());
+                address.setOriginalAddress(internetAddress.getPersonal());
+                address.setRecipientType(Address.RecipientType.UNKNOWN);
+                try {
+                    addessRepository.save(address);
+                } catch (Exception ex) {
+                    log.error("Indirizzo già presente: " + address.getMailAddress());
                 }
-                log.debug("Aggiungo indirizzo all'array da tornare");
-                list.add(address);
             }
+            log.debug("Aggiungo indirizzo all'array da tornare");
+            list.add(address);
+        }
         return list;
     }
 
-    
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption {
         log.info("Entrato in upsertAddresses");
-        HashMap<String,ArrayList> map = new HashMap<>();
+        HashMap<String, ArrayList> map = new HashMap<>();
         log.info("Verifico presenza di mittenti...");
-        if(mailMessage.getFrom() != null){
+        if (mailMessage.getFrom() != null) {
             ArrayList<Address> fromArrayList = new ArrayList<>();
             javax.mail.Address[] from = mailMessage.getFrom();
             log.info("Mittenti presenti: ciclo gli indirizzi from e li salvo");
@@ -203,20 +207,19 @@ public class StoreManager implements StoreInterface{
             // inserisco l'arraylist nella mappa con chiave 'from'
             log.info("Aggiungo l'array degli indirizzi from alla mappa con chiave 'from'");
             map.put("from", fromArrayList);
-        }
-        else{
+        } else {
             log.info("Mittenti non presenti");
             throw new StoreManagerExeption("upsertAddresses: Mittenti non presenti");
         }
-        
+
         // Se non ho neanche un destinatario devo lanciare l'errore il mestiere
-        if(mailMessage.getTo() == null && mailMessage.getCc() == null && mailMessage.getReply_to() == null){
+        if (mailMessage.getTo() == null && mailMessage.getCc() == null && mailMessage.getReply_to() == null) {
             log.info("Destinatari non presenti");
             throw new StoreManagerExeption("upsertAddresses: Destinatari non presenti");
         }
-        
+
         log.info("Verifico presenza di destinatari TO");
-        if(mailMessage.getTo() != null){     
+        if (mailMessage.getTo() != null) {
             ArrayList<Address> toArrayList = new ArrayList<>();
             javax.mail.Address[] to = mailMessage.getTo();
             log.info("ciclo gli indirizzi to e li salvo");
@@ -224,10 +227,9 @@ public class StoreManager implements StoreInterface{
             log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
             map.put("to", toArrayList);
         }
-        
-        
+
         log.info("Verifico presenza di destinatari CC");
-        if(mailMessage.getCc() != null){
+        if (mailMessage.getCc() != null) {
             ArrayList<Address> ccArrayList = new ArrayList<>();
             javax.mail.Address[] cc = mailMessage.getCc();
             log.debug("ciclo gli indirizzi cc e li salvo");
@@ -235,9 +237,9 @@ public class StoreManager implements StoreInterface{
             log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
             map.put("cc", ccArrayList);
         }
-        
+
         log.info("Verifico presenza di destinatari Reply_To");
-        if(mailMessage.getReply_to() != null){
+        if (mailMessage.getReply_to() != null) {
             ArrayList<Address> replyArrayList = new ArrayList<>();
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
             log.info("ciclo gli indirizzi reply_to e li salvo");
@@ -257,13 +259,13 @@ public class StoreManager implements StoreInterface{
         log.info("salvataggio del rawMessage...");
         rawMessage = rawMessageRepository.save(rawMessage);
         log.info("rawMessage salvato");
-        
+
         UploadQueue uploadQueue = new UploadQueue();
         uploadQueue.setIdRawMessage(rawMessage);
         log.info("inserimento del rawMessage in upload_queue...");
         uploadQueueRepository.save(uploadQueue);
         log.info("inserimento in upload_queue avvenuto con successo");
-        
+
         return rawMessage;
     }
 
@@ -275,20 +277,23 @@ public class StoreManager implements StoreInterface{
         this.inout = inout;
     }
 
-    /** Inserisce il messaggio raw nella coda di upload*/
+    /**
+     * Inserisce il messaggio raw nella coda di upload
+     */
     @Override
     public void insertToUploadQueue(RawMessage raw) {
         // dal raw -> prendo il messaggio -> prendo la pec -> prendo l'azienda -> prendo il tipo di connessione repository
         // setto in un nuovo UploadQueue        
     }
 
-    /** Rimuove il messaggio dalla coda di upload e il raw messagge*/
+    /**
+     * Rimuove il messaggio dalla coda di upload e il raw messagge
+     */
     @Override
     public void removeFromUploadQueue(UploadQueue uq) {
         // prendo il raw message in una variabile
         // elimino la riga di uploadqueue
         // elimino il raw message
     }
-    
-    
+
 }
