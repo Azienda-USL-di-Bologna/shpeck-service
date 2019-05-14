@@ -89,7 +89,8 @@ public class SMTPWorker implements Runnable {
         try{
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
-            PecProvider pecProvider = pec.getIdPecProvider();
+            //PecProvider pecProvider = pec.getIdPecProvider();
+            
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
             // creo un'istanza del manager

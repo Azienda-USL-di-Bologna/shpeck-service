@@ -79,7 +79,7 @@ public class UploadWorker implements Runnable{
     }
     
     public void doWork() throws ShpeckServiceException, UnknownHostException {
-        log.info("START doWork() per storage");
+        log.info("START doWork() UploadWorker");
      
         ArrayList<UploadQueue> messagesToUpload;
         
@@ -123,7 +123,7 @@ public class UploadWorker implements Runnable{
                 }
             }
         } while (!messagesToUpload.isEmpty());
-        log.info("STOP doWork() per storage");
+        log.info("STOP doWork() UploadWorker");
     }
     
 // TODO: caso SMTP
