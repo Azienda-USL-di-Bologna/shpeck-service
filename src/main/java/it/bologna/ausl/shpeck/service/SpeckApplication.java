@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -53,6 +54,12 @@ public class SpeckApplication {
     @Autowired
     PecRepository pecRepository;
 
+    @Value("${shpeck.threads.smtp-delay}")
+    String smtpDelay;
+
+    @Value("${shpeck.threads.imap-delay}")
+    String imapDelay;
+
 //    @Autowired
 //    TestThread testThread;  
     public static void main(String[] args) {
@@ -81,7 +88,7 @@ public class SpeckApplication {
                     IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
                     imapWorker.setThreadName("IMAP_" + pecAttive.get(i).getId());
                     imapWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, 60, TimeUnit.SECONDS);
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, Integer.valueOf(imapDelay), TimeUnit.SECONDS);
                     log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
                 }
                 log.info("creazione degli IMAPWorker eseguita con successo");
@@ -92,7 +99,7 @@ public class SpeckApplication {
                     SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
                     smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getId());
                     smtpWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, 3, TimeUnit.SECONDS);
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
                     log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
                 }
 

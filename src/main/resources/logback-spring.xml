@@ -16,7 +16,7 @@
  
         <discriminator>
             <key>logFileName</key>
-            <defaultValue>logFileName0</defaultValue>
+            <defaultValue>shpeck_service</defaultValue>
         </discriminator>
 
         <sift> 
@@ -30,38 +30,19 @@
                 </encoder>
 
                 <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
-                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}_%d{yyyy-MM-dd HHmm}.log.gz</fileNamePattern>
+                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
                 </rollingPolicy>
             </appender>
         </sift>
     </appender>
     
-    <appender name="shpeck-file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/shpeck.log</file>
-
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>
-                %d{yyyy-MM-dd HH:mm:ss} [%thread] %level %logger{35} - %msg%n
-            </Pattern>
-        </encoder>
-
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
-            <fileNamePattern>${LOG_DIR_ARCHIVE}/shpeck_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-        </rollingPolicy>
-    </appender>
-
     <root level="info">
         <appender-ref ref="console" />
     </root>
     
-    <logger name="it.bologna.ausl.shpeck.service.worker" level="debug" additivity="false">
+    <logger name="it.bologna.ausl.shpeck.service" level="debug" additivity="false">
         <appender-ref ref="thread-file" />
         <appender-ref ref="console" />
     </logger>   
-    
-    <logger name="it.bologna.ausl.shpeck.service" level="info" additivity="false">
-        <appender-ref ref="console" />
-        <appender-ref ref="shpeck-file" />
-    </logger>
  
 </configuration>

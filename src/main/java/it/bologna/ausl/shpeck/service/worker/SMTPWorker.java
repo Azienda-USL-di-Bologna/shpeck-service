@@ -34,25 +34,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SMTPWorker implements Runnable {
-        
+
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     MessageRepository messageRepository;
-    
+
     @Autowired
     OutboxRepository outboxRepository;
-        
+
     @Autowired
     Semaphore messageSemaphore;
-    
+
     @Autowired
     SmtpConnectionHandler smtpConnectionHandler;
-    
+
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
-    
+
     @Autowired
     SMTPManager smtpManager;
 
@@ -87,73 +87,75 @@ public class SMTPWorker implements Runnable {
         MDC.put("logFileName", threadName);
         //Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
-        try{
+        try {
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
             //PecProvider pecProvider = pec.getIdPecProvider();
-            
+
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
             // creo un'istanza del manager
             List<Outbox> messagesToSend = outboxRepository.findByIdPecAndIgnoreFalse(pec);
-            if(messagesToSend != null && messagesToSend.size() > 0){
+            if (messagesToSend != null && messagesToSend.size() > 0) {
                 smtpManager.buildSmtpManagerFromPec(pec);
                 log.info("Numero messaggi : " + messagesToSend.size() + " --> ciclo...");
                 for (Outbox outbox : messagesToSend) {
                     StoreResponse response = null;
-                    try{
+                    try {
                         response = saveMessageAndUploadQueue(outbox);
                         Message m = response.getMessage();
                         log.info("Salvataggio eseguito: provo a inviare...");
                         boolean sent = smtpManager.sendMessage(outbox.getRawData());
-                        if(!sent){
+                        if (!sent) {
                             log.error("Errore nell'invio del messaggio: metadati già salvati: " + response.getMessage().toString());
                             log.error("Metto in stato di errore il messaggio " + m.getId());
                             m.setMessageStatus(Message.MessageStatus.ERROR);
                             log.error("setto l'outbox come da ignorare");
                             outbox.setIgnore(Boolean.TRUE);
                             outboxRepository.save(outbox);
-                        }
-                        else{
+                        } else {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito...");
                             m.setMessageStatus(Message.MessageStatus.SENT);
                             log.info("Stato settato, ora elimino da outbox...");
-                            outboxRepository.delete(outbox);
-                            log.info("Eliminato");
-                        }  
+                            //TODO: RIATTIVARE!!
+                            //outboxRepository.delete(outbox);
+                            //log.info("Eliminato");
+
+                            //TODO: 3 righe DA TOGLIERE!!
+                            outbox.setIgnore(true);
+                            outboxRepository.save(outbox);
+                            log.info("Ignorato!");
+                        }
                         log.info("Aggiorno lo stato di message a " + m.getMessageStatus().toString());
                         messageRepository.save(m);
                         log.info("Aggiornato");
-                    }
-                    catch (BeforeSendOuboxException e){
+                    } catch (BeforeSendOuboxException e) {
                         log.error("ERRORE: " + e.getMessage());
-                    }
-                    catch (Exception e){
+                    } catch (Exception e) {
                         log.error("Errore: " + e.getMessage());
                     }
                 }
             }
-            
+
             // ciclo i messaggi:
-                // carico i raw_message con associato il messaggio
-                // se tutto ok, salvo che è stato inviato:
-                    // m.message_status sent
-                // altrimenti setto m.message_status error
-                // comunque aggiungo il raw tra quelli da caricare su mongo
-        }
-        catch(Throwable e){
-            log.error("Errore del thread " + Thread.currentThread().getName()  + "\n"
+            // carico i raw_message con associato il messaggio
+            // se tutto ok, salvo che è stato inviato:
+            // m.message_status sent
+            // altrimenti setto m.message_status error
+            // comunque aggiungo il raw tra quelli da caricare su mongo
+        } catch (Throwable e) {
+            log.error("Errore del thread " + Thread.currentThread().getName() + "\n"
                     + "---> " + e.getMessage());
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         MDC.remove("logFileName");
     }
-    
+
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException{
+    public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException {
         log.info("Entrato in saveMessageAndUploadQueue...");
         StoreResponse storeResponse = null;
-        try{
+        try {
             log.info("Buildo il mailMessage dal raw");
             MailMessage mailMessage = new MailMessage(MessageBuilder.buildMailMessageFromString(outbox.getRawData()));
             regularMessageStoreManager.setInout(Message.InOut.OUT);
@@ -163,8 +165,7 @@ public class SMTPWorker implements Runnable {
             storeResponse = regularMessageStoreManager.store();
             // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
             messageSemaphore.release();
-        }
-        catch (ShpeckServiceException e){
+        } catch (ShpeckServiceException e) {
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
         }
         return storeResponse;

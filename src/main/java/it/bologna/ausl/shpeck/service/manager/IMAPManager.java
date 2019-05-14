@@ -5,6 +5,7 @@ import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,29 +31,29 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPManager {
-    
-    static Logger log = LoggerFactory.getLogger(IMAPManager.class);
-    
+
+    static Logger log = LoggerFactory.getLogger(IMAPWorker.class);
+
     @Value("${mailbox.backup-forlder}")
     String BACKUP_FOLDER_NAME;
-    
+
     @Value("${mailbox.inbox-forlder}")
     String INBOX_FOLDER_NAME;
-    
+
     @Value("${mailbox.backup-source-forlder}")
     String BACKUP_SOURCE_FOLDER;
-    
+
     private IMAPStore store;
     private long lastUID = 0;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
     }
-    
+
     public IMAPManager(IMAPStore store) {
         this.store = store;
     }
-    
+
     public IMAPManager(IMAPStore store, long lastUID) {
         this(store);
         this.lastUID = lastUID;
@@ -73,52 +74,49 @@ public class IMAPManager {
     public void setLastUID(long lastUID) {
         this.lastUID = lastUID;
     }
-    
-    
-    
+
     /**
      * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
+     *
      * @return messaggi presenti in inbox
-     * @throws ShpeckServiceException 
+     * @throws ShpeckServiceException
      */
     public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
-        
+
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
-        
+
         try {
             if (store == null || !store.isConnected()) {
                 this.store.connect();
             }
-            
+
             /**
-             * FetchProfile elenca gli attributi del messaggio che si 
-             * desidera precaricare dal server
+             * FetchProfile elenca gli attributi del messaggio che si desidera
+             * precaricare dal server
              */
             FetchProfile fetchProfile = new FetchProfile();
-            
+
             // ENVELOPE (=busta) è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
             fetchProfile.add(FetchProfile.Item.ENVELOPE);
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
-            
+
             IMAPFolder inbox = (IMAPFolder) this.store.getFolder(BACKUP_SOURCE_FOLDER);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
                 System.exit(1);
             }
-            
+
             // apertura della cartella in lettura/scrittura
             inbox.open(Folder.READ_WRITE);
 
             // ottieni i messaggi dal server
             log.info("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
             Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, IMAPFolder.LASTUID);
-            
+
             inbox.fetch(messagesFromInbox, fetchProfile);
-            
-            
-            
+
             for (int i = 0; i < messagesFromInbox.length; i++) {
                 mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
                 if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
@@ -128,7 +126,7 @@ public class IMAPManager {
             }
 
             // chiudi la connessione ma non rimuove i messaggi dal server
-           // close();
+            // close();
             return mailMessages;
 
         } catch (Throwable e) {
@@ -136,7 +134,7 @@ public class IMAPManager {
             throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server ", e);
         }
     }
-    
+
     /**
      * Chiusura dello store per connettersi al server
      */
@@ -149,29 +147,30 @@ public class IMAPManager {
             log.error("errore nella chiusura di IMAPStore", ex);
         }
     }
-    
-    public void printAllFoldersInAccount() throws MessagingException{
+
+    public void printAllFoldersInAccount() throws MessagingException {
         if (store == null || !store.isConnected()) {
             store.connect();
         }
         IMAPFolder[] folders = (IMAPFolder[]) store.getDefaultFolder().list("*");
-        
+
         log.info("stampa di tutte le cartelle dell'account");
-        for(Folder folder:folders)
-            log.info(">> "+folder.getFullName());
+        for (Folder folder : folders) {
+            log.info(">> " + folder.getFullName());
+        }
         close();
     }
-    
+
     public void messageMover(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
         for (MailMessage mailMessage : mailMessages) {
             messageMover(mailMessage.getId());
         }
     }
-    
+
     public void messageMover(String messageId) throws ShpeckServiceException {
         messageMover(Arrays.asList(messageId));
     }
-    
+
     public void messageMover(List<String> list) throws ShpeckServiceException {
         if (list == null) {
             log.warn("lista di messaggi da spostare è null");
@@ -193,7 +192,7 @@ public class IMAPManager {
         }
         log.debug("messaggi spostati");
     }
-    
+
     protected IMAPFolder createWorkingFolder(String folderName) throws ShpeckServiceException {
         IMAPFolder f, srcfolder = null;
         try {
@@ -219,15 +218,15 @@ public class IMAPManager {
             }
         }
     }
-    
+
     public static void messageMover(IMAPStore store, String sourceFolder, String destFolder, List<String> messageIds) throws MessagingException {
         Set<String> idSet = new HashSet<>(messageIds);
         if (!store.isConnected()) {
             store.connect();
         }
         try (
-            IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
-            IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
+                IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
+                IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
             List<MimeMessage> messageToMove = new ArrayList<>(100);
             Message[] messages = srcFolder.getMessages();
@@ -253,13 +252,13 @@ public class IMAPManager {
         }
         store.close();
     }
-    
+
     public void deleteMessage(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
         for (MailMessage mailMessage : mailMessages) {
             deleteMessage(mailMessage.getId());
         }
     }
-    
+
     public boolean deleteMessage(String message_id) throws ShpeckServiceException {
         try {
             if (!store.isConnected()) {
@@ -286,7 +285,7 @@ public class IMAPManager {
                 }
             }
         } catch (Exception e) {
-            throw new ShpeckServiceException("errore: ",e);
+            throw new ShpeckServiceException("errore: ", e);
         }
         return false;
     }
