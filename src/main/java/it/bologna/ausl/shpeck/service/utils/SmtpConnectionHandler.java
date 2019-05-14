@@ -8,6 +8,7 @@ package it.bologna.ausl.shpeck.service.utils;
 import it.bologna.ausl.shpeck.service.exceptions.SmtpConnectionInitializationException;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import java.util.Properties;
@@ -69,7 +70,7 @@ public class SmtpConnectionHandler  {
         this.session = session;
     }
     
-    private void init(Pec pec) throws SmtpConnectionInitializationException{
+    private void init(Pec pec) throws SmtpConnectionInitializationException, ShpeckServiceException{
         log.info("init() ... ");
         setPropertiesByPec(pec);
         session = Session.getInstance(properties, null);
@@ -121,7 +122,7 @@ public class SmtpConnectionHandler  {
         setProperties(props);
     }
            
-    private void setPropertiesByPec(Pec pec){
+    private void setPropertiesByPec(Pec pec) throws ShpeckServiceException{
         log.info("entrato in setPropertiesByPec");
         PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
         log.info("recuperato provider " + idPecProvider.toString());
@@ -134,13 +135,12 @@ public class SmtpConnectionHandler  {
                     + "pec " + pec.toString() + "\n"
                     + "provider " + idPecProvider.toString() + "\n"
                     + "Rilancio errore " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            throw  new ShpeckServiceException("errore nella setPropertiesByPec",e);
         }
         log.info("\n######\nconfigurate le properties: \n" + properties.toString() + "\n######\n");
     }
     
-    public void createSmtpSession(Pec pec) throws NoSuchProviderException, SmtpConnectionInitializationException {
+    public void createSmtpSession(Pec pec) throws NoSuchProviderException, SmtpConnectionInitializationException, ShpeckServiceException {
         log.info("entrato in createSmtpSession con pec " + pec.getIndirizzo());
         init(pec);
     }
@@ -150,9 +150,7 @@ public class SmtpConnectionHandler  {
             try {
                 transport.close();
             } catch (MessagingException e) {
-                // TODO Auto-generated catch block
-                log.warn("Problemi nel closing connection", e);
-                e.printStackTrace();
+                log.error("Problemi nella chiusura della connessione", e);
             }
         }
 

@@ -157,6 +157,7 @@ public class PecRecepit extends MailMessage {
             pecRecepit = new PecRecepit((MailMessage) this);
         }catch (ShpeckPecPayloadNotFoundException e) {
             log.error("ricevuta non creata: ", e);
+            throw new ShpeckServiceException("ricevuta non creata: ", e);
         }
         return pecRecepit;
     }

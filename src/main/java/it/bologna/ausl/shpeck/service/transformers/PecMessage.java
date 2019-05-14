@@ -36,7 +36,7 @@ public class PecMessage extends MailMessage {
             xRicevuta = m.getHeader("X-Ricevuta", "");
             messageRef = m.getHeader("X-Riferimento-Message-ID", "");
         } catch (MessagingException e) {
-            throw new ShpeckServiceException("Problem reading PEC headers", e);
+            throw new ShpeckServiceException("Problema nella lettura degli header della PEC", e);
         }
         /**
          * posta-certificata  certified mail
@@ -46,7 +46,7 @@ public class PecMessage extends MailMessage {
             xTrasporto = m.getHeader("X-Trasporto", "");
             messageRef = m.getHeader("X-Riferimento-Message-ID", "");
         } catch (MessagingException e) {
-            throw new ShpeckServiceException("Problem reading PEC headers", e);
+            throw new ShpeckServiceException("Problema nella lettura degli header della PEC", e);
         }
     }
     
@@ -100,7 +100,7 @@ public class PecMessage extends MailMessage {
                     throw new ShpeckServiceException("Unable to create new message from mime message", e);
                 }
             } else {
-                throw e;
+                throw new ShpeckServiceException("errore: ", e);
             }
         }
         return res;

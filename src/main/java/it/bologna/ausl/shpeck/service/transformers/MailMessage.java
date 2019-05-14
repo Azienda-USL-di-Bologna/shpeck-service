@@ -64,8 +64,6 @@ public class MailMessage implements MailIdentity{
         try {
             replyArray = original.getHeader("In-Reply-To");
         } catch (MessagingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
         if (replyArray != null) {
             return replyArray[0];

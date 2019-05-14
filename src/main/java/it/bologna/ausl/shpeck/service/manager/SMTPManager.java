@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
@@ -63,7 +58,7 @@ public class SMTPManager {
         this.session = session;
     }
         
-    public void buildSmtpManagerFromPec(Pec pec) throws Exception{
+    public void buildSmtpManagerFromPec(Pec pec) throws ShpeckServiceException{
         log.info("buildSmtpManagerFromPec " + pec.toString());
         try{
             log.info("Creo un SmtpConnectionHandler");
@@ -72,7 +67,7 @@ public class SMTPManager {
             log.error("Errore: " + e.getMessage() + "\n"
                     + "Non posso creare l'SMTPManager per pec " + pec.toString() + "\n"
                     + "Rilancio errore");
-            throw e;
+            throw new ShpeckServiceException("errore nel costruire SMTP Manager: ",e);
         }
     }
     
@@ -80,13 +75,13 @@ public class SMTPManager {
         boolean sent = false;
         try{
             MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
-            //TODO: capire cosa è saveChanges
-            //mimeMessage.saveChanges();
+            //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
+            mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("Messaggio inviato!");
             sent = true;
         }
-        catch(Exception e){
+        catch(Throwable e){
             log.error("Messaggio non inviato: " + e);
         }
         return sent;
