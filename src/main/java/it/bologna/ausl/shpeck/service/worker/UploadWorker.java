@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,8 @@ public class UploadWorker implements Runnable{
     
     @Value("${mailbox.inbox-forlder}")
     String inboxForlder;
+    
+    private String threadName;
     
     @Autowired
     StorageContext storageContext;
@@ -51,9 +54,18 @@ public class UploadWorker implements Runnable{
     
     public UploadWorker() {
     }
+
+    public String getThreadName() {
+        return threadName;
+    }
+
+    public void setThreadName(String threadName) {
+        this.threadName = threadName;
+    }
     
     @Override
     public void run() {
+        MDC.put("logFileName", threadName);
         try {
             /**
              * esegue un primo doWork() perchè se il sistema riparte, 
@@ -76,6 +88,7 @@ public class UploadWorker implements Runnable{
             }
         } catch (Throwable e) {
         }
+        MDC.remove("logFileName");
     }
     
     public void doWork() throws ShpeckServiceException, UnknownHostException {

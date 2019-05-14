@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -83,7 +84,7 @@ public class SMTPWorker implements Runnable {
 
     @Override
     public void run() {
-        //MDC.put("logFileName", threadName);
+        MDC.put("logFileName", threadName);
         //Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
         try{
@@ -145,7 +146,7 @@ public class SMTPWorker implements Runnable {
                     + "---> " + e.getMessage());
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
-        //MDC.remove("logFileName");
+        MDC.remove("logFileName");
     }
     
     @Transactional(rollbackFor = Throwable.class)

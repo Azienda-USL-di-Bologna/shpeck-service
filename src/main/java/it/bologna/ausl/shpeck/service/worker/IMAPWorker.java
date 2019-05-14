@@ -100,7 +100,7 @@ public class IMAPWorker implements Runnable {
     //@Transactional
     @Override
     public void run() {
-        //MDC.put("logFileName", threadName);
+        MDC.put("logFileName", threadName);
         //Thread.currentThread().setName("ImapWorker::mailbox: " + threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
         
@@ -213,6 +213,6 @@ public class IMAPWorker implements Runnable {
             log.info("STOP CON -> [" + Thread.currentThread().getName() + "]" + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
-        //MDC.remove("logFileName");
+        MDC.remove("logFileName");
     }
 }
