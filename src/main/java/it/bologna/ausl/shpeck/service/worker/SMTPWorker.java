@@ -18,10 +18,12 @@ import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -56,6 +58,9 @@ public class SMTPWorker implements Runnable {
     @Autowired
     SMTPManager smtpManager;
 
+    @Value("${mail.smtp.sendDelay-seconds}")
+    Integer defaultDelay;
+
     private static final Logger log = LoggerFactory.getLogger(SMTPWorker.class);
     public static final int MESSAGE_POLICY_NONE = 0;
     public static final int MESSAGE_POLICY_BACKUP = 1;
@@ -85,12 +90,11 @@ public class SMTPWorker implements Runnable {
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
-        //Thread.currentThread().setName("SmtpWorker::mailbox: " + threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
+
         try {
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
-            //PecProvider pecProvider = pec.getIdPecProvider();
 
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
@@ -134,7 +138,17 @@ public class SMTPWorker implements Runnable {
                     } catch (Exception e) {
                         log.error("Errore: " + e.getMessage());
                     }
+
+                    log.debug("sleep per evitare invio massivo");
+                    if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
+                        TimeUnit.SECONDS.sleep(pec.getSendDelay());
+                    } else {
+                        TimeUnit.SECONDS.sleep(defaultDelay);
+                    }
+                    log.debug("sleep terminato, continuo");
+
                 }
+
             }
 
             // ciclo i messaggi:

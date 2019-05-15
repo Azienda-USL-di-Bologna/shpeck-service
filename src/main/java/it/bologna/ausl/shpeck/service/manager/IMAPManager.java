@@ -44,10 +44,11 @@ public class IMAPManager {
     String BACKUP_SOURCE_FOLDER;
 
     private IMAPStore store;
-    private long lastUID = 0;
+    private long lastUID;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
+        lastUID = 0;
     }
 
     public IMAPManager(IMAPStore store) {
@@ -101,7 +102,7 @@ public class IMAPManager {
             fetchProfile.add("X-Trasporto");
             fetchProfile.add("X-Riferimento-Message-ID");
 
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(BACKUP_SOURCE_FOLDER);
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -113,7 +114,7 @@ public class IMAPManager {
 
             // ottieni i messaggi dal server
             log.info("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
-            Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, IMAPFolder.LASTUID);
+            Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, Long.MAX_VALUE);
 
             inbox.fetch(messagesFromInbox, fetchProfile);
 
