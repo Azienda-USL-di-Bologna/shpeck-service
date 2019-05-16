@@ -25,51 +25,52 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecepitMessageStoreManager extends StoreManager {
-
+    
     private static final Logger log = LoggerFactory.getLogger(RecepitMessageStoreManager.class);
-
+    
     private PecRecepit pecRecepit;
     private Pec pec;
-
+    
     public RecepitMessageStoreManager() {
     }
-
+    
     public PecRecepit getPecRecepit() {
         return pecRecepit;
     }
-
+    
     public void setPecRecepit(PecRecepit pecRecepit) {
         this.pecRecepit = pecRecepit;
     }
-
+    
     public Pec getPec() {
         return pec;
     }
-
+    
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-
+    
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption {
         log.info("Entrato in RecepitMessageStoreManager.store()");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
+        messaggioDiRicevuta.setIdApplicazione(getApplicazione());
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(pecRecepit.getReference());
-
+        
         if (relatedMessage == null) {
             log.error("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());
             return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta);
         }
-
+        
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if (getMessageFromDb(messaggioDiRicevuta) != null) {
             return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
         }
-
+        
         storeMessage(messaggioDiRicevuta);
-
+        
         try {
             log.info("Salvo il RawMessage della RICEVUTA");
             storeRawMessageAndUploadQueue(messaggioDiRicevuta, pecRecepit.getRaw_message());
@@ -77,13 +78,13 @@ public class RecepitMessageStoreManager extends StoreManager {
             log.error("Errore nel retrieving data del rawMessage dal pecRecepit " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecRecepit", e);
         }
-
+        
         log.info("Salvo gli indirizzi della ricevuta");
         HashMap mapRicevuta = upsertAddresses(pecRecepit);
-
+        
         log.info("Salvo sulla cross messaggio ricevuta e indirizzi");
         storeMessagesAddresses(messaggioDiRicevuta, mapRicevuta);
-
+        
         Recepit recepit = new Recepit();
         recepit.setIdMessage(messaggioDiRicevuta);
         switch (pecRecepit.getxRicevuta()) {
@@ -112,10 +113,10 @@ public class RecepitMessageStoreManager extends StoreManager {
                 log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
                 break;
         }
-
+        
         messaggioDiRicevuta.setIdRecepit(recepit);
         storeMessage(messaggioDiRicevuta);
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
     }
-
+    
 }

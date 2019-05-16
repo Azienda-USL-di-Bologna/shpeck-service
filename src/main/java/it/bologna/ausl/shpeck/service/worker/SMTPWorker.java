@@ -2,12 +2,14 @@ package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
+import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
+import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
@@ -45,6 +47,9 @@ public class SMTPWorker implements Runnable {
 
     @Autowired
     OutboxRepository outboxRepository;
+
+    @Autowired
+    ApplicazioneRepository applicazioneRepository;
 
     @Autowired
     Semaphore messageSemaphore;
@@ -175,6 +180,8 @@ public class SMTPWorker implements Runnable {
             regularMessageStoreManager.setInout(Message.InOut.OUT);
             regularMessageStoreManager.setPec(outbox.getIdPec());
             regularMessageStoreManager.setMailMessage(mailMessage);
+            //Applicazione app = applicazioneRepository.findById(outbox.getIdApplicazione());
+            //regularMessageStoreManager.setApplicazione(app);
             log.info("Salvo i metadati...");
             storeResponse = regularMessageStoreManager.store();
             // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage

@@ -86,15 +86,15 @@
             <version>2.6</version>
         </dependency>
         <dependency>
-          <groupId>xom</groupId>
-          <artifactId>xom</artifactId>
-          <version>1.3.2</version>
+            <groupId>xom</groupId>
+            <artifactId>xom</artifactId>
+            <version>1.3.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
             <version>1.6</version>
-         </dependency>
+        </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.model</groupId>
             <artifactId>internauta-model</artifactId>
