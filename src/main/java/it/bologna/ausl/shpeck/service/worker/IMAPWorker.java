@@ -40,106 +40,106 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPWorker implements Runnable {
-    
+
     private static final Logger log = LoggerFactory.getLogger(IMAPWorker.class);
-    
+
     public static final int MESSAGE_POLICY_NONE = 0;
     public static final int MESSAGE_POLICY_BACKUP = 1;
     public static final int MESSAGE_POLICY_DELETE = 2;
-    
+
     private String threadName;
     private Integer idPec;
     private Applicazione applicazione;
-    
+
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     PecProviderRepository pecProviderRepository;
-    
+
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-    
+
     @Autowired
     ProviderConnectionHandler providerConnectionHandler;
-    
+
     @Autowired
     IMAPManager imapManager;
-    
+
     @Autowired
     PecMessageStoreManager pecMessageStoreManager;
-    
+
     @Autowired
     RecepitMessageStoreManager recepitMessageStoreManager;
-    
+
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
-    
+
     @Autowired
     Semaphore messageSemaphore;
-    
+
     @Value("${imap.reset-lastuid-minutes}")
     Integer resetLastuidMinutes;
-    
+
     @Value("${id-applicazione}")
     String idApplicazione;
-    
+
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> orphans;
-    
+
     public IMAPWorker() {
         messagesOk = new ArrayList<>();
         orphans = new ArrayList<>();
     }
-    
+
     public String getThreadName() {
         return threadName;
     }
-    
+
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-    
+
     public Integer getIdPec() {
         return idPec;
     }
-    
+
     public void setIdPec(Integer idPec) {
         this.idPec = idPec;
     }
-    
+
     private void init() {
-        
+
         applicazione = applicazioneRepository.findById(idApplicazione);
-        
+
         if (messages == null) {
             messages = new ArrayList<>();
         } else {
             messages.clear();
         }
-        
+
         if (messagesOk == null) {
             messagesOk = new ArrayList<>();
         } else {
             messagesOk.clear();
         }
-        
+
         if (orphans == null) {
             orphans = new ArrayList<>();
         } else {
             orphans.clear();
         }
-        
+
     }
-    
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
-        
+
         init();
-        
+
         try {
             Pec pec = pecRepository.findById(idPec).get();
             PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
@@ -157,15 +157,15 @@ public class IMAPWorker implements Runnable {
 
             // ottenimento dei messaggi
             messages = imapManager.getMessages();
-            
+
             MailProxy mailProxy;
             StoreResponse res = null;
-            
+
             for (MailMessage message : messages) {
                 log.info("gestione messageId: " + message.getId());
-                
+
                 mailProxy = new MailProxy(message);
-                
+
                 if (null == mailProxy.getType()) {
                     log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                 } else {
@@ -175,12 +175,12 @@ public class IMAPWorker implements Runnable {
                             pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                             pecMessageStoreManager.setPec(pec);
                             pecMessageStoreManager.setApplicazione(applicazione);
-                            
+
                             log.info("salvataggio metadati...");
                             res = pecMessageStoreManager.store();
                             log.info("salvataggio metadati -> OK");
                             break;
-                        
+
                         case RECEPIT:
                             log.info("tipo calcolato: RICEVUTA");
                             recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
@@ -218,12 +218,12 @@ public class IMAPWorker implements Runnable {
                     }
                 }
             }
-            
-            log.info("messaggi 'OK': ");
+
+            log.info("messaggi 'OK': " + ((messagesOk == null || messagesOk.isEmpty()) ? "nessuno" : ""));
             for (MailMessage mailMessage : messagesOk) {
                 log.info(mailMessage.getId());
             }
-            
+
             log.info("messaggi 'ORFANI': " + ((orphans == null || orphans.isEmpty()) ? "nessuno" : ""));
             for (MailMessage mailMessage : orphans) {
                 log.info(mailMessage.getId());
@@ -233,7 +233,7 @@ public class IMAPWorker implements Runnable {
             for (MailMessage tmpMessage : orphans) {
                 imapManager.messageMover(tmpMessage.getId());
             }
-            
+
             switch (pec.getMessagePolicy()) {
                 case (MESSAGE_POLICY_BACKUP):
                     log.info("Message Policy della casella: BACKUP, sposto nella cartella di backup");
@@ -247,9 +247,9 @@ public class IMAPWorker implements Runnable {
                     log.info("Message Policy della casella: NONE, non si fa nulla");
                     break;
             }
-            
+
             updateLastUID(pec);
-            
+
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
@@ -260,14 +260,14 @@ public class IMAPWorker implements Runnable {
             log.error("eccezione : " + e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
-        
+
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         MDC.remove("logFileName");
     }
-    
+
     private void updateLastUID(Pec pec) {
         log.info("salvataggio lastUID nella PEC...");
-        
+
         if (pec.getResetLastuidTime() == null) {
             // prima volta che fa run e il reset_lastuid_time non è settato
             pec.setResetLastuidTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());

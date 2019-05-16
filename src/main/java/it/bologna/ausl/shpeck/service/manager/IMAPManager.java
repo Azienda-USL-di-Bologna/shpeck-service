@@ -118,11 +118,15 @@ public class IMAPManager {
 
             inbox.fetch(messagesFromInbox, fetchProfile);
 
-            for (int i = 0; i < messagesFromInbox.length; i++) {
-                mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
-                if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
-                    lastUID = inbox.getUID(messagesFromInbox[i]);
-                    log.info("lastUID: " + lastUID);
+            if (messagesFromInbox.length == 1 && lastUID == inbox.getUID(messagesFromInbox[0])) {
+                log.info("messaggio con UID " + lastUID + " già trattato");
+            } else {
+                for (int i = 0; i < messagesFromInbox.length; i++) {
+                    mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
+                    if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
+                        lastUID = inbox.getUID(messagesFromInbox[i]);
+                        log.info("lastUID: " + lastUID);
+                    }
                 }
             }
 
