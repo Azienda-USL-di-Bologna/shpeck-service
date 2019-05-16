@@ -2,6 +2,7 @@ package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
@@ -16,6 +17,7 @@ import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
+import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageAddressRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
@@ -44,6 +46,8 @@ public class StoreManager implements StoreInterface {
 
     private Message.InOut inout = Message.InOut.IN;
 
+    private Applicazione applicazione;
+
     @Autowired
     MessageRepository messageRepository;
 
@@ -62,7 +66,18 @@ public class StoreManager implements StoreInterface {
     @Autowired
     UploadQueueRepository uploadQueueRepository;
 
+    @Autowired
+    ApplicazioneRepository applicazioneRepository;
+
     public StoreManager() {
+    }
+
+    public Applicazione getApplicazione() {
+        return applicazione;
+    }
+
+    public void setApplicazione(Applicazione applicazione) {
+        this.applicazione = applicazione;
     }
 
     @Override

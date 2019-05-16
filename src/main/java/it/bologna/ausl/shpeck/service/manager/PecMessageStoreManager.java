@@ -24,41 +24,42 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PecMessageStoreManager extends StoreManager {
-
+    
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
-
+    
     private PecMessage pecMessage;
     private Pec pec;
-
+    
     public PecMessageStoreManager() {
     }
-
+    
     public PecMessageStoreManager(PecMessage pecMessage, Pec pec) {
         this.pecMessage = pecMessage;
         this.pec = pec;
     }
-
+    
     public PecMessage getPecMessage() {
         return pecMessage;
     }
-
+    
     public void setPecMessage(PecMessage pecMessage) {
         this.pecMessage = pecMessage;
     }
-
+    
     public Pec getPec() {
         return pec;
     }
-
+    
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-
+    
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption {
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio...");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec);
+        messaggioSbustato.setIdApplicazione(getApplicazione());
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
         if (getMessageFromDb(messaggioSbustato) != null) {
             return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato);
@@ -74,7 +75,7 @@ public class PecMessageStoreManager extends StoreManager {
         log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
         log.info("Salvo gli indirizzi dello sbustato");
         HashMap mapSbustato = upsertAddresses(pecMessage);
-
+        
         log.info("Salvo sulla cross messaggio Sbustato e indirizzi");
         storeMessagesAddresses(messaggioSbustato, mapSbustato);
 
@@ -82,6 +83,7 @@ public class PecMessageStoreManager extends StoreManager {
         log.info("Salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
         Message messaggioBustato = createMessageForStorage(envelope, pec);
+        messaggioBustato.setIdApplicazione(getApplicazione());
         messaggioBustato.setIdRelated(messaggioSbustato);
         if (pecMessage.getxTrasporto().equals("errore")) {
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
@@ -101,7 +103,7 @@ public class PecMessageStoreManager extends StoreManager {
         HashMap mapBusta = upsertAddresses(envelope);
         log.info("Salvo sulla cross messaggio bustato e indirizzi");
         storeMessagesAddresses(messaggioBustato, mapBusta);
-
+        
         return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato);
     }
 }
