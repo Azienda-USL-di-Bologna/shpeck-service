@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
@@ -24,38 +25,38 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PecMessageStoreManager extends StoreManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
-    
+
     private PecMessage pecMessage;
     private Pec pec;
-    
+
     public PecMessageStoreManager() {
     }
-    
+
     public PecMessageStoreManager(PecMessage pecMessage, Pec pec) {
         this.pecMessage = pecMessage;
         this.pec = pec;
     }
-    
+
     public PecMessage getPecMessage() {
         return pecMessage;
     }
-    
+
     public void setPecMessage(PecMessage pecMessage) {
         this.pecMessage = pecMessage;
     }
-    
+
     public Pec getPec() {
         return pec;
     }
-    
+
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-    
+
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse store() throws MailMessageException, StoreManagerExeption {
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
         log.info("Entrato in PecMessageStoreManager.store()");
         log.info("Sbusto il messaggio...");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec);
@@ -75,7 +76,7 @@ public class PecMessageStoreManager extends StoreManager {
         log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
         log.info("Salvo gli indirizzi dello sbustato");
         HashMap mapSbustato = upsertAddresses(pecMessage);
-        
+
         log.info("Salvo sulla cross messaggio Sbustato e indirizzi");
         storeMessagesAddresses(messaggioSbustato, mapSbustato);
 
@@ -103,7 +104,7 @@ public class PecMessageStoreManager extends StoreManager {
         HashMap mapBusta = upsertAddresses(envelope);
         log.info("Salvo sulla cross messaggio bustato e indirizzi");
         storeMessagesAddresses(messaggioBustato, mapBusta);
-        
+
         return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato);
     }
 }

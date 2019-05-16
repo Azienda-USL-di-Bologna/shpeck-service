@@ -139,9 +139,9 @@ public class SMTPWorker implements Runnable {
                         messageRepository.save(m);
                         log.info("Aggiornato");
                     } catch (BeforeSendOuboxException e) {
-                        log.error("ERRORE: " + e.getMessage());
+                        log.error("ERRORE: " + e);
                     } catch (Exception e) {
-                        log.error("Errore: " + e.getMessage());
+                        log.error("Errore: " + e);
                     }
 
                     log.debug("sleep per evitare invio massivo");

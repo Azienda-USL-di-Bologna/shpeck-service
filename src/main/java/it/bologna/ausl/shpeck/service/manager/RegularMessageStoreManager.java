@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
@@ -24,33 +25,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RegularMessageStoreManager extends StoreManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(RegularMessageStoreManager.class);
-    
+
     private MailMessage mailMessage;
     private Pec pec;
-    
+
     public RegularMessageStoreManager() {
     }
-    
+
     public Pec getPec() {
         return pec;
     }
-    
+
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-    
+
     public MailMessage getMailMessage() {
         return mailMessage;
     }
-    
+
     public void setMailMessage(MailMessage mailMessage) {
         this.mailMessage = mailMessage;
     }
-    
+
     @Transactional(rollbackFor = Throwable.class)
-    public StoreResponse store() throws MailMessageException, StoreManagerExeption {
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
@@ -61,7 +62,7 @@ public class RegularMessageStoreManager extends StoreManager {
             regularMessage = storeMessage(regularMessage);
             log.info("Messaggio salvato " + regularMessage.toString());
             try {
-                log.info("Salvo il RawMessage del REGULARMESSAGE");
+                log.info("Salvo il RawMessage del RegularMessage");
                 storeRawMessageAndUploadQueue(regularMessage, mailMessage.getRaw_message());
             } catch (MailMessageException e) {
                 log.error("Errore nel retrieving data del rawMessage dal mailMessage " + e.getMessage());
@@ -75,7 +76,7 @@ public class RegularMessageStoreManager extends StoreManager {
         HashMap mapMessagesAddress = upsertAddresses(mailMessage);
         log.info("Salvo sulla cross il regular message e indirizzi");
         storeMessagesAddresses(regularMessage, mapMessagesAddress);
-        
+
         return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage);
     }
 }

@@ -23,8 +23,10 @@ import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreInterface;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import org.slf4j.Logger;
@@ -195,26 +197,38 @@ public class StoreManager implements StoreInterface {
         log.info("---Uscito da storeMessagesAddress---");
     }
 
-    public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses) {
+    public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses, Map<String, Address.RecipientType> map) {
         ArrayList<Address> list = new ArrayList<>();
         for (int i = 0; i < addresses.length; i++) {
             InternetAddress internetAddress = (InternetAddress) addresses[i];
-            Address address = new Address();
+            Address address;
             log.info("verifico presenza di " + internetAddress.getAddress());
             address = addessRepository.findByMailAddress(internetAddress.getAddress());
+
             if (address == null) {
                 log.info("indirizzo non trovato: lo salvo");
                 address = new Address();
                 address.setMailAddress(internetAddress.getAddress());
                 address.setOriginalAddress(internetAddress.getPersonal());
                 address.setRecipientType(Address.RecipientType.UNKNOWN);
+            }
+
+            if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
+                if (map != null) {
+                    switch (map.get(internetAddress.getAddress())) {
+                        case PEC:
+                            address.setRecipientType(Address.RecipientType.PEC);
+                            break;
+                        case REGULAR_EMAIL:
+                            address.setRecipientType(Address.RecipientType.REGULAR_EMAIL);
+                            break;
+                    }
+                }
                 try {
                     addessRepository.save(address);
                 } catch (Exception ex) {
                     log.error("Indirizzo già presente: " + address.getMailAddress());
                 }
-            } else {
-                log.info("indirizzi già presente su database");
             }
 
             list.add(address);
@@ -222,7 +236,7 @@ public class StoreManager implements StoreInterface {
         return list;
     }
 
-    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption {
+    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
         log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
         log.info("Verifico presenza di mittenti...");
@@ -230,7 +244,7 @@ public class StoreManager implements StoreInterface {
             ArrayList<Address> fromArrayList = new ArrayList<>();
             javax.mail.Address[] from = mailMessage.getFrom();
             log.info("Mittenti presenti, ciclo gli indirizzi FROM");
-            fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from);
+            fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from, null);
             // inserisco l'arraylist nella mappa con chiave 'from'
             map.put("from", fromArrayList);
             log.info("mittente presente");
@@ -250,7 +264,8 @@ public class StoreManager implements StoreInterface {
             ArrayList<Address> toArrayList = new ArrayList<>();
             javax.mail.Address[] to = mailMessage.getTo();
             log.info("ciclo gli indirizzi TO e se non presenti li salvo");
-            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to);
+            Map<String, Address.RecipientType> recipientsType = MessageBuilder.getRecipientsType(mailMessage);
+            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (recipientsType.isEmpty() ? null : recipientsType));
             //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
             map.put("to", toArrayList);
         } else {
@@ -262,7 +277,7 @@ public class StoreManager implements StoreInterface {
             ArrayList<Address> ccArrayList = new ArrayList<>();
             javax.mail.Address[] cc = mailMessage.getCc();
             log.debug("ciclo gli indirizzi CC e se non presenti li salvo");
-            ccArrayList = (ArrayList<Address>) saveAndReturnAddresses(cc);
+            ccArrayList = (ArrayList<Address>) saveAndReturnAddresses(cc, null);
             //log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
             map.put("cc", ccArrayList);
         } else {
@@ -274,7 +289,7 @@ public class StoreManager implements StoreInterface {
             ArrayList<Address> replyArrayList = new ArrayList<>();
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
             log.info("ciclo gli indirizzi reply_to e li salvo");
-            replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo);
+            replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo, null);
             log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
             map.put("replyTo", replyArrayList);
         } else {
