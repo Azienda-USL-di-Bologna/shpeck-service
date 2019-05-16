@@ -58,11 +58,11 @@ public class MessageBuilder {
         return Session.getDefaultInstance(props, null);
     }
 
-    public static Map<String, RecipientType> getRecipientsType(MailMessage mailMessage) throws ShpeckServiceException {
+    public static Map<String, RecipientType> getDestinatariType(MailMessage mailMessage) throws ShpeckServiceException {
         Map<String, RecipientType> res = new HashMap<>();
         try {
             MimeMessage mimeMessage = mailMessage.getOriginal();
-            ArrayList<Part> recepitParts = PecRecepit.getAllParts(mimeMessage);
+            ArrayList<Part> recepitParts = getAllParts(mimeMessage);
             Part daticert = null;
             for (Part p : recepitParts) {
                 if ("daticert.xml".equalsIgnoreCase(p.getFileName())) {
@@ -100,4 +100,22 @@ public class MessageBuilder {
         return res;
     }
 
+    public static ArrayList<Part> getAllParts(Part in) throws IOException, MessagingException {
+        ArrayList<Part> res = new ArrayList<>();
+        if (!in.isMimeType("multipart/*")) {
+            res.add(in);
+            return res;
+        } else {
+            Multipart mp = (Multipart) in.getContent();
+            for (int i = 0, n = mp.getCount(); i < n; i++) {
+                Part part = mp.getBodyPart(i);
+                if (!part.isMimeType("multipart/*")) {
+                    res.add(part);
+                } else {
+                    res.addAll(getAllParts(part));
+                }
+            }
+            return res;
+        }
+    }
 }

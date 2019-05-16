@@ -199,6 +199,7 @@ public class StoreManager implements StoreInterface {
 
     public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses, Map<String, Address.RecipientType> map) {
         ArrayList<Address> list = new ArrayList<>();
+
         for (int i = 0; i < addresses.length; i++) {
             InternetAddress internetAddress = (InternetAddress) addresses[i];
             Address address;
@@ -230,7 +231,6 @@ public class StoreManager implements StoreInterface {
                     log.error("Indirizzo già presente: " + address.getMailAddress());
                 }
             }
-
             list.add(address);
         }
         return list;
@@ -264,8 +264,8 @@ public class StoreManager implements StoreInterface {
             ArrayList<Address> toArrayList = new ArrayList<>();
             javax.mail.Address[] to = mailMessage.getTo();
             log.info("ciclo gli indirizzi TO e se non presenti li salvo");
-            Map<String, Address.RecipientType> recipientsType = MessageBuilder.getRecipientsType(mailMessage);
-            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (recipientsType.isEmpty() ? null : recipientsType));
+            Map<String, Address.RecipientType> destinatariType = MessageBuilder.getDestinatariType(mailMessage);
+            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (destinatariType.isEmpty() ? null : destinatariType));
             //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
             map.put("to", toArrayList);
         } else {
@@ -290,7 +290,7 @@ public class StoreManager implements StoreInterface {
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
             log.info("ciclo gli indirizzi reply_to e li salvo");
             replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo, null);
-            log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
+            //log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
             map.put("replyTo", replyArrayList);
         } else {
             log.info("destinatari Reply_To non presenti");

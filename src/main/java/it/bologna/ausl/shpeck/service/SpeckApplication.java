@@ -74,7 +74,7 @@ public class SpeckApplication {
             @Override
             public void run(String... args) throws Exception {
 
-//                // avvio del thread di UploadWorker
+                // avvio del thread di UploadWorker
                 uploadWorker.setThreadName("uploadWorker");
                 Thread t = new Thread(uploadWorker);
                 t.start();
@@ -82,15 +82,16 @@ public class SpeckApplication {
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
 
                 // lancio di IMAPWorker per ogni casella PEC attiva
-//                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
-//                for (int i = 0; i < pecAttive.size(); i++) {
-//                    IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
-//                    imapWorker.setThreadName("IMAP_" + pecAttive.get(i).getId());
-//                    imapWorker.setIdPec(pecAttive.get(i).getId());
-//                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, Integer.valueOf(imapDelay), TimeUnit.SECONDS);
-//                    log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
-//                }
-//                log.info("creazione degli IMAPWorker eseguita con successo");
+                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
+                for (int i = 0; i < pecAttive.size(); i++) {
+                    IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
+                    imapWorker.setThreadName("IMAP_" + pecAttive.get(i).getId());
+                    imapWorker.setIdPec(pecAttive.get(i).getId());
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, Integer.valueOf(imapDelay), TimeUnit.SECONDS);
+                    log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
+                }
+                log.info("creazione degli IMAPWorker eseguita con successo");
+
                 // creo e lancio l'SMTPWorker per ogni casella PEC attiva
                 log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
                 for (int i = 0; i < pecAttive.size(); i++) {
@@ -102,7 +103,6 @@ public class SpeckApplication {
                 }
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
-
         };
     }
 }

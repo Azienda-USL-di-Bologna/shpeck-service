@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckIllegalRecepitException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckPecPayloadNotFoundException;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.mail.MessagingException;
@@ -25,9 +26,9 @@ import org.slf4j.LoggerFactory;
  * @author spritz
  */
 public class PecRecepit extends MailMessage {
-    
+
     private static final Logger log = LoggerFactory.getLogger(PecRecepit.class);
-    
+
     private String reference;
     private String xRicevuta;
     private Message.MessageType type;
@@ -35,7 +36,7 @@ public class PecRecepit extends MailMessage {
     public PecRecepit(MailMessage m) throws ShpeckServiceException {
         super(m.original);
         getHeaders(m.original);
-        if(isPecRecepit(m.getOriginal())){
+        if (isPecRecepit(m.getOriginal())) {
             type = Message.MessageType.RECEPIT;
         }
     }
@@ -43,7 +44,7 @@ public class PecRecepit extends MailMessage {
     public PecRecepit(MimeMessage m) throws ShpeckServiceException {
         super(m);
         getHeaders(m);
-        if(isPecRecepit(m)){
+        if (isPecRecepit(m)) {
             type = Message.MessageType.RECEPIT;
         }
     }
@@ -55,7 +56,8 @@ public class PecRecepit extends MailMessage {
             if (reference == null) {
                 try {
                     reference = getReferredMessageIdFromRecepit(m);
-                } catch (ShpeckServiceException e) {}
+                } catch (ShpeckServiceException e) {
+                }
             }
             if (reference == null || xRicevuta == null) {
                 throw new ShpeckIllegalRecepitException("non si riesce a trovare header della ricevuta validi");
@@ -72,7 +74,7 @@ public class PecRecepit extends MailMessage {
     public String getxRicevuta() {
         return xRicevuta;
     }
-    
+
     public static boolean isPecRecepit(MimeMessage m) {
         String t;
         try {
@@ -86,7 +88,7 @@ public class PecRecepit extends MailMessage {
 
         return false;
     }
-    
+
     /**
      * Dato una ricevuta Pec di accettazione in ingresso restituisce il
      * message-id al quale la ricevuta si riferisce.
@@ -96,9 +98,9 @@ public class PecRecepit extends MailMessage {
      * @throws ShpeckServiceException
      */
     public static String getReferredMessageIdFromRecepit(MimeMessage recepitMessage) throws ShpeckServiceException {
-        
+
         try {
-            ArrayList<Part> recepitParts = getAllParts(recepitMessage);
+            ArrayList<Part> recepitParts = MessageBuilder.getAllParts(recepitMessage);
             Part daticert = null;
             for (Part p : recepitParts) {
                 if ("daticert.xml".equalsIgnoreCase(p.getFileName())) {
@@ -123,25 +125,6 @@ public class PecRecepit extends MailMessage {
         }
         return null;
     }
-    
-    public static ArrayList<Part> getAllParts(Part in) throws IOException, MessagingException {
-        ArrayList<Part> res = new ArrayList<>();
-        if (!in.isMimeType("multipart/*")) {
-            res.add(in);
-            return res;
-        } else {
-            Multipart mp = (Multipart) in.getContent();
-            for (int i = 0, n = mp.getCount(); i < n; i++) {
-                Part part = mp.getBodyPart(i);
-                if (!part.isMimeType("multipart/*")) {
-                    res.add(part);
-                } else {
-                    res.addAll(getAllParts(part));
-                }
-            }
-            return res;
-        }
-    }
 
     @Override
     public Message.MessageType getType() throws ShpeckServiceException {
@@ -150,12 +133,12 @@ public class PecRecepit extends MailMessage {
 
     @Override
     public Object getMail() throws ShpeckServiceException {
-        
+
         PecRecepit pecRecepit = null;
-        
+
         try {
             pecRecepit = new PecRecepit((MailMessage) this);
-        }catch (ShpeckPecPayloadNotFoundException e) {
+        } catch (ShpeckPecPayloadNotFoundException e) {
             log.error("ricevuta non creata: ", e);
             throw new ShpeckServiceException("ricevuta non creata: ", e);
         }
