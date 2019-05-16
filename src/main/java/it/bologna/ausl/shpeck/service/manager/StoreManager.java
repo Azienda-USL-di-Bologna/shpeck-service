@@ -147,22 +147,32 @@ public class StoreManager implements StoreInterface {
     }
 
     public MessageAddress storeMessageAddress(Message m, Address a, MessageAddress.AddressRoleType type) {
-        MessageAddress messageAddress = new MessageAddress();
-        messageAddress.setIdAddress(a);
-        messageAddress.setIdMessage(m);
-        messageAddress.setAddressRole(type);
-        return messageAddressRepository.save(messageAddress);
+
+        MessageAddress res = null;
+        MessageAddress recordAlreadyPresent = messageAddressRepository.findByIdMessageAndIdAddressAndAddressRole(m, a, type.toString());
+
+        if (recordAlreadyPresent == null) {
+            MessageAddress messageAddress = new MessageAddress();
+            messageAddress.setIdAddress(a);
+            messageAddress.setIdMessage(m);
+            messageAddress.setAddressRole(type);
+
+            res = messageAddressRepository.save(messageAddress);
+        }
+
+        return res;
     }
 
     public void storeMessagesAddresses(Message message, HashMap addresses) {
-        log.info("Entrato in storeMessagesAddress");
-        log.info("Prendo gli indirizzi FROM");
+        log.info("---Entrato in storeMessagesAddress---");
+
+        log.info("analisi indirizzi FROM");
         ArrayList<Address> list = (ArrayList<Address>) addresses.get("from");
         if (list != null && list.size() > 0) {
             log.info("Ciclo gli indirizzi FROM e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.FROM);
-                log.info("Salvato message_address " + ma);
+                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", FROM)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", FROM)" + "inserito"));
             }
         }
 
@@ -171,7 +181,7 @@ public class StoreManager implements StoreInterface {
             log.info("Ciclo gli indirizzi TO e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.TO);
-                log.info("Salvato message_address " + ma);
+                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", TO)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", TO)" + "inserito"));
             }
         }
         list = (ArrayList<Address>) addresses.get("cc");
@@ -179,14 +189,14 @@ public class StoreManager implements StoreInterface {
             log.info("Ciclo gli indirizzi CC e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.CC);
-                log.info("Salvato message_address " + ma);
+                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", CC)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", CC)" + "inserito"));
             }
         }
-        log.info("Uscito da storeMessagesAddress");
+        log.info("---Uscito da storeMessagesAddress---");
     }
 
     public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses) {
-        ArrayList<Address> list = new ArrayList<Address>();
+        ArrayList<Address> list = new ArrayList<>();
         for (int i = 0; i < addresses.length; i++) {
             InternetAddress internetAddress = (InternetAddress) addresses[i];
             Address address = new Address();
@@ -203,28 +213,30 @@ public class StoreManager implements StoreInterface {
                 } catch (Exception ex) {
                     log.error("Indirizzo già presente: " + address.getMailAddress());
                 }
+            } else {
+                log.info("indirizzi già presente su database");
             }
-            log.debug("Aggiungo indirizzo all'array da tornare");
+
             list.add(address);
         }
         return list;
     }
 
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption {
-        log.info("Entrato in upsertAddresses");
+        log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
         log.info("Verifico presenza di mittenti...");
         if (mailMessage.getFrom() != null) {
             ArrayList<Address> fromArrayList = new ArrayList<>();
             javax.mail.Address[] from = mailMessage.getFrom();
-            log.info("Mittenti presenti: ciclo gli indirizzi from e li salvo");
+            log.info("Mittenti presenti, ciclo gli indirizzi FROM");
             fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from);
             // inserisco l'arraylist nella mappa con chiave 'from'
-            log.info("Aggiungo l'array degli indirizzi from alla mappa con chiave 'from'");
             map.put("from", fromArrayList);
+            log.info("mittente presente");
         } else {
-            log.info("Mittenti non presenti");
-            throw new StoreManagerExeption("upsertAddresses: Mittenti non presenti");
+            log.info("Mittente non presente");
+            throw new StoreManagerExeption("upsertAddresses: Mittente non presente");
         }
 
         // Se non ho neanche un destinatario devo lanciare l'errore il mestiere
@@ -237,20 +249,24 @@ public class StoreManager implements StoreInterface {
         if (mailMessage.getTo() != null) {
             ArrayList<Address> toArrayList = new ArrayList<>();
             javax.mail.Address[] to = mailMessage.getTo();
-            log.info("ciclo gli indirizzi to e li salvo");
+            log.info("ciclo gli indirizzi TO e se non presenti li salvo");
             toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to);
-            log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
+            //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
             map.put("to", toArrayList);
+        } else {
+            log.info("destinatari TO non presenti");
         }
 
         log.info("Verifico presenza di destinatari CC");
         if (mailMessage.getCc() != null) {
             ArrayList<Address> ccArrayList = new ArrayList<>();
             javax.mail.Address[] cc = mailMessage.getCc();
-            log.debug("ciclo gli indirizzi cc e li salvo");
+            log.debug("ciclo gli indirizzi CC e se non presenti li salvo");
             ccArrayList = (ArrayList<Address>) saveAndReturnAddresses(cc);
-            log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
+            //log.debug("Aggiungo l'array degli indirizzi cc alla mappa con chiave 'cc'");
             map.put("cc", ccArrayList);
+        } else {
+            log.info("destinatari CC non presenti");
         }
 
         log.info("Verifico presenza di destinatari Reply_To");
@@ -261,7 +277,10 @@ public class StoreManager implements StoreInterface {
             replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo);
             log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
             map.put("replyTo", replyArrayList);
+        } else {
+            log.info("destinatari Reply_To non presenti");
         }
+        log.info("---Fine upsertAddresses---");
         return map;
     }
 

@@ -16,19 +16,18 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author spritz
- * 
+ *
  * Crea un IMAPStore utilizzando le credenziali presenti nella PEC
  */
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProviderConnectionHandler {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ProviderConnectionHandler.class);
-    
-    @Value("${mailbox.inbox-forlder}")
+
+    @Value("${mailbox.inbox-folder}")
     String INBOX_FOLDER_NAME;
-    
+
     private final Properties properties;
 
     public ProviderConnectionHandler(
@@ -49,11 +48,11 @@ public class ProviderConnectionHandler {
         properties.setProperty("mail.imaps.closefoldersonstorefailure", imaps_close_folders_on_store_failure);
         properties.setProperty("mail.imaps.compress.enable", imaps_compress_enable);
     }
-        
+
     private IMAPStore createIMAPStore(String uri) throws NoSuchProviderException {
         return (IMAPStore) Session.getInstance(properties).getStore(new URLName(uri));
     }
-    
+
     private String build_uri(String host, int port, String username, String password, String protocol) {
         String uri;
         if (host == null || port < 0 || port > 65535 || username == null || password == null || protocol == null) {
@@ -62,11 +61,11 @@ public class ProviderConnectionHandler {
         uri = protocol.toLowerCase() + "://" + username + ":" + password + "@" + host + ":" + Integer.toString(port) + "/" + INBOX_FOLDER_NAME;
         return uri;
     }
-    
-    public IMAPStore createProviderConnectionHandler(Pec pec) throws NoSuchProviderException{
+
+    public IMAPStore createProviderConnectionHandler(Pec pec) throws NoSuchProviderException {
         String uri = build_uri(pec.getIdPecProvider().getHost(), pec.getIdPecProvider().getPort(), pec.getUsername(), pec.getPassword(), pec.getIdPecProvider().getProtocol());
         log.info("URI creato per creazione di IMAPStore: " + uri);
         return createIMAPStore(uri);
     }
-    
+
 }

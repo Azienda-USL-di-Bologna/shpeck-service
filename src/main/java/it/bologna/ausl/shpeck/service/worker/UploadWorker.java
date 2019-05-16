@@ -27,31 +27,30 @@ import org.springframework.stereotype.Component;
  * @author spritz
  */
 @Component
-public class UploadWorker implements Runnable{
-    
+public class UploadWorker implements Runnable {
+
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
-    
-    @Value("${mailbox.inbox-forlder}")
+
+    @Value("${mailbox.inbox-folder}")
     String inboxForlder;
-    
+
     private String threadName;
-    
+
     @Autowired
     StorageContext storageContext;
-    
+
     @Autowired
     UploadQueueRepository uploadQueueRepository;
-    
+
     @Autowired
     ObjectMapper objectMapper;
-    
+
     @Autowired
     MessageRepository messageRepository;
-    
+
     @Autowired
     Semaphore messageSemaphore;
-    
-    
+
     public UploadWorker() {
     }
 
@@ -62,14 +61,14 @@ public class UploadWorker implements Runnable{
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-    
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         try {
             /**
-             * esegue un primo doWork() perchè se il sistema riparte, 
-             * si potrebbe avere dei record in upload_queue ancora da uploadare
+             * esegue un primo doWork() perchè se il sistema riparte, si
+             * potrebbe avere dei record in upload_queue ancora da uploadare
              */
             doWork();
             while (true) {
@@ -80,7 +79,7 @@ public class UploadWorker implements Runnable{
                     log.info("semaforo preso");
                     messageSemaphore.drainPermits();
                     doWork();
-                   
+
                 } catch (Exception ex) {
                     log.warn("InterruptedException: continue. " + ex);
                     //continue;
@@ -90,20 +89,20 @@ public class UploadWorker implements Runnable{
         }
         MDC.remove("logFileName");
     }
-    
+
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("START doWork() UploadWorker");
-     
+
         ArrayList<UploadQueue> messagesToUpload;
-        
+
         do {
             // prendi i messaggi da caricare presenti in upload_queue
             messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
-                
+
             for (UploadQueue messageToStore : messagesToUpload) {
                 try {
                     // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
-                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());          
+                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());
                     AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
 
                     // inizializzazione del context storage
@@ -111,13 +110,13 @@ public class UploadWorker implements Runnable{
 
                     // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
                     UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
-                    
+
                     // ottieni in messaggio associato al contenuto appena caricato
                     Optional<Message> message = messageRepository.findById(messageToStore.getIdRawMessage().getIdMessage().getId());
                     Message messageToUpdate = null;
-                    
+
                     // se messaggio è presente, si settano le proprietà relative al messaggio appena salvato nello storage
-                    if(message.isPresent()){
+                    if (message.isPresent()) {
                         messageToUpdate = message.get();
                         messageToUpdate.setUuidRepository(objectUploaded.getUuid());
                         messageToUpdate.setPathRepository(objectUploaded.getPath());
@@ -128,7 +127,7 @@ public class UploadWorker implements Runnable{
                         // set come file già trattato nella tabella upload_queue
                         objectUploaded.setUploaded(Boolean.TRUE);
                         uploadQueueRepository.save(objectUploaded);
-                        
+
                     }
                 } catch (MongoWrapperException | ShpeckServiceException | IOException ex) {
                     log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
@@ -138,7 +137,7 @@ public class UploadWorker implements Runnable{
         } while (!messagesToUpload.isEmpty());
         log.info("STOP doWork() UploadWorker");
     }
-    
+
 // TODO: caso SMTP
 //          for (UploadMessage m : messages) {
 //                    try {
@@ -159,5 +158,4 @@ public class UploadWorker implements Runnable{
 //                    db.deleteRawMessage(m.getMessageId());
 //                    db.commit();
 //                }
-   
 }
