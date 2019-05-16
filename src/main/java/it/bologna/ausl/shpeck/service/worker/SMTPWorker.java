@@ -180,8 +180,8 @@ public class SMTPWorker implements Runnable {
             regularMessageStoreManager.setInout(Message.InOut.OUT);
             regularMessageStoreManager.setPec(outbox.getIdPec());
             regularMessageStoreManager.setMailMessage(mailMessage);
-            //Applicazione app = applicazioneRepository.findById(outbox.getIdApplicazione());
-            //regularMessageStoreManager.setApplicazione(app);
+            Applicazione app = applicazioneRepository.findById(outbox.getIdApplicazione().getId());
+            regularMessageStoreManager.setApplicazione(app);
             log.info("Salvo i metadati...");
             storeResponse = regularMessageStoreManager.store();
             // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage

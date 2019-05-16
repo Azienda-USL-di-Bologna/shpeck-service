@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,14 +92,14 @@ public class SpeckApplication {
                 }
 //                log.info("creazione degli IMAPWorker eseguita con successo");
                 // creo e lancio l'SMTPWorker per ogni casella PEC attiva
-//                log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
-//                for (int i = 0; i < pecAttive.size(); i++) {
-//                    SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
-//                    smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getId());
-//                    smtpWorker.setIdPec(pecAttive.get(i).getId());
-//                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
-//                    log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
-//                }
+                log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
+                for (int i = 0; i < pecAttive.size(); i++) {
+                    SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
+                    smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getId());
+                    smtpWorker.setIdPec(pecAttive.get(i).getId());
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
+                    log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
+                }
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
 
