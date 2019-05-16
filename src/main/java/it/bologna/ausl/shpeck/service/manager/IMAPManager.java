@@ -34,13 +34,13 @@ public class IMAPManager {
 
     static Logger log = LoggerFactory.getLogger(IMAPWorker.class);
 
-    @Value("${mailbox.backup-forlder}")
+    @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
 
-    @Value("${mailbox.inbox-forlder}")
+    @Value("${mailbox.inbox-folder}")
     String INBOX_FOLDER_NAME;
 
-    @Value("${mailbox.backup-source-forlder}")
+    @Value("${mailbox.backup-source-folder}")
     String BACKUP_SOURCE_FOLDER;
 
     private IMAPStore store;
