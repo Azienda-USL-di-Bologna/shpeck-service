@@ -38,65 +38,65 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SMTPWorker implements Runnable {
-
+    
     @Autowired
     PecRepository pecRepository;
-
+    
     @Autowired
     MessageRepository messageRepository;
-
+    
     @Autowired
     OutboxRepository outboxRepository;
-
+    
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-
+    
     @Autowired
     Semaphore messageSemaphore;
-
+    
     @Autowired
     SmtpConnectionHandler smtpConnectionHandler;
-
+    
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
-
+    
     @Autowired
     SMTPManager smtpManager;
-
+    
     @Value("${mail.smtp.sendDelay-seconds}")
     Integer defaultDelay;
-
+    
     private static final Logger log = LoggerFactory.getLogger(SMTPWorker.class);
     public static final int MESSAGE_POLICY_NONE = 0;
     public static final int MESSAGE_POLICY_BACKUP = 1;
     public static final int MESSAGE_POLICY_DELETE = 2;
     private String threadName;
     private Integer idPec;
-
+    
     public SMTPWorker() {
     }
-
+    
     public String getThreadName() {
         return threadName;
     }
-
+    
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-
+    
     public Integer getIdPec() {
         return idPec;
     }
-
+    
     public void setIdPec(Integer idPec) {
         this.idPec = idPec;
     }
-
+    
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
-
+        
         try {
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
@@ -114,8 +114,8 @@ public class SMTPWorker implements Runnable {
                         response = saveMessageAndUploadQueue(outbox);
                         Message m = response.getMessage();
                         log.info("Salvataggio eseguito: provo a inviare...");
-                        boolean sent = smtpManager.sendMessage(outbox.getRawData());
-                        if (!sent) {
+                        String messagID = smtpManager.sendMessage(outbox.getRawData());
+                        if (messagID == null) {
                             log.error("Errore nell'invio del messaggio: metadati già salvati: " + response.getMessage().toString());
                             log.error("Metto in stato di errore il messaggio " + m.getId());
                             m.setMessageStatus(Message.MessageStatus.ERROR);
@@ -125,6 +125,7 @@ public class SMTPWorker implements Runnable {
                         } else {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito...");
                             m.setMessageStatus(Message.MessageStatus.SENT);
+                            m.setUuidMessage(messagID);
                             log.info("Stato settato, ora elimino da outbox...");
                             //TODO: RIATTIVARE!!
                             //outboxRepository.delete(outbox);
@@ -143,7 +144,7 @@ public class SMTPWorker implements Runnable {
                     } catch (Exception e) {
                         log.error("Errore: " + e);
                     }
-
+                    
                     log.debug("sleep per evitare invio massivo");
                     if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
                         TimeUnit.SECONDS.sleep(pec.getSendDelay());
@@ -151,9 +152,9 @@ public class SMTPWorker implements Runnable {
                         TimeUnit.SECONDS.sleep(defaultDelay);
                     }
                     log.debug("sleep terminato, continuo");
-
+                    
                 }
-
+                
             }
 
             // ciclo i messaggi:
@@ -169,7 +170,7 @@ public class SMTPWorker implements Runnable {
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         MDC.remove("logFileName");
     }
-
+    
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException {
         log.info("Entrato in saveMessageAndUploadQueue...");

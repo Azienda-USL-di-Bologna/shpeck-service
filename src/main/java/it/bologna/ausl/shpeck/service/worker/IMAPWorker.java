@@ -152,7 +152,8 @@ public class IMAPWorker implements Runnable {
 
             // prendo il lastUID del messaggio in casella
             if (pec.getLastuid() != null) {
-                imapManager.setLastUID(pec.getLastuid());
+//                imapManager.setLastUID(pec.getLastuid());
+                imapManager.setLastUID(1119);
             }
 
             // ottenimento dei messaggi

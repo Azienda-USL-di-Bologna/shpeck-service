@@ -6,7 +6,6 @@ import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
-import it.bologna.ausl.shpeck.service.repository.AddessRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import org.slf4j.Logger;
@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 
 /**
  *
@@ -60,7 +61,7 @@ public class StoreManager implements StoreInterface {
     RecepitRepository recepitRepository;
 
     @Autowired
-    AddessRepository addessRepository;
+    AddressRepository addessRepository;
 
     @Autowired
     RawMessageRepository rawMessageRepository;
@@ -231,9 +232,48 @@ public class StoreManager implements StoreInterface {
                     log.error("Indirizzo già presente: " + address.getMailAddress());
                 }
             }
+
             list.add(address);
         }
+
+        // aggiorna la tipologia di indirizzo (se PEc o REGULAR_MAIL) prendendo da XML della ricevuta la tipologia dei destinatari
+        updateDestinatariType(map);
+
         return list;
+    }
+
+    private void updateDestinatariType(Map<String, Address.RecipientType> map) {
+
+        if (map != null) {
+            Set<String> keys = map.keySet();
+            ArrayList<String> list = new ArrayList<>();
+            for (String key : keys) {
+                list.add(key);
+            }
+
+            List<Address> addresses = addessRepository.getAddresses(list);
+
+            if (!addresses.isEmpty()) {
+                for (Address address : addresses) {
+                    if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
+
+                        switch (map.get(address.getMailAddress())) {
+                            case PEC:
+                                address.setRecipientType(Address.RecipientType.PEC);
+                                break;
+                            case REGULAR_EMAIL:
+                                address.setRecipientType(Address.RecipientType.REGULAR_EMAIL);
+                                break;
+                        }
+                    }
+                }
+                try {
+                    addessRepository.saveAll(addresses);
+                } catch (Exception e) {
+                    log.error("errore updateDestinatariType: " + e);
+                }
+            }
+        }
     }
 
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {

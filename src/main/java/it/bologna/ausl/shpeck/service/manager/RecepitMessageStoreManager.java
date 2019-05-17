@@ -58,7 +58,15 @@ public class RecepitMessageStoreManager extends StoreManager {
         messaggioDiRicevuta.setIdApplicazione(getApplicazione());
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
-        Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(pecRecepit.getReference());
+        //OLD  - Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(pecRecepit.getReference());
+        String referredMessageIdFromRecepit = null;
+        try {
+            referredMessageIdFromRecepit = PecRecepit.getReferredMessageIdFromRecepit(pecRecepit.getOriginal());
+        } catch (Throwable e) {
+            log.error("referredMessageIdFromRecepit è null", e);
+        }
+
+        Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(referredMessageIdFromRecepit);
 
         if (relatedMessage == null) {
             log.error("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());

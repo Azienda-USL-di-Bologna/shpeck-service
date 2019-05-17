@@ -1,6 +1,8 @@
 package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Address;
+import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
@@ -16,6 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
@@ -53,6 +56,9 @@ public class SpeckApplication {
 
     @Autowired
     PecRepository pecRepository;
+
+    @Autowired
+    AddressRepository addressRepository;
 
     @Value("${shpeck.threads.smtp-delay}")
     String smtpDelay;
@@ -93,14 +99,14 @@ public class SpeckApplication {
                 log.info("creazione degli IMAPWorker eseguita con successo");
 
                 // creo e lancio l'SMTPWorker per ogni casella PEC attiva
-                log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
-                for (int i = 0; i < pecAttive.size(); i++) {
-                    SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
-                    smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getId());
-                    smtpWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
-                    log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
-                }
+//                log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
+//                for (int i = 0; i < pecAttive.size(); i++) {
+//                    SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
+//                    smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getId());
+//                    smtpWorker.setIdPec(pecAttive.get(i).getId());
+//                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
+//                    log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
+//                }
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };

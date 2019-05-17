@@ -73,18 +73,18 @@ public class SMTPManager {
         }
     }
 
-    public boolean sendMessage(String rawData) {
-        boolean sent = false;
+    public String sendMessage(String rawData) {
+        String res = null;
         try {
             MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
             //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
             mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("Messaggio inviato!");
-            sent = true;
+            res = mimeMessage.getMessageID();
         } catch (Throwable e) {
             log.error("Messaggio non inviato: " + e);
         }
-        return sent;
+        return res;
     }
 }
