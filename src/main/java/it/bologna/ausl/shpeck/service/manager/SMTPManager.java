@@ -6,10 +6,6 @@ import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
-import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
-import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
@@ -28,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SMTPManager {
 
-    private static final Logger log = LoggerFactory.getLogger(SMTPWorker.class);
+    private static final Logger log = LoggerFactory.getLogger(SMTPManager.class);
     private Transport transport;
     private Session session;
 
@@ -61,9 +57,9 @@ public class SMTPManager {
     }
 
     public void buildSmtpManagerFromPec(Pec pec) throws ShpeckServiceException {
-        log.info("buildSmtpManagerFromPec " + pec.toString());
+        log.debug("--- inizio buildSmtpManagerFromPec " + pec.toString());
         try {
-            log.info("Creo un SmtpConnectionHandler");
+            log.debug("Creo un SmtpConnectionHandler");
             smtpConnectionHandler.createSmtpSession(pec);
         } catch (Exception e) {
             log.error("Errore: " + e.getMessage() + "\n"
@@ -80,10 +76,10 @@ public class SMTPManager {
             //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
             mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-            log.info("Messaggio inviato!");
+            log.info("sendMessage >> Messaggio inviato!");
             res = mimeMessage.getMessageID();
         } catch (Throwable e) {
-            log.error("Messaggio non inviato: " + e);
+            log.error("sendMessage >> Messaggio non inviato: " + e);
         }
         return res;
     }

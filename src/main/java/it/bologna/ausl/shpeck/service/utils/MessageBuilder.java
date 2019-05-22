@@ -3,7 +3,6 @@ package it.bologna.ausl.shpeck.service.utils;
 import it.bologna.ausl.model.entities.shpeck.Address.RecipientType;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
-import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,10 +20,7 @@ import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.Nodes;
-import nu.xom.ParsingException;
-import nu.xom.Text;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.text.StringEscapeUtils;
 
 /**
  *

@@ -8,7 +8,6 @@ import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.mail.MessagingException;
-import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
 import org.apache.commons.io.IOUtils;

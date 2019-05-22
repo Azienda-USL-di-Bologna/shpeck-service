@@ -11,7 +11,6 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -53,7 +52,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
-        log.info("Entrato in RecepitMessageStoreManager.store()");
+        log.info("--- inizio RecepitMessageStoreManager.store() ---");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
         messaggioDiRicevuta.setIdApplicazione(getApplicazione());
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
@@ -81,17 +80,17 @@ public class RecepitMessageStoreManager extends StoreManager {
         storeMessage(messaggioDiRicevuta);
 
         try {
-            log.info("Salvo il RawMessage della RICEVUTA");
+            log.debug("Salvo il RawMessage della RICEVUTA");
             storeRawMessageAndUploadQueue(messaggioDiRicevuta, pecRecepit.getRaw_message());
         } catch (MailMessageException e) {
             log.error("Errore nel retrieving data del rawMessage dal pecRecepit " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecRecepit", e);
         }
 
-        log.info("Salvo gli indirizzi della ricevuta");
+        log.debug("Salvo gli indirizzi della ricevuta");
         HashMap mapRicevuta = upsertAddresses(pecRecepit);
 
-        log.info("Salvo sulla cross messaggio ricevuta e indirizzi");
+        log.debug("Salvo sulla cross messaggio ricevuta e indirizzi");
         storeMessagesAddresses(messaggioDiRicevuta, mapRicevuta);
 
         Recepit recepit = new Recepit();

@@ -14,12 +14,12 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class SchedulerConfiguration {
-    
+
     private static final Logger log = LoggerFactory.getLogger(SchedulerConfiguration.class);
-    
+
     @Value("${shpeck.threads.pool-size}")
     String poolSize;
-    
+
     @Bean
     public ScheduledThreadPoolExecutor scheduledThreadPoolExecutor() {
         log.info("poolSize: " + poolSize);
@@ -28,19 +28,10 @@ public class SchedulerConfiguration {
         executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
         return executor;
     }
-    
+
     @Bean
     public Semaphore messageSemaphore() {
         return new Semaphore(0);
     }
-    
-//    @Bean
-//    public ThreadPoolTaskExecutor taskExecutor() {
-//            ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
-//            pool.setCorePoolSize(5);
-//            pool.setMaxPoolSize(10);
-//            pool.setWaitForTasksToCompleteOnShutdown(true);
-//            return pool;
-//    }
-    
+
 }

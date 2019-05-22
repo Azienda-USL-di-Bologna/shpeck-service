@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class PecMessage extends MailMessage {
 
     private static final Logger log = LoggerFactory.getLogger(PecMessage.class);
-    
+
     private String xRicevuta, xTrasporto, messageStatus, messageRef = null;
     private MailMessage pecEnvelope = null;
     boolean has_payload = false;
@@ -24,13 +24,10 @@ public class PecMessage extends MailMessage {
     public PecMessage(MimeMessage m) throws ShpeckServiceException {
         super(getPec(m));
         /**
-         * non-accettazione             non acceptance
-         * accettazione                 acceptance
-         * preavviso-errore-consegna    delivery error advance notice
-         * presa-in-carico              take charge
-         * rilevazione-virus            virus detection
-         * errore-consegna              delivery error
-         * avvenuta-consegna            message delivered
+         * non-accettazione non acceptance accettazione acceptance
+         * preavviso-errore-consegna delivery error advance notice
+         * presa-in-carico take charge rilevazione-virus virus detection
+         * errore-consegna delivery error avvenuta-consegna message delivered
          */
         try {
             xRicevuta = m.getHeader("X-Ricevuta", "");
@@ -39,9 +36,8 @@ public class PecMessage extends MailMessage {
             throw new ShpeckServiceException("Problema nella lettura degli header della PEC", e);
         }
         /**
-         * posta-certificata  certified mail
-         * errore             error
-         */       
+         * posta-certificata certified mail errore error
+         */
         try {
             xTrasporto = m.getHeader("X-Trasporto", "");
             messageRef = m.getHeader("X-Riferimento-Message-ID", "");
@@ -49,21 +45,21 @@ public class PecMessage extends MailMessage {
             throw new ShpeckServiceException("Problema nella lettura degli header della PEC", e);
         }
     }
-    
+
     public PecMessage(MailMessage m) throws ShpeckServiceException {
         this(m.original);
         pecEnvelope = m;
         pecEnvelope.ispec = true;
-        
-        if(isPecMessage(pecEnvelope.getOriginal())){
+
+        if (isPecMessage(pecEnvelope.getOriginal())) {
             type = Message.MessageType.PEC;
-        } else if(PecMessage.isErrorPec(pecEnvelope.getOriginal())){
+        } else if (PecMessage.isErrorPec(pecEnvelope.getOriginal())) {
             type = Message.MessageType.ERROR;
         } else {
             type = null;
         }
     }
-    
+
     public String getMessageRef() {
         return messageRef;
     }
@@ -83,7 +79,7 @@ public class PecMessage extends MailMessage {
     public String getxTrasporto() {
         return xTrasporto;
     }
-    
+
     private static MimeMessage getPec(MimeMessage m) throws ShpeckServiceException {
         MimeMessage res = null;
         try {
@@ -93,7 +89,7 @@ public class PecMessage extends MailMessage {
             }
         } catch (ShpeckServiceException e) {
             if (e.getCause() instanceof MessagingException && "Unable to load BODYSTRUCTURE".equalsIgnoreCase(e.getCause().getMessage())) {
-                System.out.println("Trying new with new MimeMessage");
+                log.debug("Trying new with new MimeMessage");
                 try {
                     res = MailMessage.getPecPayload(new MimeMessage(m));
                 } catch (MessagingException ex) {
@@ -105,7 +101,7 @@ public class PecMessage extends MailMessage {
         }
         return res;
     }
-    
+
     public static boolean isPecMessage(MimeMessage m) {
         String t;
         try {
@@ -118,7 +114,7 @@ public class PecMessage extends MailMessage {
         }
         return false;
     }
-    
+
     public static boolean isErrorPec(MimeMessage m) {
         String t;
         try {
@@ -134,18 +130,17 @@ public class PecMessage extends MailMessage {
 
     @Override
     public Message.MessageType getType() throws ShpeckServiceException {
-       return type;
+        return type;
     }
-    
 
     @Override
     public Object getMail() throws ShpeckServiceException {
-        
+
         PecMessage pecMessage = null;
-        
+
         try {
             pecMessage = new PecMessage(pecEnvelope);
-        }catch (ShpeckPecPayloadNotFoundException e) {
+        } catch (ShpeckPecPayloadNotFoundException e) {
             log.error("payload non trovato: ", e);
         }
         return pecMessage;

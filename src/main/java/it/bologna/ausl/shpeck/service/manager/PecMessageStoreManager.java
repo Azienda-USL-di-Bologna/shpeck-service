@@ -10,7 +10,6 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -57,31 +56,36 @@ public class PecMessageStoreManager extends StoreManager {
 
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
-        log.info("Entrato in PecMessageStoreManager.store()");
-        log.info("Sbusto il messaggio...");
+        log.info("---inizio PecMessageStoreManager.store()---");
+        log.debug("sbusto il messaggio...");
         Message messaggioSbustato = createMessageForStorage((MailMessage) pecMessage, pec);
         messaggioSbustato.setIdApplicazione(getApplicazione());
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
+
         if (getMessageFromDb(messaggioSbustato) != null) {
             return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato);
         }
+
         storeMessage(messaggioSbustato);
+
         try {
-            log.info("Salvo il RawMessage dello SBUSTATO");
+            log.debug("salvo il RawMessage dello sbustato");
             storeRawMessageAndUploadQueue(messaggioSbustato, pecMessage.getRaw_message());
         } catch (MailMessageException e) {
-            log.error("Errore nel reperimento del rawMessage dal pecMessage " + e.getMessage());
+            log.error("Errore nel reperimento del rawMessage dal pecMessage " + e);
             throw new MailMessageException("Errore nel reperimento del rawMessage dal pecMessage", e);
         }
-        log.info("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
-        log.info("Salvo gli indirizzi dello sbustato");
+        log.debug("salvato messaggio sbustato con id: " + messaggioSbustato.getId());
+        log.debug("salvo gli indirizzi dello sbustato...");
         HashMap mapSbustato = upsertAddresses(pecMessage);
+        log.debug("salvataggio avvenuto con successo");
 
-        log.info("Salvo sulla cross messaggio Sbustato e indirizzi");
+        log.debug("salvo sulla cross messaggio sbustato e indirizzi...");
         storeMessagesAddresses(messaggioSbustato, mapSbustato);
+        log.debug("salvataggio avvenuto con successo");
 
         // prendo la busta
-        log.info("Salvataggio della busta...");
+        log.debug("salvataggio della busta...");
         MailMessage envelope = pecMessage.getPecEnvelope();
         Message messaggioBustato = createMessageForStorage(envelope, pec);
         messaggioBustato.setIdApplicazione(getApplicazione());
@@ -93,17 +97,18 @@ public class PecMessageStoreManager extends StoreManager {
         }
         storeMessage(messaggioBustato);
         try {
-            log.info("Salvo il RawMessage della BUSTA");
+            log.debug("Salvo il RawMessage della BUSTA");
             storeRawMessageAndUploadQueue(messaggioBustato, envelope.getRaw_message());
         } catch (MailMessageException e) {
             log.error("Errore nel retrieving data del rawMessage dal pecMessage " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecMessage", e);
         }
-        log.info("salvato messaggio busta con id: " + messaggioBustato.getId());
-        log.info("Salvo gli indirizzi dello sbustato");
+        log.debug("salvato messaggio busta con id: " + messaggioBustato.getId());
+        log.debug("Salvo gli indirizzi dello sbustato");
         HashMap mapBusta = upsertAddresses(envelope);
-        log.info("Salvo sulla cross messaggio bustato e indirizzi");
+        log.debug("Salvo sulla cross messaggio bustato e indirizzi...");
         storeMessagesAddresses(messaggioBustato, mapBusta);
+        log.debug("salvataggio avvenuto con successo");
 
         return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato);
     }
