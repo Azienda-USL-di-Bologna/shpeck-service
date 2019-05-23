@@ -1,7 +1,6 @@
 package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
@@ -18,7 +17,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
@@ -66,8 +64,6 @@ public class SpeckApplication {
     @Value("${shpeck.threads.imap-delay}")
     String imapDelay;
 
-//    @Autowired
-//    TestThread testThread;  
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }

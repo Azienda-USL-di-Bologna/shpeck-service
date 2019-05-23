@@ -43,10 +43,6 @@ public class IMAPWorker implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(IMAPWorker.class);
 
-    public static final int MESSAGE_POLICY_NONE = 0;
-    public static final int MESSAGE_POLICY_BACKUP = 1;
-    public static final int MESSAGE_POLICY_DELETE = 2;
-
     private String threadName;
     private Integer idPec;
     private Applicazione applicazione;
@@ -130,7 +126,6 @@ public class IMAPWorker implements Runnable {
         } else {
             orphans.clear();
         }
-
     }
 
     @Override
@@ -152,8 +147,8 @@ public class IMAPWorker implements Runnable {
 
             // prendo il lastUID del messaggio in casella
             if (pec.getLastuid() != null) {
-//                imapManager.setLastUID(pec.getLastuid());
-                imapManager.setLastUID(1119);
+                imapManager.setLastUID(pec.getLastuid());
+//                imapManager.setLastUID(1119);
             }
 
             // ottenimento dei messaggi
@@ -163,7 +158,7 @@ public class IMAPWorker implements Runnable {
             StoreResponse res = null;
 
             for (MailMessage message : messages) {
-                log.info("gestione messageId: " + message.getId());
+                log.info("==================== gestione messageId: " + message.getId() + " ====================");
 
                 mailProxy = new MailProxy(message);
 
@@ -191,6 +186,7 @@ public class IMAPWorker implements Runnable {
                             res = recepitMessageStoreManager.store();
                             log.info("salvataggio metadati -> OK");
                             break;
+
                         case MAIL:
                             log.info("tipo calcolato: REGULAR MAIL");
                             regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
@@ -200,6 +196,7 @@ public class IMAPWorker implements Runnable {
                             res = regularMessageStoreManager.store();
                             log.info("salvataggio metadati -> OK");
                             break;
+
                         default:
                             res = null;
                             log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
@@ -220,35 +217,40 @@ public class IMAPWorker implements Runnable {
                 }
             }
 
+            log.info("_____________________________esito e policy_____________________________");
             log.info("messaggi 'OK': " + ((messagesOk == null || messagesOk.isEmpty()) ? "nessuno" : ""));
-            for (MailMessage mailMessage : messagesOk) {
+            messagesOk.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
-            }
+            });
 
             log.info("messaggi 'ORFANI': " + ((orphans == null || orphans.isEmpty()) ? "nessuno" : ""));
-            for (MailMessage mailMessage : orphans) {
+            orphans.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
-            }
+            });
 
             // le ricevute orfane si salvano sempre nella cartella di backup
             for (MailMessage tmpMessage : orphans) {
                 imapManager.messageMover(tmpMessage.getId());
             }
 
+            // individuazione della policy della casella
             switch (pec.getMessagePolicy()) {
-                case (MESSAGE_POLICY_BACKUP):
-                    log.info("Message Policy della casella: BACKUP, sposto nella cartella di backup");
+                case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
+                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
                     imapManager.messageMover(messagesOk);
                     break;
-                case (MESSAGE_POLICY_DELETE):
-                    log.info("Message Policy della casella: DELETE, Cancello i messaggi salvati");
+
+                case (ApplicationConstant.MESSAGE_POLICY_DELETE):
+                    log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
                     imapManager.deleteMessage(messagesOk);
                     break;
+
                 default:
                     log.info("Message Policy della casella: NONE, non si fa nulla");
                     break;
             }
 
+            // aggiornamento lastUID relativo alla casella appena scaricata
             updateLastUID(pec);
 
         } catch (ShpeckServiceException e) {
@@ -266,11 +268,12 @@ public class IMAPWorker implements Runnable {
         MDC.remove("logFileName");
     }
 
+    // aggiorna la pec con campo uid dell'ultima mail analizzata
     private void updateLastUID(Pec pec) {
         log.info("salvataggio lastUID nella PEC...");
 
         if (pec.getResetLastuidTime() == null) {
-            // prima volta che fa run e il reset_lastuid_time non è settato
+            // prima volta che fa run e il reset_lastuid_time non è settato, quindi si setta now()
             pec.setResetLastuidTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
             pec.setLastuid(imapManager.getLastUID());
         } else {

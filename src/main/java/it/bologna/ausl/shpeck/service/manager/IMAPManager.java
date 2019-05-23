@@ -5,7 +5,6 @@ import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
-import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPManager {
 
-    static Logger log = LoggerFactory.getLogger(IMAPWorker.class);
+    static Logger log = LoggerFactory.getLogger(IMAPManager.class);
 
     @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
@@ -113,7 +112,7 @@ public class IMAPManager {
             inbox.open(Folder.READ_WRITE);
 
             // ottieni i messaggi dal server
-            log.info("Fetching messages from " + lastUID + " to " + IMAPFolder.LASTUID);
+            log.info("Fetching dei messaggi da " + lastUID + " a " + IMAPFolder.LASTUID);
             Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, Long.MAX_VALUE);
 
             inbox.fetch(messagesFromInbox, fetchProfile);
@@ -125,7 +124,7 @@ public class IMAPManager {
                     mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
                     if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
                         lastUID = inbox.getUID(messagesFromInbox[i]);
-                        log.info("lastUID: " + lastUID);
+                        log.debug("lastUID: " + lastUID);
                     }
                 }
             }

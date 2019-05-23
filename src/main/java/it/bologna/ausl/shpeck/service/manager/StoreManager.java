@@ -32,8 +32,6 @@ import javax.mail.internet.InternetAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 
@@ -167,35 +165,35 @@ public class StoreManager implements StoreInterface {
     }
 
     public void storeMessagesAddresses(Message message, HashMap addresses) {
-        log.info("---Entrato in storeMessagesAddress---");
+        log.info("--- inizio storeMessagesAddress ---");
 
-        log.info("analisi indirizzi FROM");
+        log.debug("analisi indirizzi FROM");
         ArrayList<Address> list = (ArrayList<Address>) addresses.get("from");
         if (list != null && list.size() > 0) {
-            log.info("Ciclo gli indirizzi FROM e li salvo su messages_addresses");
+            log.debug("Ciclo gli indirizzi FROM e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.FROM);
-                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", FROM)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", FROM)" + "inserito"));
+                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", FROM) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", FROM) " + "inserito"));
             }
         }
 
         list = (ArrayList<Address>) addresses.get("to");
         if (list != null && list.size() > 0) {
-            log.info("Ciclo gli indirizzi TO e li salvo su messages_addresses");
+            log.debug("Ciclo gli indirizzi TO e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.TO);
-                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", TO)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", TO)" + "inserito"));
+                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", TO) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", TO) " + "inserito"));
             }
         }
         list = (ArrayList<Address>) addresses.get("cc");
         if (list != null && list.size() > 0) {
-            log.info("Ciclo gli indirizzi CC e li salvo su messages_addresses");
+            log.debug("Ciclo gli indirizzi CC e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.CC);
-                log.info((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", CC)" + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", CC)" + "inserito"));
+                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", CC) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", CC) " + "inserito"));
             }
         }
-        log.info("---Uscito da storeMessagesAddress---");
+        log.info("--- fine storeMessagesAddress ---");
     }
 
     public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses, Map<String, Address.RecipientType> map) {
@@ -279,11 +277,11 @@ public class StoreManager implements StoreInterface {
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
         log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
-        log.info("Verifico presenza di mittenti...");
+        log.debug("Verifico presenza di mittenti...");
         if (mailMessage.getFrom() != null) {
             ArrayList<Address> fromArrayList = new ArrayList<>();
             javax.mail.Address[] from = mailMessage.getFrom();
-            log.info("Mittenti presenti, ciclo gli indirizzi FROM");
+            log.debug("Mittenti presenti, ciclo gli indirizzi FROM");
             fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from, null);
             // inserisco l'arraylist nella mappa con chiave 'from'
             map.put("from", fromArrayList);
@@ -303,7 +301,7 @@ public class StoreManager implements StoreInterface {
         if (mailMessage.getTo() != null) {
             ArrayList<Address> toArrayList = new ArrayList<>();
             javax.mail.Address[] to = mailMessage.getTo();
-            log.info("ciclo gli indirizzi TO e se non presenti li salvo");
+            log.debug("ciclo gli indirizzi TO e se non presenti li salvo");
             Map<String, Address.RecipientType> destinatariType = MessageBuilder.getDestinatariType(mailMessage);
             toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (destinatariType.isEmpty() ? null : destinatariType));
             //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
@@ -328,32 +326,33 @@ public class StoreManager implements StoreInterface {
         if (mailMessage.getReply_to() != null) {
             ArrayList<Address> replyArrayList = new ArrayList<>();
             javax.mail.Address[] replyTo = mailMessage.getReply_to();
-            log.info("ciclo gli indirizzi reply_to e li salvo");
+            log.debug("ciclo gli indirizzi reply_to e li salvo");
             replyArrayList = (ArrayList<Address>) saveAndReturnAddresses(replyTo, null);
             //log.debug("Aggiungo l'array degli indirizzi reply_to alla mappa con chiave 'replyTo'");
             map.put("replyTo", replyArrayList);
         } else {
             log.info("destinatari Reply_To non presenti");
         }
-        log.info("---Fine upsertAddresses---");
+        log.info("--- Fine upsertAddresses ---");
         return map;
     }
 
     @Override
     public RawMessage storeRawMessageAndUploadQueue(Message message, String raw) {
-        log.info("Metodo storeRawMessage");
+        log.info("--- inizio storeRawMessageAndUploadQueue ---");
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);
         rawMessage.setRawData(raw);
-        log.info("salvataggio del rawMessage...");
+        log.debug("salvataggio del rawMessage...");
         rawMessage = rawMessageRepository.save(rawMessage);
-        log.info("rawMessage salvato");
+        log.debug("rawMessage salvato");
 
         UploadQueue uploadQueue = new UploadQueue();
         uploadQueue.setIdRawMessage(rawMessage);
         log.info("inserimento del rawMessage in upload_queue...");
         uploadQueueRepository.save(uploadQueue);
         log.info("inserimento in upload_queue avvenuto con successo");
+        log.info("--- fine metodo storeRawMessageAndUploadQueue ---");
 
         return rawMessage;
     }

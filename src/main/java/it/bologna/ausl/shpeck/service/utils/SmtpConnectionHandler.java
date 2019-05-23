@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.utils;
 
 import it.bologna.ausl.shpeck.service.exceptions.SmtpConnectionInitializationException;
@@ -19,6 +14,8 @@ import javax.mail.Transport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -29,16 +26,19 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class SmtpConnectionHandler  {
+public class SmtpConnectionHandler {
+
     private static final Logger log = LoggerFactory.getLogger(SmtpConnectionHandler.class);
     private Properties properties;
     private Transport transport;
     private Session session;
-    private int smtpTimeOut = 300;
-    
+
+    @Value("${mail.smtptTimeout}")
+    Integer smtpTimeOut;
+
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     PecProviderRepository pecProviderRepository;
 
@@ -69,28 +69,27 @@ public class SmtpConnectionHandler  {
     public void setSession(Session session) {
         this.session = session;
     }
-    
-    private void init(Pec pec) throws SmtpConnectionInitializationException, ShpeckServiceException{
-        log.info("init() ... ");
+
+    private void init(Pec pec) throws SmtpConnectionInitializationException, ShpeckServiceException {
+        log.info("init() della sessione e del transport");
         setPropertiesByPec(pec);
         session = Session.getInstance(properties, null);
-        try{
+        try {
             transport = session.getTransport();
-            if(pec.getUsername() != null)
-                transport.connect(pec.getUsername() , pec.getPassword());
-            else
+            if (pec.getUsername() != null) {
+                transport.connect(pec.getUsername(), pec.getPassword());
+            } else {
                 transport.connect();
-        }
-        catch(NoSuchProviderException e){
+            }
+        } catch (NoSuchProviderException e) {
             log.error("Errore nel gettingTransport: ", e);
             throw new SmtpConnectionInitializationException("Errore nel gettingTransport: " + e.getMessage(), e);
-        }
-        catch(MessagingException e){
+        } catch (MessagingException e) {
             log.error("Errore di connessione al provider: ", e);
             throw new SmtpConnectionInitializationException("Errore di connessione al provider: " + e.getMessage(), e);
         }
     }
-    
+
     public void setPropertiesWithProperties(String host, int port, String username, String password, String protocol, int smtpTimeout) {
 
         log.debug("host: " + host + " port: " + String.valueOf(port) + " protocol: " + protocol);
@@ -121,30 +120,29 @@ public class SmtpConnectionHandler  {
         }
         setProperties(props);
     }
-           
-    private void setPropertiesByPec(Pec pec) throws ShpeckServiceException{
-        log.info("entrato in setPropertiesByPec");
+
+    private void setPropertiesByPec(Pec pec) throws ShpeckServiceException {
+        log.info("--- inizio setPropertiesByPec ---");
         PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
         log.info("recuperato provider " + idPecProvider.toString());
-        try{
-            setPropertiesWithProperties(idPecProvider.getHostOut(), idPecProvider.getPortOut(), 
+        try {
+            setPropertiesWithProperties(idPecProvider.getHostOut(), idPecProvider.getPortOut(),
                     pec.getUsername(), pec.getPassword(), idPecProvider.getProtocolOut(), smtpTimeOut);
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             log.error("Errore nella configurazione delle proprietà della sessione SMTP \n"
                     + "pec " + pec.toString() + "\n"
                     + "provider " + idPecProvider.toString() + "\n"
                     + "Rilancio errore " + e.getMessage());
-            throw  new ShpeckServiceException("errore nella setPropertiesByPec",e);
+            throw new ShpeckServiceException("errore nella setPropertiesByPec", e);
         }
         log.info("\n######\nconfigurate le properties: \n" + properties.toString() + "\n######\n");
     }
-    
+
     public void createSmtpSession(Pec pec) throws NoSuchProviderException, SmtpConnectionInitializationException, ShpeckServiceException {
         log.info("entrato in createSmtpSession con pec " + pec.getIndirizzo());
         init(pec);
     }
-    
+
     public void close() {
         if (transport.isConnected()) {
             try {
@@ -159,5 +157,5 @@ public class SmtpConnectionHandler  {
     public boolean isConnected() {
         return transport.isConnected();
     }
-    
+
 }

@@ -13,6 +13,7 @@ import it.bologna.ausl.shpeck.service.storage.StorageContext;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
@@ -80,7 +81,7 @@ public class UploadWorker implements Runnable {
                     messageSemaphore.drainPermits();
                     doWork();
 
-                } catch (Exception ex) {
+                } catch (ShpeckServiceException | InterruptedException | UnknownHostException ex) {
                     log.warn("InterruptedException: continue. " + ex);
                     //continue;
                 }
@@ -91,8 +92,7 @@ public class UploadWorker implements Runnable {
     }
 
     public void doWork() throws ShpeckServiceException, UnknownHostException {
-        log.info("START doWork() UploadWorker");
-
+        log.info("START -> doWork()," + " time: " + new Date());
         ArrayList<UploadQueue> messagesToUpload;
 
         do {
@@ -135,27 +135,6 @@ public class UploadWorker implements Runnable {
                 }
             }
         } while (!messagesToUpload.isEmpty());
-        log.info("STOP doWork() UploadWorker");
+        log.info("STOP -> doWork()," + " time: " + new Date());
     }
-
-// TODO: caso SMTP
-//          for (UploadMessage m : messages) {
-//                    try {
-//                        sm.setFolderPath(rootPath + "/" + db.getMailConfigDescription(m.getConfigId()));
-//                        sm.storeMessage("INBOX", m);
-//                    } catch (PecGWMessageAlreadyExistsException e) {
-//                        log.warn("Message " + m.getMessageId() + " " + m.getName() + " already on cmis");
-//                        db.rollback();
-//                        db.setAlreadyUploaded(m.getMessageId());
-//                        db.commit();
-//                        continue;
-//                    } catch (PecGWException e) {
-//                        db.rollback();
-//                        db.close();
-//                        throw new PecGWException("Error storing message to cmis", e);
-//                    }
-//                    db.setUploaded(m);
-//                    db.deleteRawMessage(m.getMessageId());
-//                    db.commit();
-//                }
 }
