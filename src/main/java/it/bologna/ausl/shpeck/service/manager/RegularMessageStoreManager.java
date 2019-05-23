@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.manager;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
@@ -30,6 +31,7 @@ public class RegularMessageStoreManager extends StoreManager {
 
     private MailMessage mailMessage;
     private Pec pec;
+    private Outbox outbox; // Viene valorizzato solo nel caso di SMTP per un messaggio spedito da Pico.
 
     public RegularMessageStoreManager() {
     }
@@ -50,11 +52,20 @@ public class RegularMessageStoreManager extends StoreManager {
         this.mailMessage = mailMessage;
     }
 
+    public Outbox getOutbox() {
+        return outbox;
+    }
+
+    public void setOutbox(Outbox outbox) {
+        this.outbox = outbox;
+    }
+
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
         log.info("Entrato in RegularMessageStoreManager.store()");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
+        regularMessage.setIdOutbox(outbox);
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         Message messagePresentInDB = getMessageFromDb(regularMessage);
