@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -164,9 +166,9 @@ public class StoreManager implements StoreInterface {
         return res;
     }
 
-    public void storeMessagesAddresses(Message message, HashMap addresses) {
-        log.info("--- inizio storeMessagesAddress ---");
+    public void storeMessagesAddresses(Message message, HashMap addresses) throws ShpeckServiceException {
 
+        log.info("--- inizio storeMessagesAddress ---");
         log.debug("analisi indirizzi FROM");
         ArrayList<Address> list = (ArrayList<Address>) addresses.get("from");
         if (list != null && list.size() > 0) {
@@ -275,6 +277,7 @@ public class StoreManager implements StoreInterface {
     }
 
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
+
         log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
         log.debug("Verifico presenza di mittenti...");

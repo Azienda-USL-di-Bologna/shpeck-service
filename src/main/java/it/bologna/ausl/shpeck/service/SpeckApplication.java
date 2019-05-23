@@ -1,6 +1,8 @@
 package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Address;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
@@ -22,6 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -56,6 +61,9 @@ public class SpeckApplication {
     PecRepository pecRepository;
 
     @Autowired
+    Test test;
+
+    @Autowired
     AddressRepository addressRepository;
 
     @Value("${shpeck.threads.smtp-delay}")
@@ -74,8 +82,18 @@ public class SpeckApplication {
         return new CommandLineRunner() {
 
             @Override
-            public void run(String... args) throws Exception {
+            // @Transactional(rollbackFor = Throwable.class, noRollbackFor = ShpeckServiceException.class, propagation = Propagation.REQUIRED)
+            public void run(String... args) throws ShpeckServiceException {
 
+//                test.prova();
+//                Address a = new Address();
+//                a.setMailAddress("main");
+//                a.setOriginalAddress("altro main");
+//                a.setRecipientType(Address.RecipientType.PEC);
+//                addressRepository.save(a);
+//                if (true) {
+//                    throw new ShpeckServiceException("prova");
+//                }
                 // avvio del thread di UploadWorker
                 uploadWorker.setThreadName("uploadWorker");
                 Thread t = new Thread(uploadWorker);
@@ -84,16 +102,15 @@ public class SpeckApplication {
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
 
                 // lancio di IMAPWorker per ogni casella PEC attiva
-                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
-                for (int i = 0; i < pecAttive.size(); i++) {
-                    IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
-                    imapWorker.setThreadName("IMAP_" + pecAttive.get(i).getId());
-                    imapWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, Integer.valueOf(imapDelay), TimeUnit.SECONDS);
-                    log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
-                }
-                log.info("creazione degli IMAPWorker eseguita con successo");
-
+//                log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
+//                for (int i = 0; i < pecAttive.size(); i++) {
+//                    IMAPWorker imapWorker = beanFactory.getBean(IMAPWorker.class);
+//                    imapWorker.setThreadName("IMAP_" + pecAttive.get(i).getId());
+//                    imapWorker.setIdPec(pecAttive.get(i).getId());
+//                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(imapWorker, i * 3 + 2, Integer.valueOf(imapDelay), TimeUnit.SECONDS);
+//                    log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + "schedulato correttamente");
+//                }
+//                log.info("creazione degli IMAPWorker eseguita con successo");
                 // creo e lancio l'SMTPWorker per ogni casella PEC attiva
                 log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
                 for (int i = 0; i < pecAttive.size(); i++) {
@@ -107,4 +124,5 @@ public class SpeckApplication {
             }
         };
     }
+
 }

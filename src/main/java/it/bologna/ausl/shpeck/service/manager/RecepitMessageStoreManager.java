@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -50,7 +51,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         this.pec = pec;
     }
 
-    @Transactional(rollbackFor = Throwable.class)
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
         log.info("--- inizio RecepitMessageStoreManager.store() ---");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);

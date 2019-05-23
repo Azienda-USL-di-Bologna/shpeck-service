@@ -6,6 +6,7 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.manager.UploadManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.storage.MongoStorage;
@@ -32,25 +33,16 @@ public class UploadWorker implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
 
-    @Value("${mailbox.inbox-folder}")
-    String inboxForlder;
-
     private String threadName;
-
-    @Autowired
-    StorageContext storageContext;
 
     @Autowired
     UploadQueueRepository uploadQueueRepository;
 
     @Autowired
-    ObjectMapper objectMapper;
-
-    @Autowired
-    MessageRepository messageRepository;
-
-    @Autowired
     Semaphore messageSemaphore;
+
+    @Autowired
+    UploadManager uploadManager;
 
     public UploadWorker() {
     }
@@ -100,39 +92,7 @@ public class UploadWorker implements Runnable {
             messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
 
             for (UploadQueue messageToStore : messagesToUpload) {
-                try {
-                    // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
-                    AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());
-                    AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
-
-                    // inizializzazione del context storage
-                    storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
-
-                    // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
-                    UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
-
-                    // ottieni in messaggio associato al contenuto appena caricato
-                    Optional<Message> message = messageRepository.findById(messageToStore.getIdRawMessage().getIdMessage().getId());
-                    Message messageToUpdate = null;
-
-                    // se messaggio è presente, si settano le proprietà relative al messaggio appena salvato nello storage
-                    if (message.isPresent()) {
-                        messageToUpdate = message.get();
-                        messageToUpdate.setUuidRepository(objectUploaded.getUuid());
-                        messageToUpdate.setPathRepository(objectUploaded.getPath());
-                        messageToUpdate.setName(objectUploaded.getName());
-                        // update del mesaggio con i nuovi parametri                    
-                        messageRepository.save(messageToUpdate);
-
-                        // set come file già trattato nella tabella upload_queue
-                        objectUploaded.setUploaded(Boolean.TRUE);
-                        uploadQueueRepository.save(objectUploaded);
-
-                    }
-                } catch (MongoWrapperException | ShpeckServiceException | IOException ex) {
-                    log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
-                    log.error("con errore: " + ex);
-                }
+                uploadManager.manage(messageToStore);
             }
         } while (!messagesToUpload.isEmpty());
         log.info("STOP -> doWork()," + " time: " + new Date());
