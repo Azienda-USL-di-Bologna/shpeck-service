@@ -321,9 +321,11 @@ public class IMAPManager {
                 // i minuti passati dall'ultimo azzeramento sono superiori al valore di configurazione quindi azzeriamo
                 pec.setResetLastuidTime(now);
                 pec.setLastuid(0L);
+                log.info("lastUID = " + 0L);
             } else {
                 // non è ancora il momento di azzerare la sequenza, aggiorno solo il lastuid
                 pec.setLastuid(getLastUID());
+                log.info("lastUID = " + getLastUID());
             }
         }
         pecRepository.save(pec);
