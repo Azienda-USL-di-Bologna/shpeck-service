@@ -63,13 +63,13 @@ public class RecepitMessageStoreManager extends StoreManager {
         try {
             referredMessageIdFromRecepit = PecRecepit.getReferredMessageIdFromRecepit(pecRecepit.getOriginal());
         } catch (Throwable e) {
-            log.error("referredMessageIdFromRecepit è null", e);
+            log.error("referredMessageIdFromRecepit = null", e);
         }
 
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(referredMessageIdFromRecepit);
 
         if (relatedMessage == null) {
-            log.warn("La ricevuta è orfana! Si riferisce a " + pecRecepit.getReference());
+            log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
             return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta);
         }
 

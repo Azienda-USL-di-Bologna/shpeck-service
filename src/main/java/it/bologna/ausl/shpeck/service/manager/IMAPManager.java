@@ -189,14 +189,14 @@ public class IMAPManager {
 
     public void messageMover(List<String> list) throws ShpeckServiceException {
         if (list == null) {
-            log.warn("lista di messaggi da spostare è null");
+            log.debug("lista di messaggi da spostare = null");
             return;
         }
         if (list.isEmpty()) {
-            log.warn("nessun messaggio da spostare");
+            log.debug("nessun messaggio da spostare");
             return;
         }
-        log.debug("Spostamento di " + list.size() + " messaggi");
+//        log.debug("Spostamento di " + list.size() + " messaggi");
         try {
             if (!store.isConnected()) {
                 store.connect();
@@ -206,7 +206,6 @@ public class IMAPManager {
         } catch (Exception e) {
             throw new ShpeckServiceException("Errore nel muovere i messaggi nella cartella di backup", e);
         }
-        log.debug("messaggi spostati");
     }
 
     protected IMAPFolder createWorkingFolder(String folderName) throws ShpeckServiceException {
@@ -252,7 +251,7 @@ public class IMAPManager {
                 String messageId = tmp.getMessageID();
                 if (idSet.contains(messageId)) {
                     messageToMove.add(tmp);
-                    log.debug("messaggio: " + messageId + " selezionato per lo spostamento");
+                    log.debug("messageMover: " + messageId + " selezionato per lo spostamento");
                 }
             }
             dstFolder.open(IMAPFolder.READ_WRITE);
