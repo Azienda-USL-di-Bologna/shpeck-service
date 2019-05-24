@@ -65,7 +65,7 @@ public class RegularMessageStoreManager extends StoreManager {
         log.info("--- inizio RegularMessageStoreManager.store() ---");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
-        regularMessage.setIdOutbox(((outbox.getId() == null) || (outbox.getId() == null) ? null : outbox.getId()));
+        regularMessage.setIdOutbox(((outbox == null) || (outbox.getId() == null) ? null : outbox.getId()));
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         Message messagePresentInDB = getMessageFromDb(regularMessage);
@@ -83,9 +83,9 @@ public class RegularMessageStoreManager extends StoreManager {
             log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
             regularMessage = messagePresentInDB;
         }
-        log.debug("Salvo gli indirizzi del regular message");
+        log.debug("salvo/aggiorno gli indirizzi del regular message");
         HashMap mapMessagesAddress = upsertAddresses(mailMessage);
-        log.debug("Salvo sulla cross il regular message e indirizzi");
+        log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
         storeMessagesAddresses(regularMessage, mapMessagesAddress);
 
         return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage);

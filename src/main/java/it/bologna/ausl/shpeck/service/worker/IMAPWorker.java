@@ -155,59 +155,63 @@ public class IMAPWorker implements Runnable {
             for (MailMessage message : messages) {
                 log.info("==================== gestione messageId: " + message.getId() + " ====================");
 
-                mailProxy = new MailProxy(message);
+                try {
+                    mailProxy = new MailProxy(message);
 
-                if (null == mailProxy.getType()) {
-                    log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
-                } else {
-                    switch (mailProxy.getType()) {
-                        case PEC:
-                            log.info("tipo calcolato: PEC");
-                            pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
-                            pecMessageStoreManager.setPec(pec);
-                            pecMessageStoreManager.setApplicazione(applicazione);
-
-                            log.info("salvataggio metadati...");
-                            res = pecMessageStoreManager.store();
-                            log.info("salvataggio metadati -> OK");
-                            break;
-
-                        case RECEPIT:
-                            log.info("tipo calcolato: RICEVUTA");
-                            recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
-                            recepitMessageStoreManager.setPec(pec);
-                            recepitMessageStoreManager.setApplicazione(applicazione);
-                            log.info("salvataggio metadati...");
-                            res = recepitMessageStoreManager.store();
-                            log.info("salvataggio metadati -> OK");
-                            break;
-
-                        case MAIL:
-                            log.info("tipo calcolato: REGULAR MAIL");
-                            regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
-                            regularMessageStoreManager.setPec(pec);
-                            regularMessageStoreManager.setApplicazione(applicazione);
-                            log.info("salvataggio metadati...");
-                            res = regularMessageStoreManager.store();
-                            log.info("salvataggio metadati -> OK");
-                            break;
-
-                        default:
-                            res = null;
-                            log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
-                    }
-                }
-
-                // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
-                messageSemaphore.release();
-
-                // individuazione dei messaggi OK e quelli ORPHAN
-                if (res != null) {
-                    if (res.getStatus().equals(ApplicationConstant.OK_KEY)) {
-                        messagesOk.add(res.getMailMessage());
+                    if (null == mailProxy.getType()) {
+                        log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                     } else {
-                        messagesOrphans.add(res.getMailMessage());
+                        switch (mailProxy.getType()) {
+                            case PEC:
+                                log.info("tipo calcolato: PEC");
+                                pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
+                                pecMessageStoreManager.setPec(pec);
+                                pecMessageStoreManager.setApplicazione(applicazione);
+
+                                log.info("salvataggio metadati...");
+                                res = pecMessageStoreManager.store();
+                                log.info("gestione metadati -> OK");
+                                break;
+
+                            case RECEPIT:
+                                log.info("tipo calcolato: RICEVUTA");
+                                recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
+                                recepitMessageStoreManager.setPec(pec);
+                                recepitMessageStoreManager.setApplicazione(applicazione);
+                                log.info("salvataggio metadati...");
+                                res = recepitMessageStoreManager.store();
+                                log.info("gestione metadati -> OK");
+                                break;
+
+                            case MAIL:
+                                log.info("tipo calcolato: REGULAR MAIL");
+                                regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
+                                regularMessageStoreManager.setPec(pec);
+                                regularMessageStoreManager.setApplicazione(applicazione);
+                                log.info("salvataggio metadati...");
+                                res = regularMessageStoreManager.store();
+                                log.info("gestione metadati -> OK");
+                                break;
+
+                            default:
+                                res = null;
+                                log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
+                        }
                     }
+
+                    // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
+                    messageSemaphore.release();
+
+                    // individuazione dei messaggi OK e quelli ORPHAN
+                    if (res != null) {
+                        if (res.getStatus().equals(ApplicationConstant.OK_KEY)) {
+                            messagesOk.add(res.getMailMessage());
+                        } else {
+                            messagesOrphans.add(res.getMailMessage());
+                        }
+                    }
+                } catch (Throwable e) {
+                    log.error("eccezione nel processare il messaggio corrente: " + e);
                 }
             }
 
