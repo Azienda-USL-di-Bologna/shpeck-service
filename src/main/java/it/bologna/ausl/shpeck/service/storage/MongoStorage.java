@@ -12,43 +12,44 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
  * @author spritz
  */
-public class MongoStorage implements StorageStrategy{
-    
+public class MongoStorage implements StorageStrategy {
+
     private String folderPath;
     private MongoWrapper mongo;
 
     public MongoStorage() {
     }
-    
+
     public MongoStorage(String mongouri, String folderPath) throws UnknownHostException, MongoWrapperException {
         mongo = new MongoWrapper(mongouri);
         this.folderPath = folderPath;
     }
-    
+
     @Override
     public void setFolderPath(String folderPath) {
         this.folderPath = folderPath;
     }
 
-    @Transactional(rollbackFor = Throwable.class)
     @Override
+    //@Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
     public UploadQueue storeMessage(String folderName, UploadQueue objectToUpload) throws ShpeckServiceException {
-        
-        String res = null;
-        String filename; 
+
+        String uuidMongo;
+        String filename;
         MimeMessage mimeMessage;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         if (folderName == null) {
             folderName = "";
         }
-        
+
         try {
             mimeMessage = MessageBuilder.buildMailMessageFromString(objectToUpload.getIdRawMessage().getRawData());
             mimeMessage.writeTo(baos);
@@ -68,16 +69,16 @@ public class MongoStorage implements StorageStrategy{
             }
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
             //assicurarsi che sia un nome unico
-            filename = objectToUpload.getIdRawMessage().getIdMessage().getId()+ "_" + filename;
-            
-            String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo()+ "/" + folderName;
+            filename = objectToUpload.getIdRawMessage().getIdMessage().getId() + "_" + filename;
+
+            String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo() + "/" + folderName;
             objectToUpload.setPath(path);
             objectToUpload.setName(filename);
-            res = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, path, false);
+            uuidMongo = mongo.put(new ByteArrayInputStream(baos.toByteArray()), filename, path, false);
 
             objectToUpload.setUploaded(Boolean.TRUE);
-            objectToUpload.setUuid(res);
-            
+            objectToUpload.setUuid(uuidMongo);
+
         } catch (MessagingException e) {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
         } catch (IOException e) {

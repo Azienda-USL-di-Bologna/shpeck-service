@@ -79,9 +79,9 @@ public class UploadManager {
                     uploadQueueRepository.save(objectUploaded);
                 }
             }
-        } catch (MongoWrapperException | ShpeckServiceException | IOException ex) {
+        } catch (Throwable e) {
             log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
-            log.error("con errore: " + ex);
+            log.error("con errore: " + e);
             throw new ShpeckServiceException("errore nell'upload del messaggio");
         }
     }

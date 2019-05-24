@@ -3,10 +3,15 @@ package it.bologna.ausl.shpeck.service.manager;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
+import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +23,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -33,6 +39,9 @@ public class IMAPManager {
 
     static Logger log = LoggerFactory.getLogger(IMAPManager.class);
 
+    @Autowired
+    PecRepository pecRepository;
+
     @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
 
@@ -41,6 +50,9 @@ public class IMAPManager {
 
     @Value("${mailbox.backup-source-folder}")
     String BACKUP_SOURCE_FOLDER;
+
+    @Value("${imap.reset-lastuid-minutes}")
+    Integer resetLastuidMinutes;
 
     private IMAPStore store;
     private long lastUID;
@@ -292,5 +304,30 @@ public class IMAPManager {
             throw new ShpeckServiceException("errore: ", e);
         }
         return false;
+    }
+
+    // aggiorna la pec con campo uid dell'ultima mail analizzata
+    public void updateLastUID(Pec pec) {
+        log.info("salvataggio lastUID nella PEC...");
+
+        if (pec.getResetLastuidTime() == null) {
+            // prima volta che fa run e il reset_lastuid_time non è settato, quindi si setta now()
+            pec.setResetLastuidTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
+            pec.setLastuid(getLastUID());
+        } else {
+            // calcolo la differenza (in minuti) per capire se riazzerare la sequenza o meno
+            LocalDateTime now = new java.sql.Timestamp(new Date().getTime()).toLocalDateTime();
+            long minutes = pec.getResetLastuidTime().until(now, ChronoUnit.MINUTES);
+            if (minutes > resetLastuidMinutes) {
+                // i minuti passati dall'ultimo azzeramento sono superiori al valore di configurazione quindi azzeriamo
+                pec.setResetLastuidTime(now);
+                pec.setLastuid(0L);
+            } else {
+                // non è ancora il momento di azzerare la sequenza, aggiorno solo il lastuid
+                pec.setLastuid(getLastUID());
+            }
+        }
+        pecRepository.save(pec);
+        log.info("salvataggio lastUID -> OK");
     }
 }

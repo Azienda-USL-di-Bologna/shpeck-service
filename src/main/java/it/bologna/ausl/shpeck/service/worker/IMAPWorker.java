@@ -19,8 +19,6 @@ import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
@@ -74,19 +72,16 @@ public class IMAPWorker implements Runnable {
     @Autowired
     Semaphore messageSemaphore;
 
-    @Value("${imap.reset-lastuid-minutes}")
-    Integer resetLastuidMinutes;
-
     @Value("${id-applicazione}")
     String idApplicazione;
 
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
-    private ArrayList<MailMessage> orphans;
+    private ArrayList<MailMessage> messagesOrphans;
 
     public IMAPWorker() {
         messagesOk = new ArrayList<>();
-        orphans = new ArrayList<>();
+        messagesOrphans = new ArrayList<>();
     }
 
     public String getThreadName() {
@@ -121,10 +116,10 @@ public class IMAPWorker implements Runnable {
             messagesOk.clear();
         }
 
-        if (orphans == null) {
-            orphans = new ArrayList<>();
+        if (messagesOrphans == null) {
+            messagesOrphans = new ArrayList<>();
         } else {
-            orphans.clear();
+            messagesOrphans.clear();
         }
     }
 
@@ -148,7 +143,7 @@ public class IMAPWorker implements Runnable {
             // prendo il lastUID del messaggio in casella
             if (pec.getLastuid() != null) {
                 imapManager.setLastUID(pec.getLastuid());
-//                imapManager.setLastUID(1119);
+                //imapManager.setLastUID(1119);
             }
 
             // ottenimento dei messaggi
@@ -200,7 +195,6 @@ public class IMAPWorker implements Runnable {
                         default:
                             res = null;
                             log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
-                            break;
                     }
                 }
 
@@ -212,7 +206,7 @@ public class IMAPWorker implements Runnable {
                     if (res.getStatus().equals(ApplicationConstant.OK_KEY)) {
                         messagesOk.add(res.getMailMessage());
                     } else {
-                        orphans.add(res.getMailMessage());
+                        messagesOrphans.add(res.getMailMessage());
                     }
                 }
             }
@@ -223,13 +217,13 @@ public class IMAPWorker implements Runnable {
                 log.info(mailMessage.getId());
             });
 
-            log.info("messaggi 'ORFANI': " + ((orphans == null || orphans.isEmpty()) ? "nessuno" : ""));
-            orphans.forEach((mailMessage) -> {
+            log.info("messaggi 'ORFANI': " + ((messagesOrphans == null || messagesOrphans.isEmpty()) ? "nessuno" : ""));
+            messagesOrphans.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
             });
 
             // le ricevute orfane si salvano sempre nella cartella di backup
-            for (MailMessage tmpMessage : orphans) {
+            for (MailMessage tmpMessage : messagesOrphans) {
                 imapManager.messageMover(tmpMessage.getId());
             }
 
@@ -251,7 +245,7 @@ public class IMAPWorker implements Runnable {
             }
 
             // aggiornamento lastUID relativo alla casella appena scaricata
-            updateLastUID(pec);
+            imapManager.updateLastUID(pec);
 
         } catch (ShpeckServiceException e) {
             String message = "";
@@ -268,28 +262,4 @@ public class IMAPWorker implements Runnable {
         MDC.remove("logFileName");
     }
 
-    // aggiorna la pec con campo uid dell'ultima mail analizzata
-    private void updateLastUID(Pec pec) {
-        log.info("salvataggio lastUID nella PEC...");
-
-        if (pec.getResetLastuidTime() == null) {
-            // prima volta che fa run e il reset_lastuid_time non è settato, quindi si setta now()
-            pec.setResetLastuidTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
-            pec.setLastuid(imapManager.getLastUID());
-        } else {
-            // calcolo la differenza (in minuti) per capire se riazzerare la sequenza o meno
-            LocalDateTime now = new java.sql.Timestamp(new Date().getTime()).toLocalDateTime();
-            long minutes = pec.getResetLastuidTime().until(now, ChronoUnit.MINUTES);
-            if (minutes > resetLastuidMinutes) {
-                // i minuti passati dall'ultimo azzeramento sono superiori al valore di configurazione quindi azzeriamo
-                pec.setResetLastuidTime(now);
-                pec.setLastuid(0L);
-            } else {
-                // non è ancora il momento di azzerare la sequenza, aggiorno solo il lastuid
-                pec.setLastuid(imapManager.getLastUID());
-            }
-        }
-        pecRepository.save(pec);
-        log.info("salvataggio lastUID -> OK");
-    }
 }

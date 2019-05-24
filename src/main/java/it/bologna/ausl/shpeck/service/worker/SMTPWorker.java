@@ -1,21 +1,14 @@
 package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
-import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
-import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
-import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
-import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
-import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
-import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -28,8 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -49,16 +40,7 @@ public class SMTPWorker implements Runnable {
     OutboxRepository outboxRepository;
 
     @Autowired
-    ApplicazioneRepository applicazioneRepository;
-
-    @Autowired
     Semaphore messageSemaphore;
-
-    @Autowired
-    SmtpConnectionHandler smtpConnectionHandler;
-
-    @Autowired
-    RegularMessageStoreManager regularMessageStoreManager;
 
     @Autowired
     SMTPManager smtpManager;
@@ -114,7 +96,7 @@ public class SMTPWorker implements Runnable {
                     try {
 
                         log.info("==================== gestione message in outbox con id: " + outbox.getId() + " ====================");
-                        response = saveMessageAndUploadQueue(outbox);
+                        response = smtpManager.saveMessageAndUploadQueue(outbox);
                         Message m = response.getMessage();
                         log.info("salvataggio eseguito > provo a inviare messaggio con id outbox " + outbox.getId() + "...");
                         String messagID = smtpManager.sendMessage(outbox.getRawData());
@@ -179,33 +161,4 @@ public class SMTPWorker implements Runnable {
         MDC.remove("logFileName");
     }
 
-    public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException {
-        log.info("salva il message e fai upload nella queue...");
-        StoreResponse storeResponse = null;
-        try {
-            log.debug("Buildo il mailMessage dal raw");
-            MailMessage mailMessage = new MailMessage(MessageBuilder.buildMailMessageFromString(outbox.getRawData()));
-            log.debug("Set inout, idPec e mailMessage...");
-            regularMessageStoreManager.setInout(Message.InOut.OUT);
-            regularMessageStoreManager.setPec(outbox.getIdPec());
-            regularMessageStoreManager.setMailMessage(mailMessage);
-            log.debug("Cerco l'applicazione d'origine");
-            Applicazione app = applicazioneRepository.findById(outbox.getIdApplicazione().getId());
-            log.info("Setto l'applicazione d'origine");
-            regularMessageStoreManager.setApplicazione(app);
-            log.debug("Setto l'outbox");
-            regularMessageStoreManager.setOutbox(outbox);
-            log.debug("salvo i metadati...");
-            storeResponse = regularMessageStoreManager.store();
-//            if (storeResponse != null) {
-//                log.info("salvataggio eseguito correttamente");
-//                // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
-//                messageSemaphore.release();
-//            }
-
-        } catch (ShpeckServiceException e) {
-            throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
-        }
-        return storeResponse;
-    }
 }

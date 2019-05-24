@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
+import it.bologna.ausl.shpeck.service.Test;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.UploadManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
@@ -44,6 +45,8 @@ public class UploadWorker implements Runnable {
     @Autowired
     UploadManager uploadManager;
 
+//    @Autowired
+//    Test test;
     public UploadWorker() {
     }
 
@@ -63,21 +66,23 @@ public class UploadWorker implements Runnable {
              * esegue un primo doWork() perchè se il sistema riparte, si
              * potrebbe avere dei record in upload_queue ancora da uploadare
              */
-            doWork();
-            while (true) {
-                try {
-                    // aspetta dal semaforo di avere elementi disponibili sulla tabella upload_queue
-                    log.info("attesa di acquisizione del semaforo per gestire nuovi messaggi...");
-                    messageSemaphore.acquire();
-                    log.info("semaforo preso");
-                    messageSemaphore.drainPermits();
-                    doWork();
-
-                } catch (ShpeckServiceException | InterruptedException | UnknownHostException ex) {
-                    log.warn("InterruptedException: continue. " + ex);
-                    //continue;
-                }
-            }
+            Test test = new Test();
+            test.prova();
+//            doWork();
+//            while (true) {
+//                try {
+//                    // aspetta dal semaforo di avere elementi disponibili sulla tabella upload_queue
+//                    log.info("attesa di acquisizione del semaforo per gestire nuovi messaggi...");
+//                    messageSemaphore.acquire();
+//                    log.info("semaforo preso");
+//                    messageSemaphore.drainPermits();
+//                    doWork();
+//
+//                } catch (ShpeckServiceException | InterruptedException | UnknownHostException ex) {
+//                    log.warn("InterruptedException: continue. " + ex);
+//                    //continue;
+//                }
+//            }
         } catch (Throwable e) {
         }
         MDC.remove("logFileName");
