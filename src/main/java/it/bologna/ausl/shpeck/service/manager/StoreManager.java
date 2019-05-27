@@ -206,19 +206,20 @@ public class StoreManager implements StoreInterface {
                 // caso di calcolo destinatari
                 log.debug("calcolo destinatari");
                 map.forEach((key, value) -> {
-                    log.info("verifico presenza di " + key);
+                    log.debug("verifico presenza di " + key);
                     Address address = addessRepository.findByMailAddress(key);
 
                     if (address == null) {
-                        log.info("indirizzo non trovato: lo salvo");
+                        log.debug("indirizzo non trovato: lo salvo");
                         address = new Address();
                         address.setMailAddress(key);
                         //address.setOriginalAddress(internetAddress.getPersonal());
                         address.setRecipientType(Address.RecipientType.UNKNOWN);
+                    } else {
+                        log.debug("indirizzo trovato con id: " + key);
                     }
 
                     if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
-
                         switch (value) {
                             case PEC:
                                 address.setRecipientType(Address.RecipientType.PEC);
