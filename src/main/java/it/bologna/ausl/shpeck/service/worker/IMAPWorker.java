@@ -216,7 +216,7 @@ public class IMAPWorker implements Runnable {
                 }
             }
 
-            log.info("_____________________________esito e policy_____________________________");
+            log.info("___esito e policy___");
             log.info("messaggi 'OK': " + ((messagesOk == null || messagesOk.isEmpty()) ? "nessuno" : ""));
             messagesOk.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
