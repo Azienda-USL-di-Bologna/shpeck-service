@@ -201,44 +201,84 @@ public class StoreManager implements StoreInterface {
     public List<Address> saveAndReturnAddresses(javax.mail.Address[] addresses, Map<String, Address.RecipientType> map) {
         ArrayList<Address> list = new ArrayList<>();
 
-        for (int i = 0; i < addresses.length; i++) {
-            InternetAddress internetAddress = (InternetAddress) addresses[i];
-            Address address;
-            log.info("verifico presenza di " + internetAddress.getAddress());
-            address = addessRepository.findByMailAddress(internetAddress.getAddress());
+        try {
+            if (map != null) {
+                // caso di calcolo destinatari
+                log.debug("calcolo destinatari");
+                map.forEach((key, value) -> {
+                    log.info("verifico presenza di " + key);
+                    Address address = addessRepository.findByMailAddress(key);
 
-            if (address == null) {
-                log.info("indirizzo non trovato: lo salvo");
-                address = new Address();
-                address.setMailAddress(internetAddress.getAddress());
-                address.setOriginalAddress(internetAddress.getPersonal());
-                address.setRecipientType(Address.RecipientType.UNKNOWN);
-            }
-
-            if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
-                if (map != null) {
-                    switch (map.get(internetAddress.getAddress())) {
-                        case PEC:
-                            address.setRecipientType(Address.RecipientType.PEC);
-                            break;
-                        case REGULAR_EMAIL:
-                            address.setRecipientType(Address.RecipientType.REGULAR_EMAIL);
-                            break;
+                    if (address == null) {
+                        log.info("indirizzo non trovato: lo salvo");
+                        address = new Address();
+                        address.setMailAddress(key);
+                        //address.setOriginalAddress(internetAddress.getPersonal());
+                        address.setRecipientType(Address.RecipientType.UNKNOWN);
                     }
-                }
-                try {
-                    addessRepository.save(address);
-                } catch (Exception ex) {
-                    log.error("Indirizzo già presente: " + address.getMailAddress());
+
+                    if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
+
+                        switch (value) {
+                            case PEC:
+                                address.setRecipientType(Address.RecipientType.PEC);
+                                break;
+                            case REGULAR_EMAIL:
+                                address.setRecipientType(Address.RecipientType.REGULAR_EMAIL);
+                                break;
+                        }
+
+                        try {
+                            addessRepository.save(address);
+                        } catch (Exception ex) {
+                            log.error("Indirizzo già presente: " + address.getMailAddress());
+                        }
+                    }
+                    list.add(address);
+                });
+            } else {
+                // caso di calcolo mittenti, reply_to, cc
+                log.debug("calcolo mittenti / cc / reply_to");
+                for (int i = 0; i < addresses.length; i++) {
+                    InternetAddress internetAddress = (InternetAddress) addresses[i];
+                    Address address;
+                    log.info("verifico presenza di " + internetAddress.getAddress());
+                    address = addessRepository.findByMailAddress(internetAddress.getAddress());
+
+                    if (address == null) {
+                        log.info("indirizzo non trovato: lo salvo");
+                        address = new Address();
+                        address.setMailAddress(internetAddress.getAddress());
+                        //address.setOriginalAddress(internetAddress.getPersonal());
+                        address.setRecipientType(Address.RecipientType.UNKNOWN);
+                    }
+
+                    if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
+                        if (map != null) {
+                            switch (map.get(internetAddress.getAddress())) {
+                                case PEC:
+                                    address.setRecipientType(Address.RecipientType.PEC);
+                                    break;
+                                case REGULAR_EMAIL:
+                                    address.setRecipientType(Address.RecipientType.REGULAR_EMAIL);
+                                    break;
+                            }
+                        }
+                        try {
+                            addessRepository.save(address);
+                        } catch (Exception ex) {
+                            log.error("Indirizzo già presente: " + address.getMailAddress());
+                        }
+                    }
+                    list.add(address);
                 }
             }
 
-            list.add(address);
+            // aggiorna la tipologia di indirizzo (se PEc o REGULAR_MAIL) prendendo da XML della ricevuta la tipologia dei destinatari
+            updateDestinatariType(map);
+        } catch (Throwable e) {
+            log.error("errore in saveAndReturnAddresses: " + e);
         }
-
-        // aggiorna la tipologia di indirizzo (se PEc o REGULAR_MAIL) prendendo da XML della ricevuta la tipologia dei destinatari
-        updateDestinatariType(map);
-
         return list;
     }
 
