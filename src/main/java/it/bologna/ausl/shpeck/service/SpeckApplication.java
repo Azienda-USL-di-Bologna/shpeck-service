@@ -86,6 +86,7 @@ public class SpeckApplication {
                 uploadWorker.setThreadName("uploadWorker");
                 Thread t = new Thread(uploadWorker);
                 t.start();
+
                 // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
 

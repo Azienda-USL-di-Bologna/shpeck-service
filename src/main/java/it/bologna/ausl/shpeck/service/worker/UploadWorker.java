@@ -76,6 +76,7 @@ public class UploadWorker implements Runnable {
     }
 
     public void doWork() throws ShpeckServiceException, UnknownHostException {
+        log.info("------------------------------------------------------------------------");
         log.info("START -> doWork()," + " time: " + new Date());
         ArrayList<UploadQueue> messagesToUpload;
 
@@ -88,5 +89,6 @@ public class UploadWorker implements Runnable {
             }
         } while (!messagesToUpload.isEmpty());
         log.info("STOP -> doWork()," + " time: " + new Date());
+        log.info("------------------------------------------------------------------------");
     }
 }

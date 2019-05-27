@@ -126,7 +126,8 @@ public class IMAPWorker implements Runnable {
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
-        log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
+        log.info("------------------------------------------------------------------------");
+        log.info("START > idPec: [" + idPec + "]" + " time: " + new Date());
 
         init();
 
@@ -263,6 +264,7 @@ public class IMAPWorker implements Runnable {
         }
 
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
+        log.info("------------------------------------------------------------------------");
         MDC.remove("logFileName");
     }
 

@@ -78,6 +78,7 @@ public class SMTPWorker implements Runnable {
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
+        log.info("------------------------------------------------------------------------");
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
 
         try {
@@ -158,6 +159,7 @@ public class SMTPWorker implements Runnable {
                     + "---> " + e);
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
+        log.info("------------------------------------------------------------------------");
         MDC.remove("logFileName");
     }
 
