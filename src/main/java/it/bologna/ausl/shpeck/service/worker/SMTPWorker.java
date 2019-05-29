@@ -90,7 +90,7 @@ public class SMTPWorker implements Runnable {
 
             // check se casella ha invio massivo oppure no
             Integer sendDeday = 0;
-            if (pec.getMassiva()) {
+            if (pec != null && pec.getMassiva()) {
                 sendDeday = defaultDelayMassiveMail;
                 log.debug("casella con invio massivo");
             } else {
