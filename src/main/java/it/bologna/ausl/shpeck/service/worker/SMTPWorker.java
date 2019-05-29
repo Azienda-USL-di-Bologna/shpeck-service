@@ -45,8 +45,11 @@ public class SMTPWorker implements Runnable {
     @Autowired
     SMTPManager smtpManager;
 
-    @Value("${mail.smtp.sendDelay-seconds}")
-    Integer defaultDelay;
+    @Value("${mail.smtp.sendNormalDelay-milliseconds}")
+    Integer defaultDelayNormailMail;
+
+    @Value("${mail.smtp.sendMassiveDelay-milliseconds}")
+    Integer defaultDelayMassiveMail;
 
     private static final Logger log = LoggerFactory.getLogger(SMTPWorker.class);
     private String threadName;
@@ -84,6 +87,16 @@ public class SMTPWorker implements Runnable {
         try {
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
+
+            // check se casella ha invio massivo oppure no
+            Integer sendDeday = 0;
+            if (pec.getMassiva()) {
+                sendDeday = defaultDelayMassiveMail;
+                log.debug("casella con invio massivo");
+            } else {
+                sendDeday = defaultDelayNormailMail;
+                log.debug("casella con invio NON massivo");
+            }
 
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
@@ -138,9 +151,9 @@ public class SMTPWorker implements Runnable {
 
                     log.debug("sleep per evitare invio massivo...");
                     if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
-                        TimeUnit.SECONDS.sleep(pec.getSendDelay());
+                        TimeUnit.MILLISECONDS.sleep(pec.getSendDelay());
                     } else {
-                        TimeUnit.SECONDS.sleep(defaultDelay);
+                        TimeUnit.MILLISECONDS.sleep(sendDeday);
                     }
                     log.debug("sleep terminato, continuo");
 
@@ -162,5 +175,4 @@ public class SMTPWorker implements Runnable {
         log.info("------------------------------------------------------------------------");
         MDC.remove("logFileName");
     }
-
 }
