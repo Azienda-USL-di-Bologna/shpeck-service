@@ -207,16 +207,16 @@ public class StoreManager implements StoreInterface {
                 log.debug("calcolo destinatari");
                 map.forEach((key, value) -> {
                     log.debug("verifico presenza di " + key);
-                    Address address = addessRepository.findByMailAddress(key);
+                    Address address = addessRepository.findByMailAddress(key.toLowerCase());
 
                     if (address == null) {
                         log.debug("indirizzo non trovato: lo salvo");
                         address = new Address();
-                        address.setMailAddress(key);
+                        address.setMailAddress(key.toLowerCase());
                         //address.setOriginalAddress(internetAddress.getPersonal());
                         address.setRecipientType(Address.RecipientType.UNKNOWN);
                     } else {
-                        log.debug("indirizzo trovato con id: " + key);
+                        log.debug("indirizzo trovato con id: " + key.toLowerCase());
                     }
 
                     if ((address.getRecipientType().equals(Address.RecipientType.UNKNOWN))) {
@@ -244,12 +244,12 @@ public class StoreManager implements StoreInterface {
                     InternetAddress internetAddress = (InternetAddress) addresses[i];
                     Address address;
                     log.info("verifico presenza di " + internetAddress.getAddress());
-                    address = addessRepository.findByMailAddress(internetAddress.getAddress());
+                    address = addessRepository.findByMailAddress(internetAddress.getAddress().toLowerCase());
 
                     if (address == null) {
                         log.info("indirizzo non trovato: lo salvo");
                         address = new Address();
-                        address.setMailAddress(internetAddress.getAddress());
+                        address.setMailAddress(internetAddress.getAddress().toLowerCase());
                         //address.setOriginalAddress(internetAddress.getPersonal());
                         address.setRecipientType(Address.RecipientType.UNKNOWN);
                     }
@@ -268,7 +268,7 @@ public class StoreManager implements StoreInterface {
                         try {
                             addessRepository.save(address);
                         } catch (Exception ex) {
-                            log.error("Indirizzo già presente: " + address.getMailAddress());
+                            log.error("Indirizzo già presente: " + address.getMailAddress().toLowerCase());
                         }
                     }
                     list.add(address);

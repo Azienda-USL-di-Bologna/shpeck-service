@@ -99,31 +99,44 @@ public class RecepitMessageStoreManager extends StoreManager {
         switch (pecRecepit.getxRicevuta()) {
             case "accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.ACCETTAZIONE);
+                if (relatedMessage.getMessageStatus().toString() != Message.MessageStatus.CONFIRMED.toString()) {
+                    relatedMessage.setMessageStatus(Message.MessageStatus.ACCEPTED);
+                }
                 break;
             case "preavviso-errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.PREAVVISO_ERRORE_CONSEGNA);
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
                 break;
             case "presa-in-carico":
                 recepit.setRecepitType(Recepit.RecepitType.PRESA_IN_CARICO);
+                // qui non posso mai entrare
                 break;
             case "non-accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.NON_ACCETTAZIONE);
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
                 break;
             case "rilevazione-virus":
                 recepit.setRecepitType(Recepit.RecepitType.RILEVAZIONE_VIRUS);
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
                 break;
             case "errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.ERRORE_CONSEGNA);
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
                 break;
             case "avvenuta-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.CONSEGNA);
+                relatedMessage.setMessageStatus(Message.MessageStatus.CONFIRMED);
                 break;
             default:
                 log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
                 break;
         }
 
+        log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
+        storeMessage(relatedMessage);
+        log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
+        log.debug("Salvo il messaggio di ricevutat...");
         storeMessage(messaggioDiRicevuta);
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
     }
