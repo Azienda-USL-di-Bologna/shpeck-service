@@ -108,12 +108,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>it.nextsw</groupId>
-            <artifactId>next-spring-data-rest-framework</artifactId>
-            <version>1.5.alfa</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
