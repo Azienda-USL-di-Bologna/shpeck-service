@@ -93,6 +93,8 @@ public class PecMessageStoreManager extends StoreManager {
         messaggioBustato.setIdRelated(messaggioSbustato);
         if (pecMessage.getxTrasporto().equals("errore")) {
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
+            messaggioBustato.setMessageStatus(Message.MessageStatus.ERROR);
+            messaggioSbustato.setMessageStatus(Message.MessageStatus.ERROR);
         } else {
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         }

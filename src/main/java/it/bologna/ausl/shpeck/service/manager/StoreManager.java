@@ -106,8 +106,9 @@ public class StoreManager implements StoreInterface {
         }
 
         try {
-            message.setAttachmentsNumber(EmlHandlerUtils.getAttachments(mailMessage.getOriginal(), null).length);
-        } catch (MessagingException | IOException ex) {
+//            message.setAttachmentsNumber(EmlHandlerUtils.getAttachments(mailMessage.getOriginal(), null).length);
+            message.setAttachmentsNumber(MessageBuilder.messageHasAttachment(mailMessage.getOriginal()));
+        } catch (ShpeckServiceException ex) {
             log.error("Errore dello stabilire il numero di allegati", ex);
             message.setAttachmentsNumber(0);
         }

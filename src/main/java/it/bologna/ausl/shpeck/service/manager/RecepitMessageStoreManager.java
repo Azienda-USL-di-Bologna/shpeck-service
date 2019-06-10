@@ -136,7 +136,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         storeMessage(relatedMessage);
         log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
-        log.debug("Salvo il messaggio di ricevutat...");
+        log.debug("Salvo il messaggio di ricevuta...");
         storeMessage(messaggioDiRicevuta);
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
     }

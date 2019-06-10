@@ -15,6 +15,7 @@ import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.Session;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import nu.xom.Builder;
 import nu.xom.Document;
@@ -113,5 +114,59 @@ public class MessageBuilder {
             }
             return res;
         }
+    }
+
+    public static int messageHasAttachment(Part p) throws ShpeckServiceException {
+        int attachments = 0;
+        try {
+            Multipart multiPart = (Multipart) p.getContent();
+            for (int i = 0; i < multiPart.getCount(); i++) {
+                MimeBodyPart part = (MimeBodyPart) multiPart.getBodyPart(i);
+                if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())) {
+                    attachments++;
+                }
+            }
+            return attachments;
+//            return getAllParts(p).size();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ShpeckServiceException("Errore nel determinare se il messaggio ha allegati", e);
+        }
+        /*
+		int res=0;
+		try {
+			if (!p.isMimeType("multipart/*") ){
+				String mime=p.getContentType();
+				String fname=p.getFileName();
+				if (fname!=null ||( !mime.equals("text/html") && !mime.equals("text/plain"))) return 1;
+				return res;
+
+			}
+
+
+
+		Multipart mp;
+		try {
+			mp = (Multipart)p.getContent();
+		} catch (IOException e) {
+			throw new PecGWException("Error getting message multipart", e);
+		}
+
+		for (int i=0, n=mp.getCount(); i<n; i++) {
+		  Part part = mp.getBodyPart(i);
+
+		  String disposition = part.getDisposition();
+
+		  if (((disposition != null) &&
+			  ((disposition.equals(Part.ATTACHMENT)) ||
+		       (disposition.equals(Part.INLINE))))||(part.getFileName()!=null)) {
+			  	res++;
+		  }
+		}
+		} catch (MessagingException e) {
+			throw new PecGWException("Error determinig if message has attachments", e);
+
+		}
+		return res;*/
     }
 }
