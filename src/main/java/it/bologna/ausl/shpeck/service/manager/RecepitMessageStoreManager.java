@@ -13,6 +13,7 @@ import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,9 @@ public class RecepitMessageStoreManager extends StoreManager {
 
     private PecRecepit pecRecepit;
     private Pec pec;
+
+    @Autowired
+    MessageTagStoreManager messageTagStoreManager;
 
     public RecepitMessageStoreManager() {
     }
@@ -106,6 +110,7 @@ public class RecepitMessageStoreManager extends StoreManager {
             case "preavviso-errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.PREAVVISO_ERRORE_CONSEGNA);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
                 break;
             case "presa-in-carico":
                 recepit.setRecepitType(Recepit.RecepitType.PRESA_IN_CARICO);
@@ -114,14 +119,17 @@ public class RecepitMessageStoreManager extends StoreManager {
             case "non-accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.NON_ACCETTAZIONE);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
                 break;
             case "rilevazione-virus":
                 recepit.setRecepitType(Recepit.RecepitType.RILEVAZIONE_VIRUS);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
                 break;
             case "errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.ERRORE_CONSEGNA);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
                 break;
             case "avvenuta-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.CONSEGNA);
