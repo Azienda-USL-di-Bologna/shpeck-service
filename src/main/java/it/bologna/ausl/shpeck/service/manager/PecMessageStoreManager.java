@@ -99,8 +99,6 @@ public class PecMessageStoreManager extends StoreManager {
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
             messaggioBustato.setMessageStatus(Message.MessageStatus.ERROR);
             messaggioSbustato.setMessageStatus(Message.MessageStatus.RECEIVED);
-            log.info("Salvo il MessageTag di errore al messaggio");
-            messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(messaggioSbustato);
         } else {
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         }
