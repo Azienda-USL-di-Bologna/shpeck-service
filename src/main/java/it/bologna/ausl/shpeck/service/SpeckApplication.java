@@ -19,6 +19,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
@@ -69,6 +70,12 @@ public class SpeckApplication {
     @Value("${shpeck.threads.imap-delay}")
     String imapDelay;
 
+    @Value("${test-mode}")
+    Boolean testMode;
+
+    @Value("${shpeck.test-mail}")
+    String testMail;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -89,6 +96,12 @@ public class SpeckApplication {
 
                 // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
+
+                if (testMode) {
+                    String[] testMailArray = Arrays.stream(testMail.split("\\,")).toArray(String[]::new);
+                    ArrayList<String> testMailList = new ArrayList<>(Arrays.asList(testMailArray));
+                    pecAttive.removeIf(pec -> !isTestMail(pec, testMailList));
+                }
 
                 // lancio di IMAPWorker per ogni casella PEC attiva
                 log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
@@ -115,6 +128,10 @@ public class SpeckApplication {
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
+    }
+
+    private boolean isTestMail(Pec pec, ArrayList<String> list) {
+        return list.contains(pec.getIndirizzo());
     }
 
 }
