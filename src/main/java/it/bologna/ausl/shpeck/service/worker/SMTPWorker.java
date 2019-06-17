@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
+import it.bologna.ausl.shpeck.service.manager.MessageTagStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
@@ -44,6 +45,9 @@ public class SMTPWorker implements Runnable {
 
     @Autowired
     SMTPManager smtpManager;
+
+    @Autowired
+    MessageTagStoreManager messageTagStoreManager;
 
     @Value("${mail.smtp.sendNormalDelay-milliseconds}")
     Integer defaultDelayNormailMail;
@@ -118,6 +122,13 @@ public class SMTPWorker implements Runnable {
                             log.error("Errore invio messaggio > metadati già salvati: " + response.getMessage().toString());
                             log.error("metto in stato di errore il messaggio " + m.getId());
                             m.setMessageStatus(Message.MessageStatus.ERROR);
+                            log.error("Metto il tag Errore al messaggio");
+                            try {
+                                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m);
+                            } catch (Exception e) {
+                                log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString());
+                                log.error(e.toString());
+                            }
                             log.error("setto in outbox come da ignorare");
                             outbox.setIgnore(Boolean.TRUE);
                             outboxRepository.save(outbox);

@@ -12,6 +12,7 @@ import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PecMessageStoreManager extends StoreManager {
+
+    @Autowired
+    MessageTagStoreManager messageTagStoreManager;
 
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
 
@@ -95,6 +99,8 @@ public class PecMessageStoreManager extends StoreManager {
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
             messaggioBustato.setMessageStatus(Message.MessageStatus.ERROR);
             messaggioSbustato.setMessageStatus(Message.MessageStatus.RECEIVED);
+            log.info("Salvo il MessageTag di errore al messaggio");
+            messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(messaggioSbustato);
         } else {
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         }
