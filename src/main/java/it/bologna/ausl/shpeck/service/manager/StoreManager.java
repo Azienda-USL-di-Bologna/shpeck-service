@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
+import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -105,11 +106,16 @@ public class StoreManager implements StoreInterface {
             message.setMessageType(Message.MessageType.MAIL);
         }
 
-        try {
+        // se il message è PEC non calcolare gli allegati
+        if (!PecMessage.isPecMessage(mailMessage.getOriginal())) {
+            try {
 //            message.setAttachmentsNumber(EmlHandlerUtils.getAttachments(mailMessage.getOriginal(), null).length);
-            message.setAttachmentsNumber(MessageBuilder.messageHasAttachment(mailMessage.getOriginal()));
-        } catch (ShpeckServiceException ex) {
-            log.error("Errore dello stabilire il numero di allegati", ex);
+                message.setAttachmentsNumber(MessageBuilder.messageHasAttachment(mailMessage.getOriginal()));
+            } catch (ShpeckServiceException ex) {
+                log.error("Errore dello stabilire il numero di allegati", ex);
+                message.setAttachmentsNumber(0);
+            }
+        } else {
             message.setAttachmentsNumber(0);
         }
 
