@@ -94,7 +94,7 @@ public class PecMessageStoreManager extends StoreManager {
         if (pecMessage.getxTrasporto().equals("errore")) {
             messaggioBustato.setMessageType(Message.MessageType.ERROR);
             messaggioBustato.setMessageStatus(Message.MessageStatus.ERROR);
-            messaggioSbustato.setMessageStatus(Message.MessageStatus.ERROR);
+            messaggioSbustato.setMessageStatus(Message.MessageStatus.RECEIVED);
         } else {
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         }
