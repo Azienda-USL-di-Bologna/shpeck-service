@@ -93,12 +93,12 @@ public class SMTPWorker implements Runnable {
             Pec pec = pecRepository.findById(idPec).get();
 
             // check se casella ha invio massivo oppure no
-            Integer sendDeday = 0;
+            Integer sendDelay = 0;
             if (pec != null && pec.getMassiva()) {
-                sendDeday = defaultDelayMassiveMail;
+                sendDelay = defaultDelayMassiveMail;
                 log.debug("casella con invio massivo");
             } else {
-                sendDeday = defaultDelayNormailMail;
+                sendDelay = defaultDelayNormailMail;
                 log.debug("casella con invio NON massivo");
             }
 
@@ -160,11 +160,11 @@ public class SMTPWorker implements Runnable {
                         log.error("Errore: " + e);
                     }
 
-                    log.debug("sleep per evitare invio massivo...");
+                    log.debug("se mail non ha invio massivo viene fatto uno sleep");
                     if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
                         TimeUnit.MILLISECONDS.sleep(pec.getSendDelay());
                     } else {
-                        TimeUnit.MILLISECONDS.sleep(sendDeday);
+                        TimeUnit.MILLISECONDS.sleep(sendDelay);
                     }
                     log.debug("sleep terminato, continuo");
 
