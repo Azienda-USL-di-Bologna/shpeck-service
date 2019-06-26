@@ -42,6 +42,9 @@ public class IMAPManager {
     @Autowired
     PecRepository pecRepository;
 
+    @Autowired
+    StoreManager storeManager;
+
     @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
 
@@ -330,5 +333,11 @@ public class IMAPManager {
         }
         pecRepository.save(pec);
         log.info("salvataggio lastUID -> OK");
+    }
+
+    public void enqueueForUpload(it.bologna.ausl.model.entities.shpeck.Message message) {
+        log.debug("enqueueForUpload -> " + message.getId());
+        log.debug("chiamo lo store manager per salvare in uploadQueue");
+        storeManager.insertToUploadQueue(message);
     }
 }

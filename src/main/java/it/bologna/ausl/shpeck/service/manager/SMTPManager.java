@@ -9,6 +9,7 @@ import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
@@ -49,6 +50,9 @@ public class SMTPManager {
 
     @Autowired
     ApplicazioneRepository applicazioneRepository;
+
+    @Autowired
+    RawMessageRepository rawMessageRepository;
 
     public SMTPManager() {
     }
@@ -125,5 +129,11 @@ public class SMTPManager {
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
         }
         return storeResponse;
+    }
+
+    public void enqueueForUpload(Message message) {
+        log.debug("enqueueForUpload -> " + message.getId());
+        log.debug("chiamo lo store manager per salvare in uploadQueue");
+        regularMessageStoreManager.insertToUploadQueue(message);
     }
 }

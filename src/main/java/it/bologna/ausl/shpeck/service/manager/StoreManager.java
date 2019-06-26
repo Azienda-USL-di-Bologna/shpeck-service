@@ -389,22 +389,14 @@ public class StoreManager implements StoreInterface {
     }
 
     @Override
-    public RawMessage storeRawMessageAndUploadQueue(Message message, String raw) {
-        log.info("--- inizio storeRawMessageAndUploadQueue ---");
+    public RawMessage storeRawMessage(Message message, String raw) {
+        log.info("--- inizio storeRawMessage ---");
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);
         rawMessage.setRawData(raw);
         log.debug("salvataggio del rawMessage...");
         rawMessage = rawMessageRepository.save(rawMessage);
         log.debug("rawMessage salvato");
-
-        UploadQueue uploadQueue = new UploadQueue();
-        uploadQueue.setIdRawMessage(rawMessage);
-        log.info("inserimento del rawMessage in upload_queue...");
-        uploadQueueRepository.save(uploadQueue);
-        log.info("inserimento in upload_queue avvenuto con successo");
-        log.info("--- fine metodo storeRawMessageAndUploadQueue ---");
-
         return rawMessage;
     }
 
@@ -420,9 +412,16 @@ public class StoreManager implements StoreInterface {
      * Inserisce il messaggio raw nella coda di upload
      */
     @Override
-    public void insertToUploadQueue(RawMessage raw) {
-        // dal raw -> prendo il messaggio -> prendo la pec -> prendo l'azienda -> prendo il tipo di connessione repository
-        // setto in un nuovo UploadQueue        
+    public void insertToUploadQueue(Message message) {
+        log.info("insertToUploadQueue: reperisco il raw_message del messaggio " + message.getId());
+        UploadQueue uploadQueue = new UploadQueue();
+        RawMessage rawMessage = rawMessageRepository.findByIdMessage(message);
+        log.info("setto l'id_raw_message " + rawMessage.getId());
+        uploadQueue.setIdRawMessage(rawMessage);
+        log.info("inserimento del rawMessage in upload_queue...");
+        uploadQueueRepository.save(uploadQueue);
+        log.info("inserimento in upload_queue avvenuto con successo");
+        log.info("--- fine metodo storeRawMessageAndUploadQueue ---");
     }
 
     /**

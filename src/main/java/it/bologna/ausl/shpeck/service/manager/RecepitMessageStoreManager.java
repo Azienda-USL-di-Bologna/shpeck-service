@@ -74,19 +74,19 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         if (relatedMessage == null) {
             log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
-            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta);
+            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, true);
         }
 
         messaggioDiRicevuta.setIdRelated(relatedMessage);
         if (getMessageFromDb(messaggioDiRicevuta) != null) {
-            return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, false);
         }
 
         storeMessage(messaggioDiRicevuta);
 
         try {
             log.debug("Salvo il RawMessage della RICEVUTA");
-            storeRawMessageAndUploadQueue(messaggioDiRicevuta, pecRecepit.getRaw_message());
+            storeRawMessage(messaggioDiRicevuta, pecRecepit.getRaw_message());
         } catch (MailMessageException e) {
             log.error("Errore nel retrieving data del rawMessage dal pecRecepit " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecRecepit", e);
@@ -145,8 +145,8 @@ public class RecepitMessageStoreManager extends StoreManager {
         log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
         log.debug("Salvo il messaggio di ricevuta...");
-        storeMessage(messaggioDiRicevuta);
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta);
+        messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
     }
 
 }

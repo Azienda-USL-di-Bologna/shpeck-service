@@ -68,14 +68,14 @@ public class PecMessageStoreManager extends StoreManager {
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
 
         if (getMessageFromDb(messaggioSbustato) != null) {
-            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato);
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato, false);
         }
 
-        storeMessage(messaggioSbustato);
+        messaggioSbustato = storeMessage(messaggioSbustato);
 
         try {
             log.debug("salvo il RawMessage dello sbustato");
-            storeRawMessageAndUploadQueue(messaggioSbustato, pecMessage.getRaw_message());
+            storeRawMessage(messaggioSbustato, pecMessage.getRaw_message());
         } catch (MailMessageException e) {
             log.error("Errore nel reperimento del rawMessage dal pecMessage " + e);
             throw new MailMessageException("Errore nel reperimento del rawMessage dal pecMessage", e);
@@ -102,10 +102,10 @@ public class PecMessageStoreManager extends StoreManager {
         } else {
             messaggioBustato.setMessageType(Message.MessageType.PEC);
         }
-        storeMessage(messaggioBustato);
+        messaggioBustato = storeMessage(messaggioBustato);
         try {
             log.debug("Salvo il RawMessage della BUSTA");
-            storeRawMessageAndUploadQueue(messaggioBustato, envelope.getRaw_message());
+            storeRawMessage(messaggioBustato, envelope.getRaw_message());
         } catch (MailMessageException e) {
             log.error("Errore nel retrieving data del rawMessage dal pecMessage " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecMessage", e);
@@ -117,6 +117,6 @@ public class PecMessageStoreManager extends StoreManager {
         storeMessagesAddresses(messaggioBustato, mapBusta);
         log.debug("salvataggio avvenuto con successo");
 
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato);
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, true);
     }
 }

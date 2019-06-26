@@ -4,6 +4,7 @@ import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
@@ -16,6 +17,7 @@ import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
 import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
@@ -47,6 +49,9 @@ public class IMAPWorker implements Runnable {
 
     @Autowired
     PecRepository pecRepository;
+
+    @Autowired
+    MessageRepository messageRepository;
 
     @Autowired
     PecProviderRepository pecProviderRepository;
@@ -168,10 +173,19 @@ public class IMAPWorker implements Runnable {
                                 pecMessageStoreManager.setPecMessage((PecMessage) mailProxy.getMail());
                                 pecMessageStoreManager.setPec(pec);
                                 pecMessageStoreManager.setApplicazione(applicazione);
-
                                 log.info("salvataggio metadati...");
                                 res = pecMessageStoreManager.store();
                                 log.info("gestione metadati -> OK");
+                                if (res.isToUpload()) {
+                                    log.info("prendo la busta dalla res");
+                                    Message busta = res.getMessage();
+                                    log.info("metto in upload queue la busta");
+                                    pecMessageStoreManager.insertToUploadQueue(busta);
+                                    log.info("metto in upload queue la mail sbustata");
+                                    pecMessageStoreManager.insertToUploadQueue(busta.getIdRelated());
+                                } else {
+                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                }
                                 break;
 
                             case RECEPIT:
@@ -182,6 +196,14 @@ public class IMAPWorker implements Runnable {
                                 log.info("salvataggio metadati...");
                                 res = recepitMessageStoreManager.store();
                                 log.info("gestione metadati -> OK");
+                                if (res.isToUpload()) {
+                                    log.info("prendo il message ricevuta dalla res");
+                                    Message ricevuta = messageRepository.findById(res.getMessage().getId()).get();
+                                    log.info("metto in upload queue la ricevuta");
+                                    recepitMessageStoreManager.insertToUploadQueue(ricevuta);
+                                } else {
+                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                }
                                 break;
 
                             case MAIL:
@@ -192,6 +214,15 @@ public class IMAPWorker implements Runnable {
                                 log.info("salvataggio metadati...");
                                 res = regularMessageStoreManager.store();
                                 log.info("gestione metadati -> OK");
+                                if (res.isToUpload()) {
+                                    log.info("prendo il regular message dalla res");
+                                    Message regularMessage = res.getMessage();
+                                    log.info("metto in upload queue il regular message");
+                                    regularMessageStoreManager.insertToUploadQueue(regularMessage);
+                                } else {
+                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                }
+
                                 break;
 
                             default:

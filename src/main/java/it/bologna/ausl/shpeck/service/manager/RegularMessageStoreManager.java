@@ -25,43 +25,43 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RegularMessageStoreManager extends StoreManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(RegularMessageStoreManager.class);
-    
+
     private MailMessage mailMessage;
     private Pec pec;
     private Outbox outbox; // Viene valorizzato solo nel caso di SMTP per un messaggio spedito da Pico.
 
     public RegularMessageStoreManager() {
     }
-    
+
     public Pec getPec() {
         return pec;
     }
-    
+
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-    
+
     public MailMessage getMailMessage() {
         return mailMessage;
     }
-    
+
     public void setMailMessage(MailMessage mailMessage) {
         this.mailMessage = mailMessage;
     }
-    
+
     public Outbox getOutbox() {
         return outbox;
     }
-    
+
     public void setOutbox(Outbox outbox) {
         this.outbox = outbox;
     }
-    
+
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
-        
+
         log.info("--- inizio RegularMessageStoreManager.store() ---");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
@@ -75,7 +75,7 @@ public class RegularMessageStoreManager extends StoreManager {
             log.info("Messaggio salvato " + regularMessage.toString());
             try {
                 log.debug("Salvo il RawMessage del RegularMessage");
-                storeRawMessageAndUploadQueue(regularMessage, mailMessage.getRaw_message());
+                storeRawMessage(regularMessage, mailMessage.getRaw_message());
             } catch (MailMessageException e) {
                 log.error("Errore nel retrieving data del rawMessage dal mailMessage " + e.getMessage());
                 throw new MailMessageException("Errore nel retrieving data del rawMessage dal mailMessage", e);
@@ -88,7 +88,7 @@ public class RegularMessageStoreManager extends StoreManager {
         HashMap mapMessagesAddress = upsertAddresses(mailMessage);
         log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
         storeMessagesAddresses(regularMessage, mapMessagesAddress);
-        
-        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage);
+
+        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, true);
     }
 }

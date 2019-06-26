@@ -11,11 +11,13 @@ public class StoreResponse {
     private String status;
     private MailMessage mailMessage;
     private Message message;
+    private boolean toUpload;
 
-    public StoreResponse(String status, MailMessage mailMessage, Message message) {
+    public StoreResponse(String status, MailMessage mailMessage, Message message, boolean toUpload) {
         this.status = status;
         this.mailMessage = mailMessage;
         this.message = message;
+        this.toUpload = toUpload;
     }
 
     public String getStatus() {
@@ -40,6 +42,19 @@ public class StoreResponse {
 
     public void setMessage(Message message) {
         this.message = message;
+    }
+
+    public boolean isToUpload() {
+        return toUpload;
+    }
+
+    public void setToUpload(boolean toUpload) {
+        this.toUpload = toUpload;
+    }
+
+    @Override
+    public String toString() {
+        return "StoreResponse{" + "status=" + status + ", mailMessage=" + mailMessage + ", message=" + message + ", toUpload=" + toUpload + '}';
     }
 
 }

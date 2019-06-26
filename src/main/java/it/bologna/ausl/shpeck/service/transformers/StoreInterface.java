@@ -21,9 +21,9 @@ public interface StoreInterface {
 
     public Message getMessageFromDb(Message message);
 
-    public RawMessage storeRawMessageAndUploadQueue(Message message, String rawMessage);
+    public RawMessage storeRawMessage(Message message, String rawMessage);
 
-    public void insertToUploadQueue(RawMessage raw);
+    public void insertToUploadQueue(Message message);
 
     public void removeFromUploadQueue(UploadQueue uq);
 }

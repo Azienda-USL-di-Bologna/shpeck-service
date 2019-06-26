@@ -30,64 +30,64 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SMTPWorker implements Runnable {
-
+    
     @Autowired
     PecRepository pecRepository;
-
+    
     @Autowired
     MessageRepository messageRepository;
-
+    
     @Autowired
     OutboxRepository outboxRepository;
-
+    
     @Autowired
     Semaphore messageSemaphore;
-
+    
     @Autowired
     SMTPManager smtpManager;
-
+    
     @Autowired
     MessageTagStoreManager messageTagStoreManager;
-
+    
     @Value("${mail.smtp.sendNormalDelay-milliseconds}")
     Integer defaultDelayNormailMail;
-
+    
     @Value("${mail.smtp.sendMassiveDelay-milliseconds}")
     Integer defaultDelayMassiveMail;
-
+    
     private static final Logger log = LoggerFactory.getLogger(SMTPWorker.class);
     private String threadName;
     private Integer idPec;
-
+    
     private enum applications {
         BABEL, BABORG, DELI, DETE, FIRMONE, GEDI, GIPI, MYALISEO, PECG, PROCTON, RIBALTORG, SCRIVANIA, SHPECK, VERBA
     }
-
+    
     public SMTPWorker() {
     }
-
+    
     public String getThreadName() {
         return threadName;
     }
-
+    
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-
+    
     public Integer getIdPec() {
         return idPec;
     }
-
+    
     public void setIdPec(Integer idPec) {
         this.idPec = idPec;
     }
-
+    
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         log.info("------------------------------------------------------------------------");
         log.info("START -> idPec: [" + idPec + "]" + " time: " + new Date());
-
+        
         try {
             // Prendo la pec
             Pec pec = pecRepository.findById(idPec).get();
@@ -112,7 +112,7 @@ public class SMTPWorker implements Runnable {
                 for (Outbox outbox : messagesToSend) {
                     StoreResponse response = null;
                     try {
-
+                        
                         log.info("==================== gestione message in outbox con id: " + outbox.getId() + " ====================");
                         response = smtpManager.saveMessageAndUploadQueue(outbox);
                         Message m = response.getMessage();
@@ -148,6 +148,9 @@ public class SMTPWorker implements Runnable {
                         }
                         log.info("aggiorno lo stato di message a " + m.getMessageStatus().toString() + "...");
                         messageRepository.save(m);
+                        
+                        log.info("sono pronto per mettere il messaggio in upload queue");
+                        smtpManager.enqueueForUpload(m);
                         // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
                         if (response != null) {
                             messageSemaphore.release();
@@ -159,7 +162,7 @@ public class SMTPWorker implements Runnable {
                     } catch (Exception e) {
                         log.error("Errore: " + e);
                     }
-
+                    
                     log.debug("se mail non ha invio massivo viene fatto uno sleep");
                     if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
                         TimeUnit.MILLISECONDS.sleep(pec.getSendDelay());
@@ -167,9 +170,9 @@ public class SMTPWorker implements Runnable {
                         TimeUnit.MILLISECONDS.sleep(sendDelay);
                     }
                     log.debug("sleep terminato, continuo");
-
+                    
                 }
-
+                
             }
 
             // ciclo i messaggi:
