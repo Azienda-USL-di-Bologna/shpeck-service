@@ -28,14 +28,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UploadWorker implements Runnable {
-    
+
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
-    
+
     private String threadName;
-    
+
     @Autowired
     UploadQueueRepository uploadQueueRepository;
-    
+
     @Autowired
     RawMessageRepository rawMessageRepository;
 
@@ -50,7 +50,7 @@ public class UploadWorker implements Runnable {
 
     @Autowired
     Semaphore messageSemaphore;
-    
+
     @Autowired
     UploadManager uploadManager;
 
@@ -58,15 +58,15 @@ public class UploadWorker implements Runnable {
 //    Test test;
     public UploadWorker() {
     }
-    
+
     public String getThreadName() {
         return threadName;
     }
-    
+
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-    
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
@@ -84,28 +84,27 @@ public class UploadWorker implements Runnable {
                     log.info("semaforo preso");
                     messageSemaphore.drainPermits();
                     doWork();
-                    
+
                 } catch (ShpeckServiceException | InterruptedException | UnknownHostException ex) {
                     log.warn("InterruptedException: continue. " + ex);
                     //continue;
                 }
             }
         } catch (Throwable e) {
-            e.printStackTrace();
         }
         MDC.remove("logFileName");
     }
-    
+
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("------------------------------------------------------------------------");
         log.info("START -> doWork()," + " time: " + new Date());
         ArrayList<UploadQueue> messagesToUpload;
-        
+
         do {
             // prendi i messaggi da caricare presenti in upload_queue
             //messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
             messagesToUpload = uploadQueueRepository.findByUploaded(Boolean.FALSE);
-            
+
             for (UploadQueue uq : messagesToUpload) {
                 UploadQueue u = uploadQueueRepository.findById(uq.getId()).get();
                 RawMessage rm = rawMessageRepository.findById(u.getIdRawMessage().getId()).get();

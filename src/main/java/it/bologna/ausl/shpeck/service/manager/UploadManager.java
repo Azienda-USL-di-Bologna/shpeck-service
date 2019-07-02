@@ -63,7 +63,7 @@ public class UploadManager {
             // inizializzazione del context storage
             storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
 
-            log.info("Fattio lo store del message");
+            log.info("Fatto lo store del message");
             // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
             UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
 
