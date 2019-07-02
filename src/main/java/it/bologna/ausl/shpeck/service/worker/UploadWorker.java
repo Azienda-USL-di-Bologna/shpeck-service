@@ -1,8 +1,16 @@
 package it.bologna.ausl.shpeck.service.worker;
 
+import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.UploadManager;
+import it.bologna.ausl.shpeck.service.repository.AziendaRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
+import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -27,6 +35,18 @@ public class UploadWorker implements Runnable {
 
     @Autowired
     UploadQueueRepository uploadQueueRepository;
+
+    @Autowired
+    RawMessageRepository rawMessageRepository;
+
+    @Autowired
+    MessageRepository messageRepository;
+
+    @Autowired
+    PecRepository pecRepository;
+
+    @Autowired
+    AziendaRepository aziendaRepository;
 
     @Autowired
     Semaphore messageSemaphore;
@@ -71,6 +91,7 @@ public class UploadWorker implements Runnable {
                 }
             }
         } catch (Throwable e) {
+            e.printStackTrace();
         }
         MDC.remove("logFileName");
     }
@@ -82,11 +103,26 @@ public class UploadWorker implements Runnable {
 
         do {
             // prendi i messaggi da caricare presenti in upload_queue
-            messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
+            //messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
+            messagesToUpload = uploadQueueRepository.findByUploaded(Boolean.FALSE);
 
-            for (UploadQueue messageToStore : messagesToUpload) {
-                uploadManager.manage(messageToStore);
+            for (UploadQueue uq : messagesToUpload) {
+                UploadQueue u = uploadQueueRepository.findById(uq.getId()).get();
+                RawMessage rm = rawMessageRepository.findById(u.getIdRawMessage().getId()).get();
+                Message m = messageRepository.findById(rm.getIdMessage().getId()).get();
+                Pec p = pecRepository.findById(m.getIdPec().getId()).get();
+                Azienda a = aziendaRepository.findById(p.getIdAziendaRepository().getId()).get();
+                p.setIdAziendaRepository(a);
+                m.setIdPec(p);
+                rm.setIdMessage(m);
+                u.setIdRawMessage(rm);
+                uploadManager.manage(u);
             }
+
+//            for (Integer messageToStore : messagesToUpload) {
+//                UploadQueue u = uploadQueueRepository.findById(messageToStore).get();
+//                uploadManager.manage(u);
+//            }
         } while (!messagesToUpload.isEmpty());
         log.info("STOP -> doWork()," + " time: " + new Date());
         log.info("------------------------------------------------------------------------");
