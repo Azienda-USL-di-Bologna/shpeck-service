@@ -16,16 +16,17 @@ import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
-import  it.bologna.ausl.model.entities.shpeck.Message.MessageType;
+import it.bologna.ausl.model.entities.shpeck.Message.MessageType;
 
-public class MailMessage implements MailIdentity{
+public class MailMessage implements MailIdentity {
+
     protected Address[] from, to, cc, reply_to;
     protected MimeMessage original;
     protected Boolean ispec = false;
     protected String subject, string_headers, id, raw_message, message = null;
     protected HashMap<String, String> headers;
-    protected Date sendDate, receiveDate; 
-    
+    protected Date sendDate, receiveDate;
+
     public MailMessage(MimeMessage m) throws MailMessageException {
         this.original = m;
         try {
@@ -42,7 +43,7 @@ public class MailMessage implements MailIdentity{
             throw new MailMessageException("Errore nella creazione del MailMessage", ex);
         }
     }
-    
+
     public Address[] getCc() {
         return cc;
     }
@@ -95,8 +96,8 @@ public class MailMessage implements MailIdentity{
     }
 
     public String getRaw_message() throws MailMessageException {
-        
-        if(raw_message == null){
+
+        if (raw_message == null) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
                 original.writeTo(baos);
@@ -187,7 +188,7 @@ public class MailMessage implements MailIdentity{
     public void setIsPec(Boolean ispec) {
         this.ispec = ispec;
     }
-    
+
     public static MimeMessage getPecPayload(Part p) throws ShpeckServiceException {
         try {
             if (p.isMimeType("message/rfc822") && p.getFileName().equals("postacert.eml")) {

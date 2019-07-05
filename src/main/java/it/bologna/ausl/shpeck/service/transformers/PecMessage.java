@@ -7,7 +7,15 @@ package it.bologna.ausl.shpeck.service.transformers;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckPecPayloadNotFoundException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Arrays;
+import java.util.Properties;
+import java.util.logging.Level;
+import javax.mail.Address;
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +91,9 @@ public class PecMessage extends MailMessage {
     private static MimeMessage getPec(MimeMessage m) throws ShpeckServiceException {
         MimeMessage res = null;
         try {
+
             res = getPecPayload(m);
+
             if (res == null) {
                 throw new ShpeckPecPayloadNotFoundException("Pec payload not found !");
             }

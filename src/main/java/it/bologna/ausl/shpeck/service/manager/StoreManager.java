@@ -1,6 +1,5 @@
 package it.bologna.ausl.shpeck.service.manager;
 
-import it.bologna.ausl.eml.handler.EmlHandlerUtils;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
@@ -8,7 +7,6 @@ import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
@@ -35,8 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -329,9 +325,18 @@ public class StoreManager implements StoreInterface {
         log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
         log.debug("Verifico presenza di mittenti...");
-        if (mailMessage.getFrom() != null) {
-            ArrayList<Address> fromArrayList = new ArrayList<>();
-            javax.mail.Address[] from = mailMessage.getFrom();
+        javax.mail.Address[] from = mailMessage.getFrom();
+        if (from == null) {
+            try {
+                from = InternetAddress.parseHeader(mailMessage.getOriginal().getHeader("From", ","), true);
+            } catch (MessagingException ex) {
+                log.error("unable to determine From address");
+            }
+        }
+//        InternetAddress from = new InternetAddress(address);
+        if (from != null) {
+            ArrayList<Address> fromArrayList;
+//            javax.mail.Address[] from = mailMessage.getFrom();
             log.debug("Mittenti presenti, ciclo gli indirizzi FROM");
             fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from, null);
             // inserisco l'arraylist nella mappa con chiave 'from'

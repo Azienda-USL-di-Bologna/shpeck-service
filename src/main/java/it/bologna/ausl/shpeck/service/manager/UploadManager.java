@@ -52,7 +52,7 @@ public class UploadManager {
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
         try {
-            log.info("Entrato in manage: carico i parametri azienda");
+            log.info("Entrato in manage con id su upload_queue: " + messageToStore.getId() + " carico i parametri azienda");
             // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
             AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());
 
@@ -98,7 +98,8 @@ public class UploadManager {
             log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
             log.error("con errore: " + e);
             throw new ShpeckServiceException("errore nell'upload del messaggio");
+        } finally {
+            log.info("manage finito");
         }
-        log.info("[manage finito]");
     }
 }

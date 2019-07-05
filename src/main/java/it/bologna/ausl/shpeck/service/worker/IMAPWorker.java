@@ -160,7 +160,7 @@ public class IMAPWorker implements Runnable {
 
             for (MailMessage message : messages) {
                 log.info("==================== gestione messageId: " + message.getId() + " ====================");
-
+                log.info("oggetto: " + message.getSubject());
                 try {
                     mailProxy = new MailProxy(message);
 
