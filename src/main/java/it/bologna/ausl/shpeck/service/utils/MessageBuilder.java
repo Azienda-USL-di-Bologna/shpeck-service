@@ -129,8 +129,9 @@ public class MessageBuilder {
             return attachments;
 //            return getAllParts(p).size();
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new ShpeckServiceException("Errore nel determinare se il messaggio ha allegati", e);
+            return attachments;
+            //e.printStackTrace();
+            //throw new ShpeckServiceException("Errore nel determinare se il messaggio ha allegati", e);
         }
         /*
 		int res=0;
