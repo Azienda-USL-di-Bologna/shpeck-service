@@ -98,15 +98,16 @@ public class UploadWorker implements Runnable {
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("------------------------------------------------------------------------");
         log.info("START -> doWork()," + " time: " + new Date());
-        ArrayList<UploadQueue> messagesToUpload;
+        ArrayList<Integer> messagesToUpload;
 
         do {
             // prendi i messaggi da caricare presenti in upload_queue
             //messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
-            messagesToUpload = uploadQueueRepository.findByUploaded(Boolean.FALSE);
+            //messagesToUpload = uploadQueueRepository.findByUploaded(Boolean.FALSE);
+            messagesToUpload = uploadQueueRepository.getIdToUpload();
 
-            for (UploadQueue uq : messagesToUpload) {
-                UploadQueue u = uploadQueueRepository.findById(uq.getId()).get();
+            for (Integer uq : messagesToUpload) {
+                UploadQueue u = uploadQueueRepository.findById(uq).get();
                 RawMessage rm = rawMessageRepository.findById(u.getIdRawMessage().getId()).get();
                 Message m = messageRepository.findById(rm.getIdMessage().getId()).get();
                 Pec p = pecRepository.findById(m.getIdPec().getId()).get();
