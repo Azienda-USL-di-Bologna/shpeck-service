@@ -55,9 +55,8 @@ public class SpeckApplication {
     @Autowired
     BeanFactory beanFactory;
 
-    @Autowired
-    UploadWorker uploadWorker;
-
+//    @Autowired
+//    UploadWorker uploadWorker;
     @Autowired
     PecRepository pecRepository;
 
@@ -90,9 +89,12 @@ public class SpeckApplication {
             public void run(String... args) throws ShpeckServiceException {
 
                 // avvio del thread di UploadWorker
+//                uploadWorker.setThreadName("uploadWorker");
+//                Thread t = new Thread(uploadWorker);
+//                t.start();
+                UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
                 uploadWorker.setThreadName("uploadWorker");
-                Thread t = new Thread(uploadWorker);
-                t.start();
+                scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
 
 //                // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();

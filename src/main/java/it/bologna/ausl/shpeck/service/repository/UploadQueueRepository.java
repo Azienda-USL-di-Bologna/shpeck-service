@@ -17,8 +17,8 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
 
 //    @Query("SELECT u FROM UploadQueue u INNER JOIN FETCH u.idRawMessage r INNER JOIN FETCH r.idMessage m INNER JOIN FETCH m.idPec p INNER JOIN FETCH p.idAziendaRepository a WHERE u.uploaded = :uploaded")
 //    ArrayList<UploadQueue> getFromUploadQueue(@Param("uploaded") Boolean uploaded);
-    public ArrayList<UploadQueue> findByUploaded(Boolean uploaded);
-
-    @Query("select u.id from UploadQueue u where u.uploaded = false")
+    //public ArrayList<UploadQueue> findByUploaded(Boolean uploaded);
+    //@Query("select u.id from UploadQueue u where u.uploaded = false")
+    @Query(value = "select id from shpeck.upload_queue where uploaded = false", nativeQuery = true)
     public ArrayList<Integer> getIdToUpload();
 }
