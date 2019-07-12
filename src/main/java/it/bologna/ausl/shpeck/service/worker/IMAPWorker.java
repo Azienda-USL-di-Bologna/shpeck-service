@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -77,9 +76,8 @@ public class IMAPWorker implements Runnable {
     @Autowired
     Semaphore messageSemaphore;
 
-    @Value("${id-applicazione}")
-    String idApplicazione;
-
+//    @Value("${id-applicazione}")
+//    String idApplicazione;
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> messagesOrphans;
@@ -105,22 +103,33 @@ public class IMAPWorker implements Runnable {
         this.idPec = idPec;
     }
 
+    public Applicazione getApplicazione() {
+        return applicazione;
+    }
+
+    public void setApplicazione(Applicazione applicazione) {
+        this.applicazione = applicazione;
+    }
+
     private void init() {
+//        log.debug("reperimento applicazione");
+//        applicazione = applicazioneRepository.findById(idApplicazione);
 
-        applicazione = applicazioneRepository.findById(idApplicazione);
-
+        log.debug("setting messages array");
         if (messages == null) {
             messages = new ArrayList<>();
         } else {
             messages.clear();
         }
 
+        log.debug("setting messagesOk array");
         if (messagesOk == null) {
             messagesOk = new ArrayList<>();
         } else {
             messagesOk.clear();
         }
 
+        log.debug("setting messagesOrphans array");
         if (messagesOrphans == null) {
             messagesOrphans = new ArrayList<>();
         } else {
@@ -137,7 +146,9 @@ public class IMAPWorker implements Runnable {
         init();
 
         try {
+            log.debug("reperimento pec...");
             Pec pec = pecRepository.findById(idPec).get();
+            log.debug("pec caricata con successo");
             PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
             pec.setIdPecProvider(idPecProvider);
             log.info("host: " + idPecProvider.getHost());
@@ -245,6 +256,9 @@ public class IMAPWorker implements Runnable {
                 } catch (Throwable e) {
                     log.error("eccezione nel processare il messaggio corrente: " + e);
                 }
+                // aggiornamento lastUID relativo alla casella appena scaricata
+                pec.setLastuid(message.getProviderUid());
+                imapManager.updateLastUID(pec);
             }
 
             log.info("___esito e policy___");

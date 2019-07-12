@@ -26,6 +26,7 @@ public class MailMessage implements MailIdentity {
     protected String subject, string_headers, id, raw_message, message = null;
     protected HashMap<String, String> headers;
     protected Date sendDate, receiveDate;
+    protected Long providerUid;
 
     public MailMessage(MimeMessage m) throws MailMessageException {
         this.original = m;
@@ -216,6 +217,14 @@ public class MailMessage implements MailIdentity {
         }
         // TODO Auto-generated catch block
         return (MimeMessage) null;
+    }
+
+    public Long getProviderUid() {
+        return providerUid;
+    }
+
+    public void setProviderUid(Long providerUid) {
+        this.providerUid = providerUid;
     }
 
     @Override

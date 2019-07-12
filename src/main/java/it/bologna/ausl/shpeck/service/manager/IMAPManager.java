@@ -136,7 +136,9 @@ public class IMAPManager {
                 log.info("messaggio con UID " + lastUID + " già trattato");
             } else {
                 for (int i = 0; i < messagesFromInbox.length; i++) {
-                    mailMessages.add(new MailMessage((MimeMessage) messagesFromInbox[i]));
+                    MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                    m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                    mailMessages.add(m);
                     if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
                         lastUID = inbox.getUID(messagesFromInbox[i]);
                         log.debug("lastUID: " + lastUID);
