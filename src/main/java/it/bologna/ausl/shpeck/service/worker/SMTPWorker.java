@@ -138,6 +138,7 @@ public class SMTPWorker implements Runnable {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito");
                             m.setMessageStatus(Message.MessageStatus.SENT);
                             m.setUuidMessage(messagID);
+                            m.setSeen(Boolean.TRUE);
                             log.info("Stato settato, ora elimino da outbox...");
                             //TODO: RIATTIVARE!!
                             //outboxRepository.delete(outbox);
