@@ -39,78 +39,76 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPWorker implements Runnable {
-    
+
     private static final Logger log = LoggerFactory.getLogger(IMAPWorker.class);
-    
+
     private String threadName;
     private Integer idPec;
     private Applicazione applicazione;
-    
+
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     MessageRepository messageRepository;
-    
+
     @Autowired
     PecProviderRepository pecProviderRepository;
-    
+
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-    
+
     @Autowired
     ProviderConnectionHandler providerConnectionHandler;
-    
+
     @Autowired
     IMAPManager imapManager;
-    
+
     @Autowired
     PecMessageStoreManager pecMessageStoreManager;
-    
+
     @Autowired
     RecepitMessageStoreManager recepitMessageStoreManager;
-    
+
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
-    
+
     @Autowired
     Semaphore messageSemaphore;
 
-//    @Value("${id-applicazione}")
-//    String idApplicazione;
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> messagesOrphans;
-    
+
     public IMAPWorker() {
         messagesOk = new ArrayList<>();
         messagesOrphans = new ArrayList<>();
     }
-    
+
     public String getThreadName() {
         return threadName;
     }
-    
+
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-    
+
     public Integer getIdPec() {
         return idPec;
     }
-    
+
     public void setIdPec(Integer idPec) {
         this.idPec = idPec;
     }
-    
+
     public Applicazione getApplicazione() {
         return applicazione;
     }
-    
+
     public void setApplicazione(Applicazione applicazione) {
         this.applicazione = applicazione;
     }
-    
+
     private void init() {
 //        log.debug("reperimento applicazione");
 //        applicazione = applicazioneRepository.findById(idApplicazione);
@@ -121,14 +119,14 @@ public class IMAPWorker implements Runnable {
         } else {
             messages.clear();
         }
-        
+
         log.debug("setting messagesOk array");
         if (messagesOk == null) {
             messagesOk = new ArrayList<>();
         } else {
             messagesOk.clear();
         }
-        
+
         log.debug("setting messagesOrphans array");
         if (messagesOrphans == null) {
             messagesOrphans = new ArrayList<>();
@@ -136,15 +134,15 @@ public class IMAPWorker implements Runnable {
             messagesOrphans.clear();
         }
     }
-    
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         log.info("------------------------------------------------------------------------");
         log.info("START > idPec: [" + idPec + "]" + " time: " + new Date());
-        
+
         init();
-        
+
         try {
             log.debug("reperimento pec...");
             Pec pec = pecRepository.findById(idPec).get();
@@ -165,17 +163,17 @@ public class IMAPWorker implements Runnable {
 
             // ottenimento dei messaggi
             messages = imapManager.getMessages();
-            
+
             MailProxy mailProxy;
             StoreResponse res = null;
-            
+
             for (MailMessage message : messages) {
                 log.info("==================== gestione messageId: " + message.getId() + " ====================");
                 log.info("oggetto: " + message.getSubject());
                 log.info("providerUID: " + message.getProviderUid());
                 try {
                     mailProxy = new MailProxy(message);
-                    
+
                     if (null == mailProxy.getType()) {
                         log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                     } else {
@@ -199,7 +197,7 @@ public class IMAPWorker implements Runnable {
                                     log.info("Il messaggio non è da mettere su mongo: " + res.toString());
                                 }
                                 break;
-                            
+
                             case RECEPIT:
                                 log.info("tipo calcolato: RICEVUTA");
                                 recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
@@ -217,7 +215,7 @@ public class IMAPWorker implements Runnable {
                                     log.info("Il messaggio non è da mettere su mongo: " + res.toString());
                                 }
                                 break;
-                            
+
                             case MAIL:
                                 log.info("tipo calcolato: REGULAR MAIL");
                                 regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
@@ -234,9 +232,9 @@ public class IMAPWorker implements Runnable {
                                 } else {
                                     log.info("Il messaggio non è da mettere su mongo: " + res.toString());
                                 }
-                                
+
                                 break;
-                            
+
                             default:
                                 res = null;
                                 log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
@@ -261,13 +259,13 @@ public class IMAPWorker implements Runnable {
                 imapManager.setLastUID(message.getProviderUid());
                 imapManager.updateLastUID(pec);
             }
-            
+
             log.info("___esito e policy___");
             log.info("messaggi 'OK': " + ((messagesOk == null || messagesOk.isEmpty()) ? "nessuno" : ""));
             messagesOk.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
             });
-            
+
             log.info("messaggi 'ORFANI': " + ((messagesOrphans == null || messagesOrphans.isEmpty()) ? "nessuno" : ""));
             messagesOrphans.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
@@ -284,12 +282,12 @@ public class IMAPWorker implements Runnable {
                     log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
                     imapManager.messageMover(messagesOk);
                     break;
-                
+
                 case (ApplicationConstant.MESSAGE_POLICY_DELETE):
                     log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
                     imapManager.deleteMessage(messagesOk);
                     break;
-                
+
                 default:
                     log.info("Message Policy della casella: NONE, non si fa nulla");
                     break;
@@ -297,7 +295,7 @@ public class IMAPWorker implements Runnable {
 
             // aggiornamento lastUID relativo alla casella appena scaricata
             imapManager.updateLastUID(pec);
-            
+
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
@@ -308,10 +306,10 @@ public class IMAPWorker implements Runnable {
             log.error("eccezione : " + e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
-        
+
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");
         MDC.remove("logFileName");
     }
-    
+
 }

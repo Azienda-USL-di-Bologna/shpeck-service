@@ -59,6 +59,7 @@ public class IMAPManager {
 
     private IMAPStore store;
     private long lastUID;
+    private long lastUIDToConsider;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
@@ -69,9 +70,18 @@ public class IMAPManager {
         this.store = store;
     }
 
+    public long getLastUIDToConsider() {
+        return lastUIDToConsider;
+    }
+
+    public void setLastUIDToConsider(long lastUIDToConsider) {
+        this.lastUIDToConsider = lastUIDToConsider;
+    }
+
     public IMAPManager(IMAPStore store, long lastUID) {
         this(store);
         this.lastUID = lastUID;
+        this.lastUIDToConsider = Long.MAX_VALUE;
     }
 
     public IMAPStore getStore() {
@@ -127,8 +137,8 @@ public class IMAPManager {
             inbox.open(Folder.READ_WRITE);
 
             // ottieni i messaggi dal server
-            log.info("Fetching dei messaggi da " + lastUID + " a " + IMAPFolder.LASTUID);
-            Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, Long.MAX_VALUE);
+            log.info("Fetching dei messaggi da " + lastUID + " a " + getLastUIDToConsider());
+            Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, getLastUIDToConsider());
 
             inbox.fetch(messagesFromInbox, fetchProfile);
 
@@ -320,18 +330,18 @@ public class IMAPManager {
             pec.setLastuid(getLastUID());
         } else {
             // calcolo la differenza (in minuti) per capire se riazzerare la sequenza o meno
-            LocalDateTime now = new java.sql.Timestamp(new Date().getTime()).toLocalDateTime();
-            long minutes = pec.getResetLastuidTime().until(now, ChronoUnit.MINUTES);
-            if (minutes > resetLastuidMinutes) {
-                // i minuti passati dall'ultimo azzeramento sono superiori al valore di configurazione quindi azzeriamo
-                pec.setResetLastuidTime(now);
-                pec.setLastuid(0L);
-                log.info("lastUID = " + 0L);
-            } else {
-                // non è ancora il momento di azzerare la sequenza, aggiorno solo il lastuid
-                pec.setLastuid(getLastUID());
-                log.info("lastUID = " + getLastUID());
-            }
+//            LocalDateTime now = new java.sql.Timestamp(new Date().getTime()).toLocalDateTime();
+//            long minutes = pec.getResetLastuidTime().until(now, ChronoUnit.MINUTES);
+//            if (minutes > resetLastuidMinutes) {
+//                // i minuti passati dall'ultimo azzeramento sono superiori al valore di configurazione quindi azzeriamo
+//                pec.setResetLastuidTime(now);
+//                pec.setLastuid(0L);
+//                log.info("lastUID = " + 0L);
+//            } else {
+            // non è ancora il momento di azzerare la sequenza, aggiorno solo il lastuid
+            pec.setLastuid(getLastUID());
+            log.info("lastUID = " + getLastUID());
+//            }
         }
         pecRepository.save(pec);
         log.info("salvataggio lastUID -> OK");

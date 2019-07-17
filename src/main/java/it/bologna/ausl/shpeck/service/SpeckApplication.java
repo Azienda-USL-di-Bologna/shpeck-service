@@ -2,12 +2,12 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
-import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +20,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -27,9 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -44,16 +44,16 @@ public class SpeckApplication {
      * Punto di partenza dell'applicazione
      */
     private static final Logger log = LoggerFactory.getLogger(SpeckApplication.class);
-    
+
     @Autowired
     ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-    
+
     @Autowired
     ShutdownThread shutdownThread;
-    
+
     @Autowired
     ApplicationContext context;
-    
+
     @Autowired
     BeanFactory beanFactory;
 
@@ -61,58 +61,65 @@ public class SpeckApplication {
 //    UploadWorker uploadWorker;
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     AddressRepository addressRepository;
-    
+
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-    
+
     @Value("${shpeck.threads.smtp-delay}")
     String smtpDelay;
-    
+
     @Value("${shpeck.threads.imap-delay}")
     String imapDelay;
-    
+
     @Value("${test-mode}")
     Boolean testMode;
-    
+
     @Value("${shpeck.test-mail}")
     String testMail;
-    
+
     @Value("${id-applicazione}")
     String idApplicazione;
-    
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
-    
+
     @Bean
     public CommandLineRunner schedulingRunner() {
-        
+
         return new CommandLineRunner() {
-            
+
             @Override
             // @Transactional(rollbackFor = Throwable.class, noRollbackFor = ShpeckServiceException.class, propagation = Propagation.REQUIRED)
             public void run(String... args) throws ShpeckServiceException {
-                
+
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 // avvio del thread di UploadWorker
-//                uploadWorker.setThreadName("uploadWorker");
-//                Thread t = new Thread(uploadWorker);
-//                t.start();
                 UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
                 uploadWorker.setThreadName("uploadWorker");
                 scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
 
-//                // recupera le mail attive
+                // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
-                
+
                 if (testMode) {
                     String[] testMailArray = Arrays.stream(testMail.split("\\,")).toArray(String[]::new);
                     ArrayList<String> testMailList = new ArrayList<>(Arrays.asList(testMailArray));
                     pecAttive.removeIf(pec -> !isTestMail(pec, testMailList));
+                }
+
+                // lancio IMAPWorker di check resettando lastUid
+                log.info("creazione degli IMAPWorker di check sulla casella");
+                for (int i = 0; i < pecAttive.size(); i++) {
+                    IMAPWorkerChecker imapWorkerChecker = beanFactory.getBean(IMAPWorkerChecker.class);
+                    imapWorkerChecker.setThreadName("IMAP_" + pecAttive.get(i).getIndirizzo());
+                    imapWorkerChecker.setIdPec(pecAttive.get(i).getId());
+                    imapWorkerChecker.setApplicazione(applicazione);
+                    scheduledThreadPoolExecutor.scheduleAtFixedRate(imapWorkerChecker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
                 }
 
                 // lancio di IMAPWorker per ogni casella PEC attiva
@@ -133,7 +140,7 @@ public class SpeckApplication {
                     SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
                     smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getIndirizzo());
                     smtpWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
                     log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
                 }
                 log.info("creazione degli SMTPWorker eseguita con successo");
@@ -141,9 +148,19 @@ public class SpeckApplication {
             }
         };
     }
-    
+
     private boolean isTestMail(Pec pec, ArrayList<String> list) {
         return list.contains(pec.getIndirizzo());
     }
-    
+
+    private long getInitialDelay() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Rome"));
+        ZonedDateTime nextRun = now.withHour(11).withMinute(0).withSecond(0);
+        if (now.compareTo(nextRun) > 0) {
+            nextRun = nextRun.plusDays(15);
+        }
+
+        Duration duration = Duration.between(now, nextRun);
+        return duration.getSeconds();
+    }
 }
