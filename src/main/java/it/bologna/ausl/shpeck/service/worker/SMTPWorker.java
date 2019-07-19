@@ -116,7 +116,7 @@ public class SMTPWorker implements Runnable {
                     try {
 
                         log.info("==================== gestione message in outbox con id: " + outbox.getId() + " ====================");
-                        response = smtpManager.saveMessageAndUploadQueue(outbox);
+                        response = smtpManager.saveMessageAndRaw(outbox);
                         Message m = response.getMessage();
                         log.info("salvataggio eseguito > provo a inviare messaggio con id outbox " + outbox.getId() + "...");
                         String messagID = smtpManager.sendMessage(outbox.getRawData());
@@ -138,6 +138,7 @@ public class SMTPWorker implements Runnable {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito");
                             m.setMessageStatus(Message.MessageStatus.SENT);
                             m.setUuidMessage(messagID);
+                            // per default i messaggi inviati devono comparire già visti
                             m.setSeen(Boolean.TRUE);
                             log.info("Stato settato, ora elimino da outbox...");
                             //TODO: RIATTIVARE!!

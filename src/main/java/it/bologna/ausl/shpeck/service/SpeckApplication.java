@@ -2,7 +2,6 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
-import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
@@ -27,9 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -44,16 +40,16 @@ public class SpeckApplication {
      * Punto di partenza dell'applicazione
      */
     private static final Logger log = LoggerFactory.getLogger(SpeckApplication.class);
-    
+
     @Autowired
     ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-    
+
     @Autowired
     ShutdownThread shutdownThread;
-    
+
     @Autowired
     ApplicationContext context;
-    
+
     @Autowired
     BeanFactory beanFactory;
 
@@ -61,41 +57,41 @@ public class SpeckApplication {
 //    UploadWorker uploadWorker;
     @Autowired
     PecRepository pecRepository;
-    
+
     @Autowired
     AddressRepository addressRepository;
-    
+
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-    
+
     @Value("${shpeck.threads.smtp-delay}")
     String smtpDelay;
-    
+
     @Value("${shpeck.threads.imap-delay}")
     String imapDelay;
-    
+
     @Value("${test-mode}")
     Boolean testMode;
-    
+
     @Value("${shpeck.test-mail}")
     String testMail;
-    
+
     @Value("${id-applicazione}")
     String idApplicazione;
-    
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
-    
+
     @Bean
     public CommandLineRunner schedulingRunner() {
-        
+
         return new CommandLineRunner() {
-            
+
             @Override
             // @Transactional(rollbackFor = Throwable.class, noRollbackFor = ShpeckServiceException.class, propagation = Propagation.REQUIRED)
             public void run(String... args) throws ShpeckServiceException {
-                
+
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 // avvio del thread di UploadWorker
@@ -108,7 +104,7 @@ public class SpeckApplication {
 
 //                // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
-                
+
                 if (testMode) {
                     String[] testMailArray = Arrays.stream(testMail.split("\\,")).toArray(String[]::new);
                     ArrayList<String> testMailList = new ArrayList<>(Arrays.asList(testMailArray));
@@ -141,9 +137,9 @@ public class SpeckApplication {
             }
         };
     }
-    
+
     private boolean isTestMail(Pec pec, ArrayList<String> list) {
         return list.contains(pec.getIndirizzo());
     }
-    
+
 }

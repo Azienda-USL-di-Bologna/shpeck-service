@@ -59,7 +59,7 @@ public class RegularMessageStoreManager extends StoreManager {
         this.outbox = outbox;
     }
 
-    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
 
         log.info("--- inizio RegularMessageStoreManager.store() ---");

@@ -101,7 +101,7 @@ public class SMTPManager {
         return res;
     }
 
-    public StoreResponse saveMessageAndUploadQueue(Outbox outbox) throws ShpeckServiceException {
+    public StoreResponse saveMessageAndRaw(Outbox outbox) throws ShpeckServiceException {
         log.info("salva il message e fai upload nella queue...");
         StoreResponse storeResponse = null;
         try {
