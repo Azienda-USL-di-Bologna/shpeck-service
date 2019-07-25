@@ -7,6 +7,8 @@ import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
+import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
@@ -23,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -53,6 +57,12 @@ public class SMTPManager {
 
     @Autowired
     RawMessageRepository rawMessageRepository;
+
+    @Autowired
+    OutboxRepository outboxRepository;
+
+    @Autowired
+    MessageRepository messageRepository;
 
     public SMTPManager() {
     }
@@ -131,9 +141,26 @@ public class SMTPManager {
         return storeResponse;
     }
 
-    public void enqueueForUpload(Message message) {
-        log.debug("enqueueForUpload -> " + message.getId());
-        log.debug("chiamo lo store manager per salvare in uploadQueue");
-        regularMessageStoreManager.insertToUploadQueue(message);
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public void updateMetadata(Message m, Outbox outbox) {
+        try {
+            log.info("updateMetadata");
+            //TODO: RIATTIVARE!!
+            //outboxRepository.delete(outbox);
+            //log.info("Eliminato");
+
+            outboxRepository.save(outbox);
+            log.info("test -> eliminato (messo a true ignore)");
+
+            log.info("aggiorno lo stato di message a " + m.getMessageStatus().toString() + "...");
+            messageRepository.save(m);
+
+            log.info("sono pronto per mettere il messaggio in upload queue");
+            log.debug("enqueueForUpload -> " + m.getId());
+            log.debug("chiamo lo store manager per salvare in uploadQueue");
+            regularMessageStoreManager.insertToUploadQueue(m);
+        } catch (Throwable e) {
+            log.error("Errore su updateMetadata " + e);
+        }
     }
 }

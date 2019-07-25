@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -20,6 +21,7 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     Message findByUuidMessageAndIdPecAndMessageType(String uuid, Pec pec, String messageType);
 
     @Modifying
+    @Transactional
     @Query(value = "update shpeck.messages set message_status = ?1 where id = ?2", nativeQuery = true)
-    int updateMessageStatus(String messageStatus, Integer id);
+    void updateMessageStatus(String messageStatus, Integer id);
 }

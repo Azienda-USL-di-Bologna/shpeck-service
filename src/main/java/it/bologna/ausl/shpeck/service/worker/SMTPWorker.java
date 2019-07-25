@@ -111,6 +111,7 @@ public class SMTPWorker implements Runnable {
             if (messagesToSend != null && messagesToSend.size() > 0) {
                 smtpManager.buildSmtpManagerFromPec(pec);
                 log.info("numero messaggi : " + messagesToSend.size() + " --> cicla...");
+
                 for (Outbox outbox : messagesToSend) {
                     StoreResponse response = null;
                     try {
@@ -131,9 +132,6 @@ public class SMTPWorker implements Runnable {
                                 log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString());
                                 log.error(e.toString());
                             }
-                            log.error("setto in outbox come da ignorare");
-                            outbox.setIgnore(Boolean.TRUE);
-                            outboxRepository.save(outbox);
                         } else {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito");
                             m.setMessageStatus(Message.MessageStatus.SENT);
@@ -141,20 +139,11 @@ public class SMTPWorker implements Runnable {
                             // per default i messaggi inviati devono comparire già visti
                             m.setSeen(Boolean.TRUE);
                             log.info("Stato settato, ora elimino da outbox...");
-                            //TODO: RIATTIVARE!!
-                            //outboxRepository.delete(outbox);
-                            //log.info("Eliminato");
-
-                            //TODO: 3 righe DA TOGLIERE!!
                             outbox.setIgnore(true);
-                            outboxRepository.save(outbox);
-                            log.info("test -> eliminato (messo a true ignore)");
                         }
-                        log.info("aggiorno lo stato di message a " + m.getMessageStatus().toString() + "...");
-                        messageRepository.save(m);
 
-                        log.info("sono pronto per mettere il messaggio in upload queue");
-                        smtpManager.enqueueForUpload(m);
+                        smtpManager.updateMetadata(m, outbox);
+
                         // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage
                         if (response != null) {
                             messageSemaphore.release();
@@ -174,9 +163,7 @@ public class SMTPWorker implements Runnable {
                         TimeUnit.MILLISECONDS.sleep(sendDelay);
                     }
                     log.debug("sleep terminato, continuo");
-
                 }
-
             }
 
             // ciclo i messaggi:

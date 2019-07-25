@@ -95,14 +95,11 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 // avvio del thread di UploadWorker
-//                uploadWorker.setThreadName("uploadWorker");
-//                Thread t = new Thread(uploadWorker);
-//                t.start();
                 UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
                 uploadWorker.setThreadName("uploadWorker");
                 scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
 
-//                // recupera le mail attive
+                // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
 
                 if (testMode) {

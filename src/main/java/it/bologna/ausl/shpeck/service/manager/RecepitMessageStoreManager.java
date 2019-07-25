@@ -56,14 +56,14 @@ public class RecepitMessageStoreManager extends StoreManager {
         this.pec = pec;
     }
 
-    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
         log.info("--- inizio RecepitMessageStoreManager.store() ---");
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
         messaggioDiRicevuta.setIdApplicazione(getApplicazione());
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
-        //OLD  - Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(pecRecepit.getReference());
+
         String referredMessageIdFromRecepit = null;
         try {
             referredMessageIdFromRecepit = PecRecepit.getReferredMessageIdFromRecepit(pecRecepit.getOriginal());
@@ -104,7 +104,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         switch (pecRecepit.getxRicevuta()) {
             case "accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.ACCETTAZIONE);
-                if (relatedMessage.getMessageStatus().toString() != Message.MessageStatus.CONFIRMED.toString()) {
+                if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))) {
                     relatedMessage.setMessageStatus(Message.MessageStatus.ACCEPTED);
                 }
                 break;
@@ -143,7 +143,6 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
 
-//        storeMessage(relatedMessage);
         messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
         log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
