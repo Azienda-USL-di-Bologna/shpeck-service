@@ -84,7 +84,8 @@ public class UploadManager {
                 log.info("--> " + messageToUpdate.toString());
                 // update del mesaggio con i nuovi parametri   
                 log.info("salvo");
-                messageRepository.save(messageToUpdate);
+                //messageRepository.save(messageToUpdate);
+                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
                 if (objectUploaded.getUuid() != null) {
                     log.info("setto uploaded true");
                     // set come file già trattato nella tabella upload_queue

@@ -24,4 +24,9 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     @Transactional
     @Query(value = "update shpeck.messages set message_status = ?1 where id = ?2", nativeQuery = true)
     void updateMessageStatus(String messageStatus, Integer id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update shpeck.messages set uuid_repository = ?1, path_repository = ?2, name = ?3 where id = ?4", nativeQuery = true)
+    void updateUuidAndPathMongoAndName(String uuidRepository, String pathRepository, String name, Integer id);
 }
