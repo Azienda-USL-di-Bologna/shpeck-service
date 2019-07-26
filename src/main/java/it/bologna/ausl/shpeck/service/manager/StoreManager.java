@@ -12,6 +12,7 @@ import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckIllegalRecepitException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
@@ -33,6 +34,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
+import java.util.Optional;
+import java.util.logging.Level;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.MimeMessage;
 
 /**
  *
@@ -216,7 +221,6 @@ public class StoreManager implements StoreInterface {
                         log.debug("indirizzo non trovato: lo salvo");
                         address = new Address();
                         address.setMailAddress(key.toLowerCase());
-                        //address.setOriginalAddress(internetAddress.getPersonal());
                         address.setRecipientType(Address.RecipientType.UNKNOWN);
                     } else {
                         log.debug("indirizzo trovato con id: " + key.toLowerCase());
@@ -322,6 +326,8 @@ public class StoreManager implements StoreInterface {
 
     public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
 
+        boolean ricevutaConsegnaType = false;
+
         log.info("---Inizio upsertAddresses---");
         HashMap<String, ArrayList> map = new HashMap<>();
         log.debug("Verifico presenza di mittenti...");
@@ -333,10 +339,10 @@ public class StoreManager implements StoreInterface {
                 log.error("unable to determine From address");
             }
         }
-//        InternetAddress from = new InternetAddress(address);
+
         if (from != null) {
             ArrayList<Address> fromArrayList;
-//            javax.mail.Address[] from = mailMessage.getFrom();
+
             log.debug("Mittenti presenti, ciclo gli indirizzi FROM");
             fromArrayList = (ArrayList<Address>) saveAndReturnAddresses(from, null);
             // inserisco l'arraylist nella mappa con chiave 'from'
@@ -353,17 +359,65 @@ public class StoreManager implements StoreInterface {
             throw new StoreManagerExeption("upsertAddresses: Destinatari non presenti");
         }
 
-        log.info("Verifico presenza di destinatari TO");
-        if (mailMessage.getTo() != null) {
-            ArrayList<Address> toArrayList = new ArrayList<>();
-            javax.mail.Address[] to = mailMessage.getTo();
-            log.debug("ciclo gli indirizzi TO e se non presenti li salvo");
-            Map<String, Address.RecipientType> destinatariType = MessageBuilder.getDestinatariType(mailMessage);
-            toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (destinatariType.isEmpty() ? null : destinatariType));
-            //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
-            map.put("to", toArrayList);
+        // se ricevuta di consegna (compreso errore) si va a prendere solo l'indirizzo associato alla ricevuta
+        if (mailMessage.getType() == Message.MessageType.RECEPIT) {
+            try {
+                MimeMessage original = mailMessage.getOriginal();
+                String ricevuta = original.getHeader("X-Ricevuta", "");
+                switch (ricevuta) {
+                    case "preavviso-errore-consegna":
+                    case "errore-consegna":
+                    case "avvenuta-consegna":
+                        ricevutaConsegnaType = true;
+                        break;
+                    default:
+                        log.debug("non riguarda le ricevute di consegna");
+                        ricevutaConsegnaType = false;
+                }
+
+            } catch (MessagingException ex) {
+                log.error("nel messaggio di ricevuta non esiste header X-Ricevuta");
+            }
+        }
+
+        if (ricevutaConsegnaType) {
+            log.debug("Verifico presenza di tag consegna");
+            Map<String, Address.RecipientType> destinatarioConsegna = MessageBuilder.getDestinatarioConsegnaType(mailMessage);
+            String uuid = null;
+            String address = null;
+            log.debug("estrazione address...");
+            for (String key : destinatarioConsegna.keySet()) {
+                address = key;
+                log.debug("address estratto: " + address);
+            }
+
+            log.debug("calcolo uuid del related");
+            try {
+                uuid = mailMessage.getOriginal().getHeader("X-Riferimento-Message-ID", "");
+                log.debug("uuid del related. " + uuid);
+            } catch (MessagingException ex) {
+                log.error("X-Riferimento-Message-ID non presente nella ricevuta");
+                throw new ShpeckIllegalRecepitException("X-Riferimento-Message-ID non presente nella ricevuta", ex);
+            }
+
+            if (uuid != null && address != null) {
+                log.debug("inserimento dell'indirizzo nel TO");
+                map.put("to", getAddressFromRecepit(uuid, address));
+            }
+
         } else {
-            log.info("destinatari TO non presenti");
+            log.info("Verifico presenza di destinatari TO");
+            if (mailMessage.getTo() != null) {
+                ArrayList<Address> toArrayList = new ArrayList<>();
+                javax.mail.Address[] to = mailMessage.getTo();
+                log.debug("ciclo gli indirizzi TO e se non presenti li salvo");
+                Map<String, Address.RecipientType> destinatariType = MessageBuilder.getDestinatariType(mailMessage);
+                toArrayList = (ArrayList<Address>) saveAndReturnAddresses(to, (destinatariType.isEmpty() ? null : destinatariType));
+                //log.debug("Aggiungo l'array degli indirizzi to alla mappa con chiave 'to'");
+                map.put("to", toArrayList);
+            } else {
+                log.info("destinatari TO non presenti");
+            }
         }
 
         log.info("Verifico presenza di destinatari CC");
@@ -393,8 +447,35 @@ public class StoreManager implements StoreInterface {
         return map;
     }
 
+    public ArrayList<Address> getAddressFromRecepit(String uuid, String mailAddress) {
+
+        log.debug("inizio getAddressFromRecepit");
+        ArrayList<Address> res = new ArrayList<>();
+
+        log.debug("caricamento idAddress...");
+        Integer idAddress = addessRepository.getIdAddressByUidMessageAndMailAddress(uuid, mailAddress);
+        log.debug("idAddress: " + idAddress);
+
+        Optional<Address> address = addessRepository.findById(idAddress);
+
+        if (address.isPresent()) {
+            log.debug("inserimento di address nel risultato");
+            res.add(address.get());
+        } else {
+            log.debug("address non presente, viene creato e salvato");
+            Address a = new Address();
+            a.setMailAddress(mailAddress);
+            a.setRecipientType(Address.RecipientType.PEC);
+            res.add(addessRepository.save(a));
+        }
+
+        log.debug("ritorno getAddressFromRecepit con res di dimensione: " + res.size());
+        return res;
+    }
+
     @Override
-    public RawMessage storeRawMessage(Message message, String raw) {
+    public RawMessage storeRawMessage(Message message, String raw
+    ) {
         log.info("--- inizio storeRawMessage ---");
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);

@@ -1,7 +1,9 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
@@ -143,7 +145,11 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
 
-        messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+        // cambio lo stato solo se non è in errore
+        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
+            messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+        }
+
         log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
         log.debug("Salvo il messaggio di ricevuta...");

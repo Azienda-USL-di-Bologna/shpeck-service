@@ -19,4 +19,10 @@ public interface AddressRepository extends JpaRepository<Address, Integer> {
 
     @Query("SELECT a FROM Address a WHERE a.mailAddress in :mailAddresses")
     List<Address> getAddresses(@Param("mailAddresses") List<String> mailAddresses);
+
+    @Query(value = "select distinct a.id from shpeck.messages m join shpeck.messages_addresses ma on m.id = ma.message "
+            + "join shpeck.addresses a on a.id = ma.address "
+            + "where uuid_message = :uuid "
+            + "and a.mail_address = :mailAddress", nativeQuery = true)
+    Integer getIdAddressByUidMessageAndMailAddress(@Param("uuid") String uuid, @Param("mailAddress") String mailAddress);
 }

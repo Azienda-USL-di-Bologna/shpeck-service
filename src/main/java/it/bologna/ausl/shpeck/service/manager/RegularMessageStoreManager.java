@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
+import javax.mail.internet.AddressException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -60,7 +61,7 @@ public class RegularMessageStoreManager extends StoreManager {
     }
 
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
-    public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
+    public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, AddressException {
 
         log.info("--- inizio RegularMessageStoreManager.store() ---");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);

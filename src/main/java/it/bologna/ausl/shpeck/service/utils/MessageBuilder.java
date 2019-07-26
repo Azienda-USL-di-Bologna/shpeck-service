@@ -97,6 +97,38 @@ public class MessageBuilder {
         return res;
     }
 
+    public static Map<String, RecipientType> getDestinatarioConsegnaType(MailMessage mailMessage) throws ShpeckServiceException {
+        Map<String, RecipientType> res = new HashMap<>();
+        try {
+            MimeMessage mimeMessage = mailMessage.getOriginal();
+            ArrayList<Part> recepitParts = getAllParts(mimeMessage);
+            Part daticert = null;
+            for (Part p : recepitParts) {
+                if ("daticert.xml".equalsIgnoreCase(p.getFileName())) {
+                    daticert = p;
+                    break;
+                }
+            }
+            if (daticert != null) {
+                String xmlbody = IOUtils.toString(daticert.getInputStream(), "UTF-8");
+                Builder parser = new Builder();
+                Document daticertDocument = parser.build(xmlbody, null);
+                Element destinatario = null;
+                Nodes nodes = daticertDocument.query("/postacert/dati/consegna");
+                if (nodes.size() > 0) {
+                    for (int i = 0; i < nodes.size(); i++) {
+                        destinatario = (Element) daticertDocument.query("/postacert/dati/consegna").get(i);
+                        String mailAddress = destinatario.getChild(0).toXML();
+                        res.put(mailAddress, RecipientType.PEC);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //throw new ShpeckServiceException("Unable to get recipients type", e);
+        }
+        return res;
+    }
+
     public static ArrayList<Part> getAllParts(Part in) throws IOException, MessagingException {
         ArrayList<Part> res = new ArrayList<>();
         if (!in.isMimeType("multipart/*")) {
