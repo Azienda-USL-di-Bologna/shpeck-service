@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class IMAPWorker implements Runnable {
+public class IMAPWorkerChecker implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(IMAPWorker.class);
+    private static final Logger log = LoggerFactory.getLogger("check_all_messages");
 
     private String threadName;
     private Integer idPec;
@@ -80,7 +80,9 @@ public class IMAPWorker implements Runnable {
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> messagesOrphans;
 
-    public IMAPWorker() {
+    private Long lastUIDToConsider;
+
+    public IMAPWorkerChecker() {
         messagesOk = new ArrayList<>();
         messagesOrphans = new ArrayList<>();
     }
@@ -109,10 +111,15 @@ public class IMAPWorker implements Runnable {
         this.applicazione = applicazione;
     }
 
-    private void init() {
-//        log.debug("reperimento applicazione");
-//        applicazione = applicazioneRepository.findById(idApplicazione);
+    public Long getLastUIDToConsider() {
+        return lastUIDToConsider;
+    }
 
+    public void setLastUIDToConsider(Long lastUIDToConsider) {
+        this.lastUIDToConsider = lastUIDToConsider;
+    }
+
+    private void init() {
         log.debug("setting messages array");
         if (messages == null) {
             messages = new ArrayList<>();
@@ -155,11 +162,9 @@ public class IMAPWorker implements Runnable {
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             imapManager.setStore(store);
 
-            // prendo il lastUID del messaggio in casella
-            if (pec.getLastuid() != null) {
-                imapManager.setLastUID(pec.getLastuid());
-                //imapManager.setLastUID(1119);
-            }
+            // set di fromUID to lastUID
+            imapManager.setLastUID(0);
+            imapManager.setLastUIDToConsider(getLastUIDToConsider());
 
             // ottenimento dei messaggi
             messages = imapManager.getMessages();
@@ -255,9 +260,6 @@ public class IMAPWorker implements Runnable {
                 } catch (Throwable e) {
                     log.error("eccezione nel processare il messaggio corrente: " + e);
                 }
-                // aggiornamento lastUID relativo alla casella appena scaricata
-                imapManager.setLastUID(message.getProviderUid());
-                imapManager.updateLastUID(pec);
             }
 
             log.info("___esito e policy___");
@@ -292,10 +294,6 @@ public class IMAPWorker implements Runnable {
                     log.info("Message Policy della casella: NONE, non si fa nulla");
                     break;
             }
-
-            // aggiornamento lastUID relativo alla casella appena scaricata
-            imapManager.updateLastUID(pec);
-
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {

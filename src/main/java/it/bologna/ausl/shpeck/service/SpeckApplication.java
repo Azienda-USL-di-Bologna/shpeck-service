@@ -7,6 +7,7 @@ import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import it.bologna.ausl.shpeck.service.worker.ShutdownThread;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -108,6 +112,16 @@ public class SpeckApplication {
                     pecAttive.removeIf(pec -> !isTestMail(pec, testMailList));
                 }
 
+                // lancio IMAPWorker di check resettando lastUid
+                log.info("creazione degli IMAPWorker di check sulla casella");
+                for (int i = 0; i < pecAttive.size(); i++) {
+                    IMAPWorkerChecker imapWorkerChecker = beanFactory.getBean(IMAPWorkerChecker.class);
+                    imapWorkerChecker.setThreadName("IMAP_" + pecAttive.get(i).getIndirizzo());
+                    imapWorkerChecker.setIdPec(pecAttive.get(i).getId());
+                    imapWorkerChecker.setApplicazione(applicazione);
+                    scheduledThreadPoolExecutor.scheduleAtFixedRate(imapWorkerChecker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+                }
+
                 // lancio di IMAPWorker per ogni casella PEC attiva
                 log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
                 for (int i = 0; i < pecAttive.size(); i++) {
@@ -126,7 +140,7 @@ public class SpeckApplication {
                     SMTPWorker smtpWorker = beanFactory.getBean(SMTPWorker.class);
                     smtpWorker.setThreadName("SMTP_" + pecAttive.get(i).getIndirizzo());
                     smtpWorker.setIdPec(pecAttive.get(i).getId());
-                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 3 + 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
+                    scheduledThreadPoolExecutor.scheduleWithFixedDelay(smtpWorker, i * 2, Integer.valueOf(smtpDelay), TimeUnit.SECONDS);
                     log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
                 }
                 log.info("creazione degli SMTPWorker eseguita con successo");
@@ -139,4 +153,14 @@ public class SpeckApplication {
         return list.contains(pec.getIndirizzo());
     }
 
+    private long getInitialDelay() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Rome"));
+        ZonedDateTime nextRun = now.withHour(11).withMinute(0).withSecond(0);
+        if (now.compareTo(nextRun) > 0) {
+            nextRun = nextRun.plusDays(15);
+        }
+
+        Duration duration = Duration.between(now, nextRun);
+        return duration.getSeconds();
+    }
 }
