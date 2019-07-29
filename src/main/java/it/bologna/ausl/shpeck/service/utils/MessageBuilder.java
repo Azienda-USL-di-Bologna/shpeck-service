@@ -22,12 +22,16 @@ import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.Nodes;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author spritz
  */
 public class MessageBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageBuilder.class);
 
     public static MimeMessage buildMailMessageFromString(String s) throws ShpeckServiceException {
         ByteArrayInputStream bais = null;
@@ -91,8 +95,8 @@ public class MessageBuilder {
                 }
 
             }
-        } catch (Exception e) {
-            //throw new ShpeckServiceException("Unable to get recipients type", e);
+        } catch (Throwable e) {
+            log.error("getDestinatariType: ", e);
         }
         return res;
     }
@@ -123,7 +127,8 @@ public class MessageBuilder {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            log.error("getDestinatarioConsegnaType non presente tag consegna nella consegna", e);
             //throw new ShpeckServiceException("Unable to get recipients type", e);
         }
         return res;

@@ -376,7 +376,7 @@ public class StoreManager implements StoreInterface {
                 }
 
             } catch (MessagingException ex) {
-                log.error("nel messaggio di ricevuta non esiste header X-Ricevuta");
+                log.error("nel messaggio di ricevuta non esiste header X-Ricevuta", ex);
             }
         }
 
