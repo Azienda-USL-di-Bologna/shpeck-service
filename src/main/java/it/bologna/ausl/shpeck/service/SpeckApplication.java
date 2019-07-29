@@ -57,8 +57,6 @@ public class SpeckApplication {
     @Autowired
     BeanFactory beanFactory;
 
-//    @Autowired
-//    UploadWorker uploadWorker;
     @Autowired
     PecRepository pecRepository;
 
@@ -93,7 +91,6 @@ public class SpeckApplication {
         return new CommandLineRunner() {
 
             @Override
-            // @Transactional(rollbackFor = Throwable.class, noRollbackFor = ShpeckServiceException.class, propagation = Propagation.REQUIRED)
             public void run(String... args) throws ShpeckServiceException {
 
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
@@ -112,7 +109,7 @@ public class SpeckApplication {
                     pecAttive.removeIf(pec -> !isTestMail(pec, testMailList));
                 }
 
-                // lancio IMAPWorker di check resettando lastUid
+                // lancio riconciliazione
                 log.info("creazione degli IMAPWorker di check sulla casella");
                 for (int i = 0; i < pecAttive.size(); i++) {
                     IMAPWorkerChecker imapWorkerChecker = beanFactory.getBean(IMAPWorkerChecker.class);
@@ -157,7 +154,7 @@ public class SpeckApplication {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Rome"));
         ZonedDateTime nextRun = now.withHour(11).withMinute(0).withSecond(0);
         if (now.compareTo(nextRun) > 0) {
-            nextRun = nextRun.plusDays(15);
+            nextRun = nextRun.plusDays(1);
         }
 
         Duration duration = Duration.between(now, nextRun);
