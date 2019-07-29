@@ -162,12 +162,8 @@ public class IMAPWorkerChecker implements Runnable {
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             imapManager.setStore(store);
 
-            // set di fromUID to lastUID
-            imapManager.setLastUID(0);
-            imapManager.setLastUIDToConsider(getLastUIDToConsider());
-
             // ottenimento dei messaggi
-            messages = imapManager.getMessages();
+            messages = imapManager.getMessagesSinceTwoWeeksAgo();
 
             MailProxy mailProxy;
             StoreResponse res = null;

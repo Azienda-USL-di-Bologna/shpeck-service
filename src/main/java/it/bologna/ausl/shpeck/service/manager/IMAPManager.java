@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +22,10 @@ import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.search.AndTerm;
+import javax.mail.search.ComparisonTerm;
+import javax.mail.search.ReceivedDateTerm;
+import javax.mail.search.SearchTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +105,22 @@ public class IMAPManager {
         this.lastUID = lastUID;
     }
 
+    public FetchProfile getNewFetchProfile() {
+        /**
+         * FetchProfile elenca gli attributi del messaggio che si desidera
+         * precaricare dal server
+         */
+
+        log.info("Faccio un get di un nuovo FetchProfile");
+        FetchProfile fetchProfile = new FetchProfile();
+
+        // ENVELOPE (=busta) è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
+        fetchProfile.add(FetchProfile.Item.ENVELOPE);
+        fetchProfile.add("X-Trasporto");
+        fetchProfile.add("X-Riferimento-Message-ID");
+        return fetchProfile;
+    }
+
     /**
      * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
      *
@@ -119,12 +140,7 @@ public class IMAPManager {
              * FetchProfile elenca gli attributi del messaggio che si desidera
              * precaricare dal server
              */
-            FetchProfile fetchProfile = new FetchProfile();
-
-            // ENVELOPE (=busta) è un insieme di attributi comuni a un messaggio (es. From, To, Cc, Bcc, ReplyTo, Subject and Date...)
-            fetchProfile.add(FetchProfile.Item.ENVELOPE);
-            fetchProfile.add("X-Trasporto");
-            fetchProfile.add("X-Riferimento-Message-ID");
+            FetchProfile fetchProfile = getNewFetchProfile();
 
             IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
@@ -164,6 +180,75 @@ public class IMAPManager {
             log.error("errore durante il recupero dei messaggi da imap server " + store.getURLName().toString(), e);
             throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server ", e);
         }
+    }
+
+    /**
+     * Recupera i messaggi dal provider da due settimane più indietro...
+     */
+    public ArrayList<MailMessage> getMessagesSinceTwoWeeksAgo() throws ShpeckServiceException {
+        log.info("Dentro getMessagesSinceTwoWeeks()");
+        ArrayList<MailMessage> mailMessages = new ArrayList<>();
+        try {
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+
+            log.info("Connesso al provider");
+            FetchProfile fetchProfile = getNewFetchProfile();
+
+            log.info("Setto la cartella Inbox");
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            if (inbox == null) {
+                log.error("FATAL: no INBOX");
+                //TODO: da vedere se va bene System.exit
+                System.exit(1);
+            }
+
+            log.info("Creo il parametro di ricerca per trovare i messaggi nel range di due settimane");
+            SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, new Date());
+            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTwoWeeksAgoDate());
+            SearchTerm andTerm = new AndTerm(olderThan, newerThan);
+
+            log.info("Lancio la ricerca");
+            Message[] messagesFromInbox = inbox.search(andTerm);
+
+            log.info("fetcho...");
+            inbox.fetch(messagesFromInbox, fetchProfile);
+
+            log.info("length " + messagesFromInbox.length);
+            log.info("Ciclo... ");
+            for (int i = 0; i < messagesFromInbox.length; i++) {
+                MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                mailMessages.add(m);
+                if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
+                    lastUID = inbox.getUID(messagesFromInbox[i]);
+                    log.debug("lastUID: " + lastUID);
+                    log.info("getReceiveDate " + m.getReceiveDate());
+                    log.info("getSubject " + m.getSubject());
+                    log.info("getSendDate " + m.getSendDate());
+                }
+            }
+
+        } catch (Throwable e) {
+            log.error("errore durante il recupero dei messaggi da imap server (2-weeks range) " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server (2-weeks range) ", e);
+        }
+        // chiudi la connessione ma non rimuove i messaggi dal server
+        // close();
+        return mailMessages;
+    }
+
+    /**
+     * Mi restituisce la data di due settimana fa da ora
+     */
+    public Date getTwoWeeksAgoDate() {
+        int noOfDays = 14; //i.e two weeks
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.DAY_OF_YEAR, -noOfDays);
+        Date date = calendar.getTime();
+        return date;
     }
 
     /**
