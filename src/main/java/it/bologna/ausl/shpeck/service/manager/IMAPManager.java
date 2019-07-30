@@ -204,6 +204,9 @@ public class IMAPManager {
                 System.exit(1);
             }
 
+            // apertura della cartella in lettura/scrittura
+            inbox.open(Folder.READ_WRITE);
+
             log.info("Creo il parametro di ricerca per trovare i messaggi nel range di due settimane");
             SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, new Date());
             SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTwoWeeksAgoDate());
@@ -220,15 +223,15 @@ public class IMAPManager {
             for (int i = 0; i < messagesFromInbox.length; i++) {
                 MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
                 m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                log.info("* \t * \t *");
+                log.info("UUID:\t " + m.getProviderUid());
+                log.info("SUBJECT:\t " + m.getSubject());
+                log.info("getReceiveDate " + m.getReceiveDate());
+                log.info("getSendDate " + m.getSendDate());
+                log.info("..............................");
                 mailMessages.add(m);
-                if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
-                    lastUID = inbox.getUID(messagesFromInbox[i]);
-                    log.debug("lastUID: " + lastUID);
-                    log.info("getReceiveDate " + m.getReceiveDate());
-                    log.info("getSubject " + m.getSubject());
-                    log.info("getSendDate " + m.getSendDate());
-                }
             }
+            log.info("---FINE CICLAGGIO---");
 
         } catch (Throwable e) {
             log.error("errore durante il recupero dei messaggi da imap server (2-weeks range) " + store.getURLName().toString(), e);
@@ -243,11 +246,15 @@ public class IMAPManager {
      * Mi restituisce la data di due settimana fa da ora
      */
     public Date getTwoWeeksAgoDate() {
+        log.info("getTwoWeeksAgoDate");
         int noOfDays = 14; //i.e two weeks
+        log.info("tolgo " + noOfDays);
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
         calendar.add(Calendar.DAY_OF_YEAR, -noOfDays);
         Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
         return date;
     }
 

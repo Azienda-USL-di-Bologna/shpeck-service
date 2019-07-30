@@ -4,7 +4,7 @@
     <property name="LOG_DIR" value="./logs" />
     <property name="LOG_DIR_ARCHIVE" value="./logs/archive" />
     <property name="LOG_DIR_CHECK" value="./logs/check" />
-    <property name="LOG_DIR_CHECK_ARCHIVE" value="./logs/CHECK/archive" />
+    <property name="LOG_DIR_CHECK_ARCHIVE" value="./logs/check/archive" />
  
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
@@ -38,16 +38,14 @@
         </sift>
     </appender>
     
-    <appender name="check-file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        
+    <appender name="check-file" class="ch.qos.logback.classic.sift.SiftingAppender">
         <discriminator>
-            <key>logFileName</key>
-            <defaultValue>shpeck_service</defaultValue>
+            <key>logCheckFileName</key>
+            <defaultValue>shpeck_check_service</defaultValue>
         </discriminator>
-        
         <sift> 
-            <appender name="${logFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <file>${LOG_DIR_CHECK}/${logFileName}_check.log</file>
+            <appender name="${logCheckFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${LOG_DIR_CHECK}/${logCheckFileName}.log</file>
 
                 <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
                     <Pattern>
@@ -56,7 +54,7 @@
                 </encoder>
 
                 <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
-                    <fileNamePattern>${LOG_DIR_CHECK_ARCHIVE}/${logFileName}_check_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+                    <fileNamePattern>${LOG_DIR_CHECK_ARCHIVE}/${logCheckFileName}_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
                 </rollingPolicy>
             </appender>
         </sift>
@@ -67,8 +65,8 @@
         <appender-ref ref="console" />
     </root>
     
-    <logger name="check_all_messages" level="DEBUG" additivity="false">
-        <appender-ref ref="check-file"/>
+    <logger name="checks" level="debug" additivity="false">
+        <appender-ref ref="check-file" />
     </logger>
     
     <logger name="it.bologna.ausl.shpeck.service" level="debug" additivity="false">

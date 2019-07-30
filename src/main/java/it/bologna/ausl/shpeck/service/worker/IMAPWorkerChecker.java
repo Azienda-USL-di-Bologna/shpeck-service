@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPWorkerChecker implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger("check_all_messages");
+    private static final Logger log = LoggerFactory.getLogger("checks");
 
     private String threadName;
     private Integer idPec;
@@ -144,8 +144,9 @@ public class IMAPWorkerChecker implements Runnable {
 
     @Override
     public void run() {
-        MDC.put("logFileName", threadName);
+        MDC.put("logCheckFileName", threadName);
         log.info("------------------------------------------------------------------------");
+        log.info("INIZIO IL MESTIERE DI RICONCILIAZIONE");
         log.info("START > idPec: [" + idPec + "]" + " time: " + new Date());
 
         init();
@@ -154,6 +155,7 @@ public class IMAPWorkerChecker implements Runnable {
             log.debug("reperimento pec...");
             Pec pec = pecRepository.findById(idPec).get();
             log.debug("pec caricata con successo");
+            log.debug(pec.getIndirizzo());
             PecProvider idPecProvider = pecProviderRepository.findById(pec.getIdPecProvider().getId()).get();
             pec.setIdPecProvider(idPecProvider);
             log.info("host: " + idPecProvider.getHost());
@@ -163,7 +165,13 @@ public class IMAPWorkerChecker implements Runnable {
             imapManager.setStore(store);
 
             // ottenimento dei messaggi
-            messages = imapManager.getMessagesSinceTwoWeeksAgo();
+            if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
+                log.info("La message policy è NONE: riscorro i messaggi da due settimane a questa parte");
+                messages = imapManager.getMessagesSinceTwoWeeksAgo();
+            } else {
+                log.info("La message policy prevede di spostare i messaggi: quindi li ciclo tutti");
+                messages = imapManager.getMessages();
+            }
 
             MailProxy mailProxy;
             StoreResponse res = null;
@@ -195,7 +203,7 @@ public class IMAPWorkerChecker implements Runnable {
                                     log.info("metto in upload queue la mail sbustata");
                                     pecMessageStoreManager.insertToUploadQueue(busta.getIdRelated());
                                 } else {
-                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
                                 break;
 
@@ -213,7 +221,7 @@ public class IMAPWorkerChecker implements Runnable {
                                     log.info("metto in upload queue la ricevuta");
                                     recepitMessageStoreManager.insertToUploadQueue(ricevuta);
                                 } else {
-                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
                                 break;
 
@@ -231,7 +239,7 @@ public class IMAPWorkerChecker implements Runnable {
                                     log.info("metto in upload queue il regular message");
                                     regularMessageStoreManager.insertToUploadQueue(regularMessage);
                                 } else {
-                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
 
                                 break;
@@ -303,7 +311,7 @@ public class IMAPWorkerChecker implements Runnable {
 
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");
-        MDC.remove("logFileName");
+        MDC.remove("logCheckFileName");
     }
 
 }

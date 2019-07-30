@@ -81,6 +81,9 @@ public class SpeckApplication {
     @Value("${id-applicazione}")
     String idApplicazione;
 
+    @Value("${hour-to-start}")
+    Integer hourToStart;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -99,7 +102,6 @@ public class SpeckApplication {
                 UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
                 uploadWorker.setThreadName("uploadWorker");
                 scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
-
                 // recupera le mail attive
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
 
@@ -108,15 +110,16 @@ public class SpeckApplication {
                     ArrayList<String> testMailList = new ArrayList<>(Arrays.asList(testMailArray));
                     pecAttive.removeIf(pec -> !isTestMail(pec, testMailList));
                 }
-
                 // lancio riconciliazione
-                log.info("creazione degli IMAPWorker di check sulla casella");
+                log.info("creazione degli IMAPCheckWorker di check sulla casella");
                 for (int i = 0; i < pecAttive.size(); i++) {
+                    log.info(pecAttive.get(i).getIndirizzo());
                     IMAPWorkerChecker imapWorkerChecker = beanFactory.getBean(IMAPWorkerChecker.class);
-                    imapWorkerChecker.setThreadName("IMAP_" + pecAttive.get(i).getIndirizzo());
+                    imapWorkerChecker.setThreadName("IMAP_CHECK_" + pecAttive.get(i).getIndirizzo());
                     imapWorkerChecker.setIdPec(pecAttive.get(i).getId());
                     imapWorkerChecker.setApplicazione(applicazione);
                     scheduledThreadPoolExecutor.scheduleAtFixedRate(imapWorkerChecker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+
                 }
 
                 // lancio di IMAPWorker per ogni casella PEC attiva
@@ -130,7 +133,6 @@ public class SpeckApplication {
                     log.info("IMAPWorker_su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
                 }
                 log.info("creazione degli IMAPWorker eseguita con successo");
-
                 // creo e lancio l'SMTPWorker per ogni casella PEC attiva
                 log.info("creazione degli SMTPWorker per ogni casella PEC attiva...");
                 for (int i = 0; i < pecAttive.size(); i++) {
@@ -152,9 +154,9 @@ public class SpeckApplication {
 
     private long getInitialDelay() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Rome"));
-        ZonedDateTime nextRun = now.withHour(11).withMinute(0).withSecond(0);
+        ZonedDateTime nextRun = now.withHour(hourToStart).withMinute(0).withSecond(0);
         if (now.compareTo(nextRun) > 0) {
-            nextRun = nextRun.plusDays(1);
+            nextRun = nextRun.plusDays(0);
         }
 
         Duration duration = Duration.between(now, nextRun);
