@@ -185,7 +185,7 @@ public class IMAPManager {
     /**
      * Recupera i messaggi dal provider da due settimane più indietro...
      */
-    public ArrayList<MailMessage> getMessagesSinceTwoWeeksAgo() throws ShpeckServiceException {
+    public ArrayList<MailMessage> getMessagesFromTwoWeeksAgoToToday() throws ShpeckServiceException {
         log.info("Dentro getMessagesSinceTwoWeeks()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
