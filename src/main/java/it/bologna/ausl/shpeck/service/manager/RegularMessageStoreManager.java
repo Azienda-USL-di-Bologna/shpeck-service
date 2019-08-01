@@ -72,15 +72,21 @@ public class RegularMessageStoreManager extends StoreManager {
         regularMessage.setExternalId(((outbox == null) || (outbox.getExternalId() == null) ? null : outbox.getExternalId()));
         Message messagePresentInDB = getMessageFromDb(regularMessage);
         if (messagePresentInDB == null) {
-            regularMessage = storeMessage(regularMessage);
-            log.info("Messaggio salvato " + regularMessage.toString());
             try {
-                log.debug("Salvo il RawMessage del RegularMessage");
-                storeRawMessage(regularMessage, mailMessage.getRaw_message());
-            } catch (MailMessageException e) {
-                log.error("Errore nel retrieving data del rawMessage dal mailMessage " + e.getMessage());
-                throw new MailMessageException("Errore nel retrieving data del rawMessage dal mailMessage", e);
+                regularMessage = storeMessage(regularMessage);
+                log.info("Messaggio salvato " + regularMessage.toString());
+                try {
+                    log.debug("Salvo il RawMessage del RegularMessage");
+                    storeRawMessage(regularMessage, mailMessage.getRaw_message());
+                } catch (MailMessageException e) {
+                    log.error("Errore nel retrieving data del rawMessage dal mailMessage " + e.getMessage());
+                    throw new MailMessageException("Errore nel retrieving data del rawMessage dal mailMessage", e);
+                }
+            } catch (Throwable e) {
+                log.error("Errore nello storage del regularMessage, " + e);
+                throw new StoreManagerExeption("Errore nello storage del regularMessage", e);
             }
+
         } else {
             log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
             regularMessage = messagePresentInDB;
