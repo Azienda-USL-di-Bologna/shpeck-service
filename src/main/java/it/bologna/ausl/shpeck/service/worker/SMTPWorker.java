@@ -141,8 +141,10 @@ public class SMTPWorker implements Runnable {
                             m.setSeen(Boolean.TRUE);
                             log.info("Stato settato, ora elimino da outbox...");
                             outbox.setIgnore(true);
+                            log.info("Controllo se togliere il message tags di errore...");
+                            String deleteMT = messageTagStoreManager.removeErrorMessageTagIfExists(m, Tag.SystemTagName.technical_error);
+                            log.info("Risultato: " + deleteMT);
                         }
-
                         smtpManager.updateMetadata(m, outbox);
 
                         // segnalazione del caricamento di nuovi messaggi in tabella da salvare nello storage

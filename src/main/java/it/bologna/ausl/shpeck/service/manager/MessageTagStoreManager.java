@@ -101,7 +101,7 @@ public class MessageTagStoreManager extends StoreManager {
             mt.setIdMessage(message);
             log.info("Carico la pec");
             Pec pec = pecRepository.findById(message.getIdPec().getId()).get();
-            log.info("Carico il tag di errore tecnico della pec");
+            log.info("Carico il tag " + tagName.toString() + " della pec");
             Tag tag = tagRepository.findByNameAndIdPec(tagName.toString(), pec);
             mt.setIdTag(tag);
             log.info("Ritorno il MessageTag");
@@ -110,5 +110,30 @@ public class MessageTagStoreManager extends StoreManager {
             throw e;
         }
         return mt;
+    }
+
+    public String removeErrorMessageTagIfExists(Message message, Tag.SystemTagName tagName) {
+        log.info("Provo a rimuovere dal messaggio il tag " + tagName.toString());
+        String risposta = "...";
+        try {
+            log.info("Carico la pec");
+            Pec pec = pecRepository.findById(message.getIdPec().getId()).get();
+            log.info("Carico il tag " + tagName.toString() + " della pec");
+            Tag tag = tagRepository.findByNameAndIdPec(tagName.toString(), pec);
+
+            MessageTag mt = messageTagRepository.findByIdMessageAndIdTag(message, tag);
+            if (mt != null) {
+                log.info("Message tag trovato: ora lo elimino");
+                risposta = "Message tag eliminato";
+            } else {
+                log.info("Nessun message_tag di errore trovato...");
+                messageTagRepository.delete(mt);
+                risposta = "Eliminato MessageTag!";
+            }
+        } catch (Throwable e) {
+            log.error("*** Errore nel rimuovere il messageTag di errore dalla mail ", e.getMessage());
+            risposta = "Ho avuto un errore";
+        }
+        return risposta;
     }
 }
