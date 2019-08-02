@@ -500,8 +500,19 @@ public class StoreManager implements StoreInterface {
     @Override
     public void insertToUploadQueue(Message message) {
         log.info("insertToUploadQueue: reperisco il raw_message del messaggio " + message.getId());
-        UploadQueue uploadQueue = new UploadQueue();
         RawMessage rawMessage = rawMessageRepository.findByIdMessage(message);
+        log.info("RawMessage trovato " + rawMessage.getId());
+
+        UploadQueue uploadQueue = null;
+        log.info("... ma non è che ce l'ho già la riga in upload_queue?");
+        uploadQueue = uploadQueueRepository.findByIdRawMessage(rawMessage);
+        if (uploadQueue != null) {
+            log.info("Trovato un upload_queue con id " + uploadQueue.getId());
+            log.info("Ahh ma quindi l'avevo già spedito! allora a posto...");
+            return;
+        }
+        log.info("No, quindi devo salvarlo");
+        uploadQueue = new UploadQueue();
         log.info("setto l'id_raw_message " + rawMessage.getId());
         uploadQueue.setIdRawMessage(rawMessage);
         log.info("inserimento del rawMessage in upload_queue...");

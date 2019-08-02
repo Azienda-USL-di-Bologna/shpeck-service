@@ -124,15 +124,15 @@ public class MessageTagStoreManager extends StoreManager {
             MessageTag mt = messageTagRepository.findByIdMessageAndIdTag(message, tag);
             if (mt != null) {
                 log.info("Message tag trovato: ora lo elimino");
+                messageTagRepository.delete(mt);
                 risposta = "Message tag eliminato";
             } else {
                 log.info("Nessun message_tag di errore trovato...");
-                messageTagRepository.delete(mt);
-                risposta = "Eliminato MessageTag!";
+                risposta = "Non c'è nessun message tag di technical_error!";
             }
         } catch (Throwable e) {
             log.error("*** Errore nel rimuovere il messageTag di errore dalla mail ", e.getMessage());
-            risposta = "Ho avuto un errore";
+            risposta = "ERRORE: Ho avuto un problema...";
         }
         return risposta;
     }

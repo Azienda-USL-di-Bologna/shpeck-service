@@ -105,6 +105,7 @@ public class SMTPManager {
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("sendMessage >> Messaggio inviato!");
             res = mimeMessage.getMessageID();
+            log.info("Mime Message Id: " + res);
         } catch (Throwable e) {
             log.error("sendMessage >> Messaggio non inviato: " + e);
         }
@@ -156,8 +157,8 @@ public class SMTPManager {
             messageRepository.save(m);
 
             log.info("sono pronto per mettere il messaggio in upload queue");
-            log.debug("enqueueForUpload -> " + m.getId());
-            log.debug("chiamo lo store manager per salvare in uploadQueue");
+            log.info("enqueueForUpload -> " + m.getId());
+            log.info("chiamo lo store manager per salvare in uploadQueue");
             regularMessageStoreManager.insertToUploadQueue(m);
         } catch (Throwable e) {
             log.error("Errore su updateMetadata " + e);

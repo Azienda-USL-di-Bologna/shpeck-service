@@ -1,5 +1,6 @@
 package it.bologna.ausl.shpeck.service.repository;
 
+import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.UploadQueueWithPlainFields;
 import java.util.ArrayList;
@@ -24,5 +25,7 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
 
     @Query(value = "select u.* from shpeck.upload_queue u, shpeck.raw_messages r where r.id = u.id_raw_message and r.id_message = ?1", nativeQuery = true)
     public UploadQueue getIdUploadQueueByIdMessage(Integer idMessage);
+
+    public UploadQueue findByIdRawMessage(RawMessage rawMessage);
 
 }
