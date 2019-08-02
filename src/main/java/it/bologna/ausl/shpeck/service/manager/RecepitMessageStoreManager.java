@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
+import it.bologna.ausl.model.entities.shpeck.Tag;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
@@ -113,7 +114,7 @@ public class RecepitMessageStoreManager extends StoreManager {
             case "preavviso-errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.PREAVVISO_ERRORE_CONSEGNA);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "presa-in-carico":
                 recepit.setRecepitType(Recepit.RecepitType.PRESA_IN_CARICO);
@@ -122,17 +123,17 @@ public class RecepitMessageStoreManager extends StoreManager {
             case "non-accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.NON_ACCETTAZIONE);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "rilevazione-virus":
                 recepit.setRecepitType(Recepit.RecepitType.RILEVAZIONE_VIRUS);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.ERRORE_CONSEGNA);
                 relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "avvenuta-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.CONSEGNA);

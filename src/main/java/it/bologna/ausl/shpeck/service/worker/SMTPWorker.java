@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.worker;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
+import it.bologna.ausl.model.entities.shpeck.Tag;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
 import it.bologna.ausl.shpeck.service.manager.MessageTagStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
@@ -127,7 +128,7 @@ public class SMTPWorker implements Runnable {
                             m.setMessageStatus(Message.MessageStatus.ERROR);
                             log.error("Metto il tag Errore al messaggio");
                             try {
-                                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m);
+                                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m, Tag.SystemTagName.technical_error);
                             } catch (Exception e) {
                                 log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString());
                                 log.error(e.toString());

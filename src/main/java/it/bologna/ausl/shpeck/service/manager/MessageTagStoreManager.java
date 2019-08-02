@@ -81,10 +81,10 @@ public class MessageTagStoreManager extends StoreManager {
         this.tag = tag;
     }
 
-    public MessageTag createAndSaveErrorMessageTagFromMessage(Message m) {
+    public MessageTag createAndSaveErrorMessageTagFromMessage(Message m, Tag.SystemTagName tagName) {
         MessageTag mt = null;
         try {
-            mt = createErrorMessageTagFromMessage(m);
+            mt = createErrorMessageTagFromMessage(m, tagName);
             log.info("Salvo il MessageTag");
             mt = messageTagRepository.save(mt);
         } catch (Exception e) {
@@ -95,14 +95,14 @@ public class MessageTagStoreManager extends StoreManager {
         return mt;
     }
 
-    public MessageTag createErrorMessageTagFromMessage(Message message) {
+    public MessageTag createErrorMessageTagFromMessage(Message message, Tag.SystemTagName tagName) {
         MessageTag mt = new MessageTag();
         try {
             mt.setIdMessage(message);
             log.info("Carico la pec");
             Pec pec = pecRepository.findById(message.getIdPec().getId()).get();
-            log.info("Carico il tag di errore della pec");
-            Tag tag = tagRepository.findByNameAndIdPec(Tag.SystemTagName.in_error.toString(), pec);
+            log.info("Carico il tag di errore tecnico della pec");
+            Tag tag = tagRepository.findByNameAndIdPec(tagName.toString(), pec);
             mt.setIdTag(tag);
             log.info("Ritorno il MessageTag");
         } catch (Exception e) {

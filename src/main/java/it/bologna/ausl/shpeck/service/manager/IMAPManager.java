@@ -69,6 +69,8 @@ public class IMAPManager {
 
     public IMAPManager() {
         lastUID = 0;
+        lastUIDToConsider = Long.MAX_VALUE;
+
     }
 
     public IMAPManager(IMAPStore store) {
@@ -128,7 +130,7 @@ public class IMAPManager {
      * @throws ShpeckServiceException
      */
     public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
-
+        log.info("Faccio getMessages dal provider... ");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
 
         try {
@@ -140,8 +142,10 @@ public class IMAPManager {
              * FetchProfile elenca gli attributi del messaggio che si desidera
              * precaricare dal server
              */
+            log.info("Getto una nuovo FetchProfile...");
             FetchProfile fetchProfile = getNewFetchProfile();
 
+            log.info("Setto la inbox dello store");
             IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
@@ -150,12 +154,14 @@ public class IMAPManager {
             }
 
             // apertura della cartella in lettura/scrittura
+            log.info("Apro la folder");
             inbox.open(Folder.READ_WRITE);
 
             // ottieni i messaggi dal server
-            log.info("Fetching dei messaggi da " + lastUID + " a " + getLastUIDToConsider());
+            log.info("Prendo i messaggi da " + lastUID + " a " + getLastUIDToConsider());
             Message[] messagesFromInbox = inbox.getMessagesByUID(lastUID + 1, getLastUIDToConsider());
 
+            log.info("Fetching dei messaggi da " + lastUID + " a " + getLastUIDToConsider());
             inbox.fetch(messagesFromInbox, fetchProfile);
 
             if (messagesFromInbox.length == 1 && lastUID == inbox.getUID(messagesFromInbox[0])) {
