@@ -151,7 +151,7 @@ public class SMTPManager {
             //log.info("Eliminato");
 
             outboxRepository.save(outbox);
-            log.info("test -> eliminato (messo a true ignore)");
+            log.info("test -> non eliminato (messo 'ignore' a " + outbox.getIgnore() + ")");
 
             log.info("aggiorno lo stato di message a " + m.getMessageStatus().toString() + "...");
             messageRepository.save(m);

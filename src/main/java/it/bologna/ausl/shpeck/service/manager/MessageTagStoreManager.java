@@ -82,11 +82,21 @@ public class MessageTagStoreManager extends StoreManager {
     }
 
     public MessageTag createAndSaveErrorMessageTagFromMessage(Message m, Tag.SystemTagName tagName) {
+        log.info("createAndSaveErrorMessageTagFromMessage...");
         MessageTag mt = null;
         try {
             mt = createErrorMessageTagFromMessage(m, tagName);
-            log.info("Salvo il MessageTag");
-            mt = messageTagRepository.save(mt);
+            log.info("Non è che ce l'ho già?");
+            MessageTag mesTagTemp = messageTagRepository.findByIdMessageAndIdTag(m, mt.getIdTag());
+            if (mesTagTemp != null) {
+                log.info("Sì, trovato " + mesTagTemp.toString());
+                mt = mesTagTemp;
+            } else {
+                log.info("No, quindi salvo il MessageTag");
+                mt = messageTagRepository.save(mt);
+                log.info("Salvato " + mt.toString());
+            }
+
         } catch (Exception e) {
             log.error("Errore nel salvataggio del MessageTag: " + e.toString());
             throw e;
