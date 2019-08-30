@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
@@ -103,7 +104,10 @@ public class SpeckApplication {
                 faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
+                //ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
+                ArrayList<Pec> pecAttive = new ArrayList<>();
+                Optional<Pec> p = pecRepository.findById(1502);
+                pecAttive.add(p.get());
 
                 log.info("Pec attive #: " + pecAttive.size());
 

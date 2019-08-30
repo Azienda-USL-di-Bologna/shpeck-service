@@ -61,11 +61,9 @@ public class RecepitMessageStoreManager extends StoreManager {
 
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException {
-        log.info("--- inizio RecepitMessageStoreManager.store() ---");
-        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
-        messaggioDiRicevuta.setIdApplicazione(getApplicazione());
-        messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
-        messaggioDiRicevuta.setIsPec(Boolean.TRUE);
+
+        StoreResponse res = inserisci();
+        Message messaggioDiRicevuta = res.getMessage();
 
         String referredMessageIdFromRecepit = null;
         try {
@@ -81,12 +79,61 @@ public class RecepitMessageStoreManager extends StoreManager {
             return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, true);
         }
 
-        messaggioDiRicevuta.setIdRelated(relatedMessage);
+        switch (pecRecepit.getxRicevuta()) {
+            case "accettazione":
+                if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))) {
+                    relatedMessage.setMessageStatus(Message.MessageStatus.ACCEPTED);
+                }
+                break;
+            case "preavviso-errore-consegna":
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
+                break;
+            case "non-accettazione":
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
+                break;
+            case "rilevazione-virus":
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
+                break;
+            case "errore-consegna":
+                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
+                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
+                break;
+            case "avvenuta-consegna":
+                relatedMessage.setMessageStatus(Message.MessageStatus.CONFIRMED);
+                break;
+            default:
+                log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
+                break;
+        }
+
+        log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
+
+        // cambio lo stato solo se non è in errore
+        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
+            messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+        }
+
+        messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
+
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
+    }
+
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public StoreResponse inserisci() throws MailMessageException, ShpeckServiceException {
+        log.info("--- inizio RecepitMessageStoreManager.store() ---");
+        Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
+        messaggioDiRicevuta.setIdApplicazione(getApplicazione());
+        messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
+        messaggioDiRicevuta.setIsPec(Boolean.TRUE);
+
         if (getMessageFromDb(messaggioDiRicevuta) != null) {
             return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, false);
         }
 
-        storeMessage(messaggioDiRicevuta);
+        messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
 
         try {
             log.debug("Salvo il RawMessage della RICEVUTA");
@@ -104,58 +151,40 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         Recepit recepit = new Recepit();
         recepit.setIdMessage(messaggioDiRicevuta);
+
         switch (pecRecepit.getxRicevuta()) {
             case "accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.ACCETTAZIONE);
-                if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))) {
-                    relatedMessage.setMessageStatus(Message.MessageStatus.ACCEPTED);
-                }
                 break;
             case "preavviso-errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.PREAVVISO_ERRORE_CONSEGNA);
-                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "presa-in-carico":
                 recepit.setRecepitType(Recepit.RecepitType.PRESA_IN_CARICO);
-                // qui non posso mai entrare
                 break;
             case "non-accettazione":
                 recepit.setRecepitType(Recepit.RecepitType.NON_ACCETTAZIONE);
-                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "rilevazione-virus":
                 recepit.setRecepitType(Recepit.RecepitType.RILEVAZIONE_VIRUS);
-                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "errore-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.ERRORE_CONSEGNA);
-                relatedMessage.setMessageStatus(Message.MessageStatus.ERROR);
-                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(relatedMessage, Tag.SystemTagName.in_error);
                 break;
             case "avvenuta-consegna":
                 recepit.setRecepitType(Recepit.RecepitType.CONSEGNA);
-                relatedMessage.setMessageStatus(Message.MessageStatus.CONFIRMED);
                 break;
             default:
                 log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
                 break;
         }
 
-        log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
-
-        // cambio lo stato solo se non è in errore
-        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
-            messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
-        }
-
         log.debug("Setto la ricevuta del messaggio di ricevuta");
         messaggioDiRicevuta.setIdRecepit(recepit);
         log.debug("Salvo il messaggio di ricevuta...");
+
         messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
+
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
     }
-
 }
