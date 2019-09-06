@@ -150,6 +150,7 @@ public class SpeckApplication {
 
     public void faiGliUploadWorker() {
         log.info("Creo l'uploadWorker");
+
         UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
         uploadWorker.setThreadName("uploadWorker");
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
