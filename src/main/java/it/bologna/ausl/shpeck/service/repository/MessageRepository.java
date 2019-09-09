@@ -32,6 +32,6 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
 
     @Modifying
     @Transactional
-    @Query(value = "update shpeck.messages set id_related = ?2, , update_time = now() where id = ?1", nativeQuery = true)
+    @Query(value = "update shpeck.messages set id_related = ?2, update_time = now() where id = ?1", nativeQuery = true)
     void updateRelatedMessage(Integer id, Integer idRelated);
 }

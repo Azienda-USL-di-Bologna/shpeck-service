@@ -260,7 +260,9 @@ public class IMAPWorker implements Runnable {
                 }
                 // aggiornamento lastUID relativo alla casella appena scaricata
                 imapManager.setLastUID(message.getProviderUid());
-                imapManager.updateLastUID(pec);
+
+                pec = imapManager.updateLastUID(pec);
+                pec = pecRepository.findById(pec.getId()).get();
             }
 
             log.info("___esito e policy___");
@@ -297,8 +299,7 @@ public class IMAPWorker implements Runnable {
             }
 
             // aggiornamento lastUID relativo alla casella appena scaricata
-            imapManager.updateLastUID(pec);
-
+            //imapManager.updateLastUID(pec);
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
@@ -306,7 +307,7 @@ public class IMAPWorker implements Runnable {
             }
             log.error("Errore: " + message, e);
         } catch (Throwable e) {
-            log.error("eccezione : " + e);
+            log.error("eccezione : ", e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
 

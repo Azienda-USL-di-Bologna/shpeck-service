@@ -7,8 +7,6 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -419,7 +417,7 @@ public class IMAPManager {
     }
 
     // aggiorna la pec con campo uid dell'ultima mail analizzata
-    public void updateLastUID(Pec pec) {
+    public Pec updateLastUID(Pec pec) {
         log.info("salvataggio lastUID nella PEC...");
 
         if (pec.getResetLastuidTime() == null) {
@@ -441,8 +439,9 @@ public class IMAPManager {
             log.info("lastUID = " + getLastUID());
 //            }
         }
-        pecRepository.save(pec);
+        pec = pecRepository.save(pec);
         log.info("salvataggio lastUID -> OK");
+        return pec;
     }
 
     public void enqueueForUpload(it.bologna.ausl.model.entities.shpeck.Message message) {
