@@ -1,7 +1,6 @@
 package it.bologna.ausl.shpeck.service.transformers;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.Recepit;

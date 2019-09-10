@@ -12,8 +12,6 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
