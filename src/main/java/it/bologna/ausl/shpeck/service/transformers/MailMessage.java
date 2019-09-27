@@ -17,6 +17,7 @@ import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.MimeMessage;
 import it.bologna.ausl.model.entities.shpeck.Message.MessageType;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 
 public class MailMessage implements MailIdentity {
 
@@ -38,7 +39,7 @@ public class MailMessage implements MailIdentity {
             this.subject = original.getSubject();
             this.receiveDate = original.getReceivedDate();
             this.sendDate = original.getSentDate();
-            this.id = original.getMessageID();
+            this.id = MessageBuilder.getClearMessageID(original.getMessageID());
 
         } catch (Exception ex) {
             throw new MailMessageException("Errore nella creazione del MailMessage", ex);

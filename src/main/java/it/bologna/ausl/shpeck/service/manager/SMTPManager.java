@@ -104,7 +104,7 @@ public class SMTPManager {
             mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("sendMessage >> Messaggio inviato!");
-            res = mimeMessage.getMessageID();
+            res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
             log.info("Mime Message Id: " + res);
         } catch (Throwable e) {
             log.error("sendMessage >> Messaggio non inviato: " + e);

@@ -12,11 +12,14 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecRecepit;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +39,11 @@ public class RecepitMessageStoreManager extends StoreManager {
 
     @Autowired
     MessageTagStoreManager messageTagStoreManager;
+
+//    @PersistenceContext
+//    private EntityManager em;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     public RecepitMessageStoreManager() {
     }
@@ -130,7 +138,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
     }
 
-    @Transactional(rollbackFor = Throwable.class)
+    //@Transactional(rollbackFor = Throwable.class)
     public StoreResponse gestioneRelated(Message messaggioDiRicevuta) throws Exception {
 
         String referredMessageIdFromRecepit = null;
@@ -184,8 +192,22 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         // cambio lo stato solo se non è in errore
         if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
-            messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+            //messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
             messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
+
+//            Message m = em.find(Message.class, relatedMessage.getId());
+//            m.setMessageStatus(relatedMessage.getMessageStatus());
+//            //m.setIdRelated(messaggioDiRicevuta);
+//            messaggioDiRicevuta.setIdRelated(m);
+//            m.setUpdateTime(LocalDateTime.now());
+//            messaggioDiRicevuta.setUpdateTime(LocalDateTime.now());
+//            em.merge(m);
+//            em.merge(messaggioDiRicevuta);
+            String updateQuery1 = "update shpeck.messages set message_status = ?, update_time = now() where id = ?";
+            jdbcTemplate.update(updateQuery1, relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+
+            String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
+            jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
         }
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
     }

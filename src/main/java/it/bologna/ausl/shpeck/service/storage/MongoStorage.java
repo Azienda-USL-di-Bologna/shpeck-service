@@ -63,7 +63,7 @@ public class MongoStorage implements StorageStrategy {
                 String asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
                 filename = asGmt + " " + from + ".eml";
             } else {
-                filename = mimeMessage.getMessageID() + " " + from + ".eml";
+                filename = MessageBuilder.getClearMessageID(mimeMessage.getMessageID()) + " " + from + ".eml";
             }
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
             //assicurarsi che sia un nome unico
