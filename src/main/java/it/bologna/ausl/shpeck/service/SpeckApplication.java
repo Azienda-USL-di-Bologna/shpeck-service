@@ -103,7 +103,11 @@ public class SpeckApplication {
                 faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
+                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
+                
+//               --- PER DEBUG ---
+//                ArrayList<Pec> pecAttive = new ArrayList<>();
+//                pecAttive.add(pecRepository.findById(inserire_id).get());
 
                 log.info("Pec attive #: " + pecAttive.size());
 
@@ -117,7 +121,7 @@ public class SpeckApplication {
                 faiGliImapWorker(pecAttive, applicazione);
 
                 faiGliSMTPWorker(pecAttive);
-
+                
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
