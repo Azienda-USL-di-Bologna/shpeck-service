@@ -10,6 +10,7 @@ import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerException;
+import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerInterruption;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
@@ -18,6 +19,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -94,7 +96,7 @@ public class CleanerWorker implements Runnable {
         return hoCancellato;
     }
 
-    public boolean cleanRawMessage(UploadQueue uq) throws Exception {
+    public boolean cleanRawMessage(UploadQueue uq) throws CleanerWorkerException, Exception {
         boolean tuttoOK = true;
         try {
             // recuperare il raw message
@@ -112,10 +114,19 @@ public class CleanerWorker implements Runnable {
             m = messageRepository.findById(rm.getIdMessage().getId()).get();
             log.info("Trovato " + m.toString());
 
-//            // se il m.getTime > 2 settimane fa (cioè end time)
-//            //      rilancia specifica eccezione per terminare il mestiere
-            if (m.getInOut() == Message.InOut.OUT) {
-                tuttoOK = deleteOutboxLine(m);
+            // il receive time è posteriore alla mia data di fine (2 settimane fa)
+            if (m.getReceiveTime().toInstant(ZoneOffset.UTC).isAfter(getEndTime().toInstant())) {
+                log.info("Ok ho messaggi troppo nuovi, quindi il mestiere finisce.");
+                log.info("End Time: " + getEndTime().toString());
+                log.info("Receive Time: " + m.getReceiveTime().toString());
+                throw new CleanerWorkerException("Sono arrivato al messaggio " + m.getId() + " che è arrivato " + m.getReceiveTime().toString());
+            }
+            // se il m.getTime > 2 settimane fa (cioè end time)
+            //            //      rilancia specifica eccezione per terminare il mestiere
+            {
+                if (m.getInOut() == Message.InOut.OUT) {
+                    tuttoOK = deleteOutboxLine(m);
+                }
             }
             if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && uq.getName().equals(m.getName())) {
                 log.info("Sto per cancelare la riga di raw message " + rm.getId());
@@ -154,6 +165,9 @@ public class CleanerWorker implements Runnable {
                     log.info("Non posso cancellare la riga di upload queue " + uq.getId());
                     throw new CleanerWorkerException("Non posso cancellare la riga di upload queue " + uq.getId());
                 }
+            } catch (CleanerWorkerInterruption i) {
+                log.info("Interrompo cleanUploadQueue: UploadQueue.id " + id.toString());
+                throw i;
             } catch (Throwable e) {
                 log.info("Errore ignoto nella cancellazione dell upload_queue con id " + uq.getId());
                 log.info(e.toString());
@@ -173,12 +187,25 @@ public class CleanerWorker implements Runnable {
             messagesToDelete = uploadQueueRepository.getIdToDelete();
             log.info("Devo ciclare righe " + messagesToDelete.size());
             for (Integer id : messagesToDelete) {
+                log.info("UploadQueue.ID = " + id.toString() + " ...");
                 try {
                     cleanUploadQueue(id);
+                } catch (CleanerWorkerInterruption i) {
+                    log.info("Interrompo spazzinoUploadQueue(): sono arrivato ai messaggi più nuovi:");
+                    i.printStackTrace();
+                    log.info(i.getMessage());
+                    log.info("MA VA TUTTO BENE, il resto l'ho salvato. termino lo spazzino");
+                    break;
                 } catch (CleanerWorkerException e) {
                     // entrando qua dentro dovrei rollbackare le cancellazioni avvenute usando questo uploadqueue
                     log.error("Catchato CleanerWorkerException in spazzinoUploadQueue " + e.toString());
+                } catch (Throwable t) {
+                    log.error("QUALCOSA E' ANDATO MALE! Sono arrivato all'upload queue " + id.toString());
+                    log.error(t.toString());
+                    log.error(t.getMessage());
+                    t.printStackTrace();
                 }
+
             }
             log.info("Finito spazzinoUploadQueue: Tutto OK");
         } catch (Throwable e) {
@@ -189,6 +216,12 @@ public class CleanerWorker implements Runnable {
 
     }
 
+    public void doRiconciliazione() {
+        // caricare pec attive
+        // creare IMAPChecker di riconciliazione ciclando sulle pec caricate
+        // accodarli in un pool di esecuzione che parte mo
+    }
+
     public void doWork() {
         log.info("------------------------------------------------------------------------");
         log.info("START > *CLEANER WORKER* time: " + new Date());
@@ -196,10 +229,13 @@ public class CleanerWorker implements Runnable {
             // spazziono uploadqueue
             spazzinoUploadQueue();
             // accodare mestieri di riconciliazione
+            doRiconciliazione();
         } catch (Throwable e) {
+            log.error("ERRORE NEL DOWORK " + e.getMessage());
             e.printStackTrace();
-            log.error("ERRORE NEL DOWORK " + e.toString());
         }
+        log.info("------------------------------------------------------------------------");
+        log.info("FINE > *CLEANER WORKER* time: " + new Date());
     }
 
     @Override

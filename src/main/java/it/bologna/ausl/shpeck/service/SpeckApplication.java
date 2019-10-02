@@ -103,14 +103,15 @@ public class SpeckApplication {
                 log.info("Recupero l'applicazione");
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
+                log.info("Creo e schedulo l'Upload Worker");
                 faiGliUploadWorker();
+
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
-                
+
 //               --- PER DEBUG ---
 //                ArrayList<Pec> pecAttive = new ArrayList<>();
 //                pecAttive.add(pecRepository.findById(inserire_id).get());
-
                 log.info("Pec attive #: " + pecAttive.size());
 
                 if (testMode) {
