@@ -90,9 +90,11 @@ public class UploadManager {
 
                 // update Uuid e Path Mongo e il Name
                 String updateQuery = "update shpeck.messages set uuid_repository = ?, path_repository = ?, name = ?, update_time = now() where id = ?";
-                jdbcTemplate.update(updateQuery, objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
+                int updatedRow = jdbcTemplate.update(updateQuery, objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
 //                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
-                if (objectUploaded.getUuid() != null) {
+
+//                if (objectUploaded.getUuid() != null) {
+                if (updatedRow > 0) {
                     log.info("setto uploaded true");
                     // set come file già trattato nella tabella upload_queue
                     objectUploaded.setUploaded(Boolean.TRUE);
