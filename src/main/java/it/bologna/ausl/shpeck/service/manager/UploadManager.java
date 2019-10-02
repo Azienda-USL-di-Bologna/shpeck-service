@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,9 @@ public class UploadManager {
 
     @Autowired
     Semaphore messageSemaphore;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
@@ -80,10 +84,14 @@ public class UploadManager {
                 messageToUpdate.setPathRepository(objectUploaded.getPath());
                 messageToUpdate.setName(objectUploaded.getName());
                 log.info("--> " + messageToUpdate.toString());
-                // update del mesaggio con i nuovi parametri   
+                // update del mesaggio con i nuovi parametri
                 log.info("salvo");
                 //messageRepository.save(messageToUpdate);
-                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
+
+                // update Uuid e Path Mongo e il Name
+                String updateQuery = "update shpeck.messages set uuid_repository = ?, path_repository = ?, name = ?, update_time = now() where id = ?";
+                jdbcTemplate.update(updateQuery, objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
+//                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
                 if (objectUploaded.getUuid() != null) {
                     log.info("setto uploaded true");
                     // set come file già trattato nella tabella upload_queue

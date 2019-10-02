@@ -192,8 +192,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 
 //        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
         //messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
-        messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
-
+//        messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
 //            Message m = em.find(Message.class, relatedMessage.getId());
 //            m.setMessageStatus(relatedMessage.getMessageStatus());
 //            //m.setIdRelated(messaggioDiRicevuta);
