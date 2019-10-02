@@ -190,10 +190,9 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
 
-        // cambio lo stato solo se non è in errore
-        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
-            //messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
-            messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
+//        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
+        //messageRepository.updateMessageStatus(relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+        messageRepository.updateRelatedMessage(messaggioDiRicevuta.getId(), relatedMessage.getId());
 
 //            Message m = em.find(Message.class, relatedMessage.getId());
 //            m.setMessageStatus(relatedMessage.getMessageStatus());
@@ -203,12 +202,12 @@ public class RecepitMessageStoreManager extends StoreManager {
 //            messaggioDiRicevuta.setUpdateTime(LocalDateTime.now());
 //            em.merge(m);
 //            em.merge(messaggioDiRicevuta);
-            String updateQuery1 = "update shpeck.messages set message_status = ?, update_time = now() where id = ?";
-            jdbcTemplate.update(updateQuery1, relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
+        String updateQuery1 = "update shpeck.messages set message_status = ?, update_time = now() where id = ?";
+        jdbcTemplate.update(updateQuery1, relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
 
-            String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
-            jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
-        }
+        String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
+        jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
+//        }
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
     }
 }
