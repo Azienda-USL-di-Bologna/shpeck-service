@@ -194,7 +194,7 @@ public class CleanerWorker implements Runnable {
                     log.info("Interrompo spazzinoUploadQueue(): sono arrivato ai messaggi più nuovi:");
                     i.printStackTrace();
                     log.info(i.getMessage());
-                    log.info("MA VA TUTTO BENE, il resto l'ho salvato. termino lo spazzino");
+                    log.info("VA TUTTO BENE, il resto l'ho salvato. termino lo spazzino");
                     break;
                 } catch (CleanerWorkerException e) {
                     // entrando qua dentro dovrei rollbackare le cancellazioni avvenute usando questo uploadqueue
