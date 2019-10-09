@@ -76,6 +76,7 @@ public class CleanerWorker implements Runnable {
         this.endTime = endTime;
     }
 
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
     private boolean deleteOutboxLine(Message message) throws Throwable {
         boolean hoCancellato = false;
         log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
@@ -83,11 +84,11 @@ public class CleanerWorker implements Runnable {
         if (idOutbox == null) {
             throw new Throwable("Errore, messagio in uscita senza id outbox");
         }
-        Outbox lineInOutbox = new Outbox();
-        lineInOutbox = outboxRepository.findById(idOutbox).get();
-        if (lineInOutbox.getIgnore() == true) {
-            log.info("Sto per cancelare la riga di outbox " + lineInOutbox.getId());
-            outboxRepository.delete(lineInOutbox);
+        Outbox outboxRow = new Outbox();
+        outboxRow = outboxRepository.findById(idOutbox).get();
+        if (outboxRow.getIgnore() == true) {
+            log.info("Sto per cancelare la riga di outbox " + outboxRow.getId());
+            outboxRepository.delete(outboxRow);
             log.info("Ho cancelato la riga!!");
             hoCancellato = true;
         } else {
@@ -96,7 +97,8 @@ public class CleanerWorker implements Runnable {
         return hoCancellato;
     }
 
-    public boolean cleanRawMessage(UploadQueue uq) throws CleanerWorkerException, Exception {
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRED)
+    public boolean cleanRawMessage(UploadQueue uq) throws CleanerWorkerException, Exception, Throwable {
         boolean tuttoOK = true;
         try {
             // recuperare il raw message
@@ -115,20 +117,22 @@ public class CleanerWorker implements Runnable {
             log.info("Trovato " + m.toString());
 
             // il receive time è posteriore alla mia data di fine (2 settimane fa)
-            if (m.getReceiveTime().toInstant(ZoneOffset.UTC).isAfter(getEndTime().toInstant())) {
-                log.info("Ok ho messaggi troppo nuovi, quindi il mestiere finisce.");
-                log.info("End Time: " + getEndTime().toString());
-                log.info("Receive Time: " + m.getReceiveTime().toString());
-                throw new CleanerWorkerException("Sono arrivato al messaggio " + m.getId() + " che è arrivato " + m.getReceiveTime().toString());
+//            if (m.getReceiveTime().toInstant(ZoneOffset.UTC).isAfter(getEndTime().toInstant())) {
+//                log.info("Ok ho messaggi troppo nuovi, quindi il mestiere finisce.");
+//                log.info("End Time: " + getEndTime().toString());
+//                log.info("Receive Time: " + m.getReceiveTime().toString());
+//                throw new CleanerWorkerInterruption("Sono arrivato al messaggio " + m.getId() + " che è arrivato " + m.getReceiveTime().toString());
+//            }
+//
+            // se il messaggio è in uscita (OUT) allora devo cancellare l'outbox
+            if (m.getInOut() == Message.InOut.OUT) {
+                tuttoOK = deleteOutboxLine(m);
             }
-            // se il m.getTime > 2 settimane fa (cioè end time)
-            //            //      rilancia specifica eccezione per terminare il mestiere
-            {
-                if (m.getInOut() == Message.InOut.OUT) {
-                    tuttoOK = deleteOutboxLine(m);
-                }
-            }
-            if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && uq.getName().equals(m.getName())) {
+
+            if (!tuttoOK) {
+                log.info("C'è stato un problema con la cancellazione dell'outbox " + m.getIdOutbox());
+                throw new Throwable("Errore nel cancellamento dell'outbox con id = " + m.getIdOutbox());
+            } else if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && uq.getName().equals(m.getName())) {
                 log.info("Sto per cancelare la riga di raw message " + rm.getId());
                 rawMessageRepository.delete(rm);
                 log.info("Ho cancelato la riga!!");
@@ -139,9 +143,13 @@ public class CleanerWorker implements Runnable {
                 log.info(" uq.getName().equals(m.getName()) " + uq.getName().equals(m.getName()));
                 tuttoOK = false;
             }
+        } catch (CleanerWorkerInterruption e) {
+            log.error("Catchato CleanerWorkerInterruption e rilancio, " + e.toString());
+            throw e;
         } catch (Throwable e) {
             e.printStackTrace();
             log.error("Catchato errore in cleanRawMessage " + e.toString());
+            throw e;
         }
         return tuttoOK;
     }
@@ -153,7 +161,7 @@ public class CleanerWorker implements Runnable {
         UploadQueue uq = new UploadQueue();
         uq = uploadQueueRepository.findById(id).get();
 
-        if (uq.getIdRawMessage() != null && uq.getIdRawMessage().getId() != null) {
+        if (uq.getUploaded() == true && uq.getIdRawMessage() != null && uq.getIdRawMessage().getId() != null) {
             log.info("Pulisco il raw message di upQ " + id.toString());
             try {
                 if (cleanRawMessage(uq) == true) {
@@ -161,6 +169,7 @@ public class CleanerWorker implements Runnable {
                     log.info("Sto per cancellare la riga di upload queue");
                     uploadQueueRepository.delete(uq);
                     log.info("Ho cancellato la riga di upload queue");
+                    throw new Exception("TEsT TEST: FERMO E NON CANCELLO");  // da cancellare
                 } else {
                     log.info("Non posso cancellare la riga di upload queue " + uq.getId());
                     throw new CleanerWorkerException("Non posso cancellare la riga di upload queue " + uq.getId());
@@ -179,6 +188,15 @@ public class CleanerWorker implements Runnable {
         }
     }
 
+    public ArrayList<Integer> getTestOutboxIds() {
+        ArrayList<Integer> arrayList = new ArrayList<Integer>();
+        //arrayList.add(9867);
+        arrayList.add(10472);
+        arrayList.add(10477);
+        arrayList.add(10478);
+        return arrayList;
+    }
+
     public void spazzinoUploadQueue() throws Throwable {
         try {
             // caricare upload queue
@@ -186,6 +204,8 @@ public class CleanerWorker implements Runnable {
             List<Integer> messagesToDelete = new ArrayList<>();
             messagesToDelete = uploadQueueRepository.getIdToDelete();
             log.info("Devo ciclare righe " + messagesToDelete.size());
+
+            messagesToDelete = getTestOutboxIds();
             for (Integer id : messagesToDelete) {
                 log.info("UploadQueue.ID = " + id.toString() + " ...");
                 try {
@@ -222,14 +242,54 @@ public class CleanerWorker implements Runnable {
         // accodarli in un pool di esecuzione che parte mo
     }
 
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public UploadQueue test2(UploadQueue uq) throws Exception {
+        log.info("TEST2");
+        uq.setName("TEST2");
+        uq.setPath("TEST2");
+        uq.setUuid("TEST2");
+        uq = uploadQueueRepository.save(uq);
+        throw new Exception("AHIA!");
+        //return uq;
+    }
+
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public UploadQueue test1(UploadQueue uq) throws Exception {
+        //throw new Exception("ECCEZZIONE TEST1");
+        log.info("TEST1");
+        uq.setName("TEST1");
+        uq.setPath("TEST1");
+        uq.setUuid("TEST1");
+        uq = uploadQueueRepository.save(uq);
+        uq = test2(uq);
+        return uq;
+
+    }
+
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public void test() throws Exception {
+        log.info("TEST");
+        UploadQueue uq = uploadQueueRepository.findById(6034).get();
+
+        uq = test1(uq);
+        uq.setName("test0");
+        uq.setPath("test0");
+        uq.setUuid("test0");
+        uploadQueueRepository.save(uq);
+
+    }
+
     public void doWork() {
         log.info("------------------------------------------------------------------------");
         log.info("START > *CLEANER WORKER* time: " + new Date());
         try {
+
+            test();
+
             // spazziono uploadqueue
-            spazzinoUploadQueue();
+            //spazzinoUploadQueue();
             // accodare mestieri di riconciliazione
-            doRiconciliazione();
+            //doRiconciliazione();
         } catch (Throwable e) {
             log.error("ERRORE NEL DOWORK " + e.getMessage());
             e.printStackTrace();

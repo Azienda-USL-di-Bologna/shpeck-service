@@ -104,7 +104,7 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 log.info("Creo e schedulo l'Upload Worker");
-                faiGliUploadWorker();
+//                faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
@@ -125,9 +125,8 @@ public class SpeckApplication {
 //                // questo è reso obsoleto dal CleanerWorker
 //                //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
 
-                faiGliImapWorker(pecAttive, applicazione);
-
-                faiGliSMTPWorker(pecAttive);
+//                faiGliImapWorker(pecAttive, applicazione);
+//                faiGliSMTPWorker(pecAttive);
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -226,8 +225,9 @@ public class SpeckApplication {
         CleanerWorker cleanerWorker = beanFactory.getBean(CleanerWorker.class);
         cleanerWorker.setThreadName("cleanerWorker");
         cleanerWorker.setEndTime(getTwoWeeksAgoDate());
-        scheduledThreadPoolExecutor.scheduleWithFixedDelay(cleanerWorker, 0, 5, TimeUnit.SECONDS);
-        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
+        cleanerWorker.run();
+//        scheduledThreadPoolExecutor.scheduleWithFixedDelay(cleanerWorker, 0, 5, TimeUnit.SECONDS);
+//        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
 
 }
