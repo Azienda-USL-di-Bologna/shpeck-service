@@ -51,7 +51,7 @@ public class UploadManager {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    //@Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
         try {
             log.info("Entrato in manage con id su upload_queue: " + messageToStore.getId() + " carico i parametri azienda");
