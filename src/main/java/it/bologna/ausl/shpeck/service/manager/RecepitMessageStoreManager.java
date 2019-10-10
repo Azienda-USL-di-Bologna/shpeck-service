@@ -154,7 +154,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         if (relatedMessage == null) {
             log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
-            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, ricevuraResponse.isToUpload());
+            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload());
         }
 
         switch (pecRecepit.getxRicevuta()) {
@@ -209,6 +209,6 @@ public class RecepitMessageStoreManager extends StoreManager {
         String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
         jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
 //        }
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, ricevuraResponse.isToUpload());
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload());
     }
 }
