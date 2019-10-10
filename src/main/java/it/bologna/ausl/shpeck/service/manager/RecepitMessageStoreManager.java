@@ -67,8 +67,8 @@ public class RecepitMessageStoreManager extends StoreManager {
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, Exception {
 
-        StoreResponse gestioneRicevuta = gestioneRicevuta();
-        return gestioneRelated(gestioneRicevuta.getMessage());
+        StoreResponse recepitResponse = gestioneRicevuta();
+        return gestioneRelated(recepitResponse);
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -139,7 +139,9 @@ public class RecepitMessageStoreManager extends StoreManager {
     }
 
     //@Transactional(rollbackFor = Throwable.class)
-    public StoreResponse gestioneRelated(Message messaggioDiRicevuta) throws Exception {
+    public StoreResponse gestioneRelated(StoreResponse recepitResponse) throws Exception {
+
+        Message messaggioDiRicevuta = recepitResponse.getMessage();
 
         String referredMessageIdFromRecepit = null;
         try {
@@ -152,7 +154,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         if (relatedMessage == null) {
             log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
-            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, true);
+            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, ricevuraResponse.isToUpload());
         }
 
         switch (pecRecepit.getxRicevuta()) {
@@ -207,6 +209,6 @@ public class RecepitMessageStoreManager extends StoreManager {
         String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
         jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
 //        }
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, true);
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, ricevuraResponse.isToUpload());
     }
 }
