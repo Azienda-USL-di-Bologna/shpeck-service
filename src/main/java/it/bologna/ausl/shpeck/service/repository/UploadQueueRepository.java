@@ -8,6 +8,8 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * per convenzione nostra, collectionResourceRel e path devono avere lo stesso
@@ -27,5 +29,8 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
     public UploadQueue getIdUploadQueueByIdMessage(Integer idMessage);
 
     public UploadQueue findByIdRawMessage(RawMessage rawMessage);
+
+    @Query(value = "select id from shpeck.upload_queue where uploaded = true order by id", nativeQuery = true)
+    public ArrayList<Integer> getIdToDelete();
 
 }
