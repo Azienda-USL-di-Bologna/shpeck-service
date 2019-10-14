@@ -87,6 +87,9 @@ public class SpeckApplication {
     @Value("${hour-to-start}")
     Integer hourToStart;
 
+    @Value("${days-back-spazzino}")
+    Integer daysBackSpazzino;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -134,6 +137,21 @@ public class SpeckApplication {
 
     private boolean isTestMail(Pec pec, ArrayList<String> list) {
         return list.contains(pec.getIndirizzo());
+    }
+
+    /**
+     * Mi restituisce la data di due settimana fa da ora
+     */
+    public Date getTheeseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTwoWeeksAgoDate");
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
     /**
@@ -224,9 +242,9 @@ public class SpeckApplication {
         log.info("Creazione e schedulazione del worker di pulizia (CleanerWorker)");
         CleanerWorker cleanerWorker = beanFactory.getBean(CleanerWorker.class);
         cleanerWorker.setThreadName("cleanerWorker");
-        cleanerWorker.setEndTime(getTwoWeeksAgoDate());
-        cleanerWorker.run();
-//        scheduledThreadPoolExecutor.scheduleWithFixedDelay(cleanerWorker, 0, 5, TimeUnit.SECONDS);
+        cleanerWorker.setEndTime(getTheeseDaysAgoDate(daysBackSpazzino));
+        cleanerWorker.run();    // <--  RIGA DA CANCElLARE!
+//        scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
 //        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
 
