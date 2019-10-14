@@ -60,7 +60,7 @@ public class CleanerManager {
      * Recupera un Outbox dal Message passato come parametro e lo cancella se il
      * campo 'ignore' è settato a true.
      */
-    public boolean deleteOutboxLine(Message message) throws Throwable {
+    public boolean deleteOutboxRow(Message message) throws Throwable {
         boolean hoCancellato = false;
         log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
         Integer idOutbox = message.getIdOutbox();
@@ -118,7 +118,7 @@ public class CleanerManager {
 
             // se il messaggio è in uscita (OUT) allora devo cancellare l'outbox
             if (m.getInOut() == Message.InOut.OUT) {
-                tuttoOK = deleteOutboxLine(m);
+                tuttoOK = deleteOutboxRow(m);
             }
             
             if (!tuttoOK) {

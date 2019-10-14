@@ -94,8 +94,6 @@ public class CleanerWorker implements Runnable {
             List<Integer> messagesToDelete = new ArrayList<>();
             messagesToDelete = uploadQueueRepository.getIdToDelete();
             log.info("Devo ciclare righe " + messagesToDelete.size());
-            // riga da cancellare: test
-            messagesToDelete = getTestOutboxIds();  // riga da cancellare: roba di test
             cleanerManager.setEndTime(endTime);
             for (Integer id : messagesToDelete) {
                 log.info("UploadQueue.ID = " + id.toString() + " ...");
@@ -130,28 +128,14 @@ public class CleanerWorker implements Runnable {
 
     }
 
-    /**
-     * Accoda nel pool di thread i mestieri di riconciliazione per tutte le pec
-     * attive
-     */
-    public void doRiconciliazione() {
-        // caricare pec attive
-        // creare IMAPChecker di riconciliazione ciclando sulle pec caricate
-        // accodarli in un pool di esecuzione che parte mo
-    }
-
     public void doWork() {
         log.info("------------------------------------------------------------------------");
         log.info("START > *CLEANER WORKER* time: " + new Date());
         try {
-//
-//            test();
 
             // spazziono uploadqueue
             spazzinoUploadQueue();
 
-            // accodare mestieri di riconciliazione
-            //doRiconciliazione();
         } catch (Throwable e) {
             log.error("ERRORE NEL DOWORK " + e.getMessage());
             e.printStackTrace();

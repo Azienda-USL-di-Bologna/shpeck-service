@@ -107,7 +107,7 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 log.info("Creo e schedulo l'Upload Worker");
-//                faiGliUploadWorker();
+                faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
@@ -124,12 +124,12 @@ public class SpeckApplication {
 
                 log.info("Creo e schedulo il cleaner worker");
                 accodaCleanerWorker();
-//                
-//                // questo è reso obsoleto dal CleanerWorker
-//                //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
 
-//                faiGliImapWorker(pecAttive, applicazione);
-//                faiGliSMTPWorker(pecAttive);
+                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
+                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+
+                faiGliImapWorker(pecAttive, applicazione);
+                faiGliSMTPWorker(pecAttive);
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -243,9 +243,8 @@ public class SpeckApplication {
         CleanerWorker cleanerWorker = beanFactory.getBean(CleanerWorker.class);
         cleanerWorker.setThreadName("cleanerWorker");
         cleanerWorker.setEndTime(getTheeseDaysAgoDate(daysBackSpazzino));
-        cleanerWorker.run();    // <--  RIGA DA CANCElLARE!
-//        scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
-//        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
 
 }
