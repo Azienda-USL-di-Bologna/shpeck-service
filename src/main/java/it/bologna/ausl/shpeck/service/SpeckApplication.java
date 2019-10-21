@@ -6,6 +6,7 @@ import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
@@ -25,6 +26,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
@@ -84,6 +87,9 @@ public class SpeckApplication {
     @Value("${hour-to-start}")
     Integer hourToStart;
 
+    @Value("${days-back-spazzino}")
+    Integer daysBackSpazzino;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -100,11 +106,15 @@ public class SpeckApplication {
                 log.info("Recupero l'applicazione");
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
+                log.info("Creo e schedulo l'Upload Worker");
                 faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrue();
+                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
+//               --- PER DEBUG ---
+//                ArrayList<Pec> pecAttive = new ArrayList<>();
+//                pecAttive.add(pecRepository.findById(inserire_id).get());
                 log.info("Pec attive #: " + pecAttive.size());
 
                 if (testMode) {
@@ -112,12 +122,14 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
+                log.info("Creo e schedulo il cleaner worker");
+                accodaCleanerWorker();
+
+                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
 
                 faiGliImapWorker(pecAttive, applicazione);
-
                 faiGliSMTPWorker(pecAttive);
-
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -125,6 +137,37 @@ public class SpeckApplication {
 
     private boolean isTestMail(Pec pec, ArrayList<String> list) {
         return list.contains(pec.getIndirizzo());
+    }
+
+    /**
+     * Mi restituisce la data di due settimana fa da ora
+     */
+    public Date getTheeseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTwoWeeksAgoDate");
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
+    }
+
+    /**
+     * Mi restituisce la data di due settimana fa da ora
+     */
+    public Date getTwoWeeksAgoDate() {
+        log.info("getTwoWeeksAgoDate");
+        int noOfDays = 14; //i.e two weeks
+        log.info("tolgo " + noOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -noOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
     private long getInitialDelay() {
@@ -194,6 +237,15 @@ public class SpeckApplication {
             log.info(smtpWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
         }
         log.info("creazione degli SMTPWorker eseguita con successo");
+    }
+
+    public void accodaCleanerWorker() {
+        log.info("Creazione e schedulazione del worker di pulizia (CleanerWorker)");
+        CleanerWorker cleanerWorker = beanFactory.getBean(CleanerWorker.class);
+        cleanerWorker.setThreadName("cleanerWorker");
+        cleanerWorker.setEndTime(getTheeseDaysAgoDate(daysBackSpazzino));
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
 
 }

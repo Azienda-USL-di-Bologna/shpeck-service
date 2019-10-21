@@ -104,7 +104,7 @@ public class SMTPManager {
             mimeMessage.saveChanges();
             smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
             log.info("sendMessage >> Messaggio inviato!");
-            res = mimeMessage.getMessageID();
+            res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
             log.info("Mime Message Id: " + res);
         } catch (Throwable e) {
             log.error("sendMessage >> Messaggio non inviato: " + e);
@@ -137,7 +137,9 @@ public class SMTPManager {
 //            }
 
         } catch (Throwable e) {
+            log.error("BeforeSendOuboxException", e);
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
+            
         }
         return storeResponse;
     }

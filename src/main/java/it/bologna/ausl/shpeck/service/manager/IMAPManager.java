@@ -7,6 +7,7 @@ import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -359,7 +360,7 @@ public class IMAPManager {
 
             for (Message m : messages) {
                 MimeMessage tmp = (MimeMessage) m;
-                String messageId = tmp.getMessageID();
+                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
                 if (idSet.contains(messageId)) {
                     messageToMove.add(tmp);
                     log.debug("messageMover: " + messageId + " selezionato per lo spostamento");
@@ -369,7 +370,7 @@ public class IMAPManager {
             srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
             for (Message m : messages) {
                 MimeMessage tmp = (MimeMessage) m;
-                String messageId = tmp.getMessageID();
+                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
                 if (idSet.contains(messageId)) {
                     tmp.setFlag(Flags.Flag.DELETED, true);
                 }
@@ -403,7 +404,7 @@ public class IMAPManager {
             String messid;
             for (int i = 0; i < tmpmess.length; i++) {
                 mess = (IMAPMessage) tmpmess[i];
-                messid = mess.getMessageID();
+                messid = MessageBuilder.getClearMessageID(mess.getMessageID());
                 if (messid.equals(message_id)) {
                     tmpmess[i].setFlag(Flags.Flag.DELETED, true);
                     inbox.close(true);

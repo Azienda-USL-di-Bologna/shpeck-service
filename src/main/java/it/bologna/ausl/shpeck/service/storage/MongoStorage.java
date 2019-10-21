@@ -12,8 +12,6 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -65,7 +63,7 @@ public class MongoStorage implements StorageStrategy {
                 String asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
                 filename = asGmt + " " + from + ".eml";
             } else {
-                filename = mimeMessage.getMessageID() + " " + from + ".eml";
+                filename = MessageBuilder.getClearMessageID(mimeMessage.getMessageID()) + " " + from + ".eml";
             }
             filename = filename.replace(':', ' ').replaceAll("[^0-9a-zA-Z@ _\\.\\-]", "");
             //assicurarsi che sia un nome unico

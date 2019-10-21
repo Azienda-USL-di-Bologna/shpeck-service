@@ -153,6 +153,14 @@ public class MessageBuilder {
         }
     }
 
+    /**
+     * ritorna solamente il vero messageID senza eventuali descrittori dopo come
+     * as esempio (added by )
+     */
+    public static String getClearMessageID(String messageId) {
+        return messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+    }
+
     public static int messageHasAttachment(Part p) throws ShpeckServiceException {
         int attachments = 0;
         try {

@@ -35,8 +35,6 @@ import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import java.util.Optional;
-import java.util.logging.Level;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 
 /**

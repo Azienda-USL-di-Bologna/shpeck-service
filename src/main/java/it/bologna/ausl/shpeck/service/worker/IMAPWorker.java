@@ -209,13 +209,17 @@ public class IMAPWorker implements Runnable {
                                 log.info("salvataggio metadati...");
                                 res = recepitMessageStoreManager.store();
                                 log.info("gestione metadati -> OK");
-                                if (res.isToUpload()) {
-                                    log.info("prendo il message ricevuta dalla res");
-                                    Message ricevuta = messageRepository.findById(res.getMessage().getId()).get();
-                                    log.info("metto in upload queue la ricevuta");
-                                    recepitMessageStoreManager.insertToUploadQueue(ricevuta);
+                                if (res != null) {
+                                    if (res.isToUpload()) {
+                                        log.info("prendo il message ricevuta dalla res");
+                                        Message ricevuta = messageRepository.findById(res.getMessage().getId()).get();
+                                        log.info("metto in upload queue la ricevuta");
+                                        recepitMessageStoreManager.insertToUploadQueue(ricevuta);
+                                    } else {
+                                        log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    }
                                 } else {
-                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    log.info("ricevuta già presente");
                                 }
                                 break;
 
