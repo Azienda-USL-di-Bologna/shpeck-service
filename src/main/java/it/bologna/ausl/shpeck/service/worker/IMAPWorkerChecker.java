@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPWorkerChecker implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(IMAPWorkerChecker.class);
+    private static final Logger log = LoggerFactory.getLogger("checks");
 
     private String threadName;
     private Integer idPec;
