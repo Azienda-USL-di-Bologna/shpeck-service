@@ -6,6 +6,8 @@ import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.BeanCreationNotAllowedExceptionShpeck;
+import it.bologna.ausl.shpeck.service.exceptions.CannotCreateTransactionShpeck;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
@@ -27,10 +29,12 @@ import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.CannotCreateTransactionException;
 
 /**
  *
@@ -259,6 +263,10 @@ public class IMAPWorker implements Runnable {
                             messagesOrphans.add(res.getMailMessage());
                         }
                     }
+                } catch (CannotCreateTransactionException ex) {
+                    throw new CannotCreateTransactionShpeck(ex.getMessage());
+                } catch (BeanCreationNotAllowedException ex) {
+                    throw new BeanCreationNotAllowedExceptionShpeck(ex.getMessage());
                 } catch (Throwable e) {
                     log.error("eccezione nel processare il messaggio corrente: " + e);
                 }
@@ -304,6 +312,9 @@ public class IMAPWorker implements Runnable {
 
             // aggiornamento lastUID relativo alla casella appena scaricata
             //imapManager.updateLastUID(pec);
+        } catch (CannotCreateTransactionShpeck | BeanCreationNotAllowedExceptionShpeck e) {
+            log.error("eccezione : ", e);
+            log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
