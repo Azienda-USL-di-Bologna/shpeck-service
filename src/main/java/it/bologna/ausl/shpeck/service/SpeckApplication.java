@@ -122,14 +122,14 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
-                log.info("Creo e schedulo il cleaner worker");
-                accodaCleanerWorker();
+                //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+                //accodaCleanerWorker();
 
-                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
-                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
-
+               // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
+               
+
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -193,6 +193,7 @@ public class SpeckApplication {
 
     public void faiGliUploadWorker() {
         log.info("Creo l'uploadWorker");
+
         UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
         uploadWorker.setThreadName("uploadWorker");
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
