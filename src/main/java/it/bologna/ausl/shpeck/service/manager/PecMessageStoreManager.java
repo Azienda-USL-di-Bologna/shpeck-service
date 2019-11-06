@@ -67,7 +67,10 @@ public class PecMessageStoreManager extends StoreManager {
         messaggioSbustato.setIdApplicazione(getApplicazione());
         messaggioSbustato.setMessageType(Message.MessageType.MAIL);
 
-        if (getMessageFromDb(messaggioSbustato) != null) {
+        log.info("Verfico presenza messaggio...");
+        Message messagePresentInDB = getMessageFromDb(messaggioSbustato);
+        if (messagePresentInDB != null) {
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
             return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioSbustato, false);
         }
 

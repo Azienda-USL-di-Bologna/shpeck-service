@@ -68,6 +68,10 @@ public class RecepitMessageStoreManager extends StoreManager {
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, Exception {
 
         StoreResponse recepitResponse = gestioneRicevuta();
+        if (!recepitResponse.isToUpload()) {
+            log.info("Il messaggio non è da uploadare probabilmente perché ce l'ho già, quindi non aggiorno la ricevuta.");
+            return recepitResponse;
+        }
         return gestioneRelated(recepitResponse);
     }
 
@@ -80,7 +84,10 @@ public class RecepitMessageStoreManager extends StoreManager {
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
 
-        if (getMessageFromDb(messaggioDiRicevuta) != null) {
+        log.info("Verfico presenza messaggio...");
+        Message messagePresentInDB = getMessageFromDb(messaggioDiRicevuta);
+        if (messagePresentInDB != null) {
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
             return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, false);
         }
 
