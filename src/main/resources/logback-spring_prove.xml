@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+ 
+    <property name="LOG_DIR" value="./logs" />
+    <property name="LOG_DIR_ARCHIVE" value="./logs/archive" />
+    <property name="LOG_DIR_CHECK" value="./logs/check" />
+    <property name="LOG_DIR_CHECK_ARCHIVE" value="./logs/check/archive" />
+ 
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %blue(%C{1.}): %msg%n%throwable
+            </Pattern>
+        </layout>
+    </appender>
+    
+    <appender name="thread-file" class="ch.qos.logback.classic.sift.SiftingAppender">
+ 
+        <discriminator>
+            <key>logFileName</key>
+            <defaultValue>shpeck_service</defaultValue>
+        </discriminator>
+
+        <sift> 
+            <appender name="${logFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">    
+                <if condition='isDefined("logFileName")'>
+                    <then>
+                        <if condition='p("logFileName").contains("IMAP_CHECK_")'>
+                            <then>
+                                <file>${LOG_DIR_CHECK}/${logFileName}.log</file>
+                            </then>
+                            <else>
+                                <file>${LOG_DIR}/${logFileName}.log</file>
+                            </else>
+                        </if>
+                    </then>
+                    <else>
+                        <file>${LOG_DIR}/${logFileName}.log</file>
+                    </else>
+                </if>
+                
+                
+                
+
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <Pattern>
+                        %d{yyyy-MM-dd HH:mm:ss} [%thread] %level %logger{35} - %msg%n
+                    </Pattern>
+                </encoder>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
+                    <fileNamePattern>${LOG_DIR_ARCHIVE}/${logFileName}_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+                </rollingPolicy>
+            </appender>
+        </sift>
+    </appender>
+    
+    <appender name="check-file" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator>
+            <key>logCheckFileName</key>
+            <defaultValue>shpeck_check_service</defaultValue>
+        </discriminator>
+        <sift> 
+            <appender name="${logCheckFileName}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${LOG_DIR_CHECK}/${logCheckFileName}.log</file>
+
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <Pattern>
+                        %d{yyyy-MM-dd HH:mm:ss} [%thread] %level %logger{35} - %msg%n
+                    </Pattern>
+                </encoder>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                         
+                    <fileNamePattern>${LOG_DIR_CHECK_ARCHIVE}/${logCheckFileName}_%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+                </rollingPolicy>
+            </appender>
+        </sift>
+  
+    </appender>
+    
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+    
+    <logger name="checks" level="debug" additivity="false">
+        <appender-ref ref="check-file" />
+    </logger>
+    
+    <logger name="it.bologna.ausl.shpeck.service" level="debug" additivity="false">
+        <appender-ref ref="thread-file" />
+        <appender-ref ref="console" />
+    </logger>  
+ 
+</configuration>

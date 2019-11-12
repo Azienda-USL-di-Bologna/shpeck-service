@@ -188,9 +188,10 @@ public class IMAPManager {
     }
 
     /**
-     * Recupera i messaggi dal provider da due settimane più indietro...
+     * Recupera i messaggi dal provider andando indietro fino ai giorni passati
+     * come parametro.
      */
-    public ArrayList<MailMessage> getMessagesFromTwoWeeksAgoToToday() throws ShpeckServiceException {
+    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException {
         log.info("Dentro getMessagesSinceTwoWeeks()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
@@ -214,7 +215,7 @@ public class IMAPManager {
 
             log.info("Creo il parametro di ricerca per trovare i messaggi nel range di due settimane");
             SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, new Date());
-            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTwoWeeksAgoDate());
+            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTheseDaysAgoDate(daysAgo));
             SearchTerm andTerm = new AndTerm(olderThan, newerThan);
 
             log.info("Lancio la ricerca");
@@ -245,6 +246,21 @@ public class IMAPManager {
         // chiudi la connessione ma non rimuove i messaggi dal server
         // close();
         return mailMessages;
+    }
+
+    /**
+     * Mi restituisce la data del numero di giorni fa passato come parametro.
+     */
+    public Date getTheseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTheseDaysAgoDate", numberOfDays);
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
     /**

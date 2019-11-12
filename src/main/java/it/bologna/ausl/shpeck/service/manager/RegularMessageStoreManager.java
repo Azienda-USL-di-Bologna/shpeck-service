@@ -26,43 +26,43 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RegularMessageStoreManager extends StoreManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(RegularMessageStoreManager.class);
-    
+
     private MailMessage mailMessage;
     private Pec pec;
     private Outbox outbox; // Viene valorizzato solo nel caso di SMTP per un messaggio spedito da Pico.
 
     public RegularMessageStoreManager() {
     }
-    
+
     public Pec getPec() {
         return pec;
     }
-    
+
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-    
+
     public MailMessage getMailMessage() {
         return mailMessage;
     }
-    
+
     public void setMailMessage(MailMessage mailMessage) {
         this.mailMessage = mailMessage;
     }
-    
+
     public Outbox getOutbox() {
         return outbox;
     }
-    
+
     public void setOutbox(Outbox outbox) {
         this.outbox = outbox;
     }
-    
+
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, AddressException {
-        
+
         log.info("--- inizio RegularMessageStoreManager.store() ---");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
@@ -70,10 +70,13 @@ public class RegularMessageStoreManager extends StoreManager {
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         regularMessage.setExternalId(((outbox == null) || (outbox.getExternalId() == null) ? null : outbox.getExternalId()));
-        
+
         log.info("Verfico presenza messaggio...");
         Message messagePresentInDB = getMessageFromDb(regularMessage);
-        if (messagePresentInDB == null) {
+        if (messagePresentInDB != null) {
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
+            regularMessage = messagePresentInDB;
+        } else {
             try {
                 regularMessage = storeMessage(regularMessage);
                 log.info("Messaggio salvato " + regularMessage.toString());
@@ -88,16 +91,13 @@ public class RegularMessageStoreManager extends StoreManager {
                 log.error("Errore nello storage del regularMessage, " + e);
                 throw new StoreManagerExeption("Errore nello storage del regularMessage", e);
             }
-            
-        } else {
-            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
-            regularMessage = messagePresentInDB;
+
+            log.debug("salvo/aggiorno gli indirizzi del regular message");
+            HashMap mapMessagesAddress = upsertAddresses(mailMessage);
+            log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
+            storeMessagesAddresses(regularMessage, mapMessagesAddress);
         }
-        log.debug("salvo/aggiorno gli indirizzi del regular message");
-        HashMap mapMessagesAddress = upsertAddresses(mailMessage);
-        log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
-        storeMessagesAddresses(regularMessage, mapMessagesAddress);
-        
+
         return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, true);
     }
 }
