@@ -122,7 +122,7 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
-                //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
                 accodaCleanerWorker();
 
                 // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
