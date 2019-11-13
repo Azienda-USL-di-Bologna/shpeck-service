@@ -139,7 +139,7 @@ public class SMTPManager {
         } catch (Throwable e) {
             log.error("BeforeSendOuboxException", e);
             throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
-            
+
         }
         return storeResponse;
     }
@@ -163,7 +163,7 @@ public class SMTPManager {
             log.info("chiamo lo store manager per salvare in uploadQueue");
             regularMessageStoreManager.insertToUploadQueue(m);
         } catch (Throwable e) {
-            log.error("Errore su updateMetadata " + e);
+            log.error("Errore su updateMetadata ", e);
         }
     }
 }

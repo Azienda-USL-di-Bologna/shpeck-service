@@ -268,7 +268,7 @@ public class IMAPWorker implements Runnable {
                 } catch (BeanCreationNotAllowedException ex) {
                     throw new BeanCreationNotAllowedExceptionShpeck(ex.getMessage());
                 } catch (Throwable e) {
-                    log.error("eccezione nel processare il messaggio corrente: " + e);
+                    log.error("eccezione nel processare il messaggio corrente: ", e);
                 }
                 // aggiornamento lastUID relativo alla casella appena scaricata
                 imapManager.setLastUID(message.getProviderUid());

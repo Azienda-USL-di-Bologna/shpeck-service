@@ -116,8 +116,7 @@ public class UploadWorker implements Runnable {
 //                }
 //            }
         } catch (Throwable e) {
-            e.printStackTrace();
-            log.info(e.toString());
+            log.error("ERRORE", e);
         }
         MDC.remove("logFileName");
     }

@@ -130,8 +130,7 @@ public class SMTPWorker implements Runnable {
                             try {
                                 messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m, Tag.SystemTagName.technical_error);
                             } catch (Exception e) {
-                                log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString());
-                                log.error(e.toString());
+                                log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString(), e);
                             }
                         } else {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito");
@@ -153,10 +152,11 @@ public class SMTPWorker implements Runnable {
                         }
                         log.info("aggiornato");
                     } catch (BeforeSendOuboxException e) {
-                        log.error("BeforeSendOuboxException: " + e);
+                        log.error("BeforeSendOuboxException: ", e);
+                        log.error("Però continuo");
                         continue;
                     } catch (Exception e) {
-                        log.error("Errore: " + e);
+                        log.error("Errore: ", e);
                     }
 
                     log.debug("se mail non ha invio massivo viene fatto uno sleep");
@@ -177,7 +177,7 @@ public class SMTPWorker implements Runnable {
             // comunque aggiungo il raw tra quelli da caricare su mongo
         } catch (Throwable e) {
             log.error("Errore del thread " + Thread.currentThread().getName() + "\n"
-                    + "---> " + e);
+                    + "---> ", e);
         }
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");

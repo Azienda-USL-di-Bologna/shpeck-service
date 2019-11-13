@@ -237,7 +237,7 @@ public class StoreManager implements StoreInterface {
                         try {
                             addessRepository.save(address);
                         } catch (Exception ex) {
-                            log.error("Indirizzo già presente: " + address.getMailAddress());
+                            log.error("Indirizzo già presente: " + address.getMailAddress(), ex);
                         }
                     }
                     list.add(address);
@@ -273,7 +273,7 @@ public class StoreManager implements StoreInterface {
                         try {
                             addessRepository.save(address);
                         } catch (Exception ex) {
-                            log.error("Indirizzo già presente: " + address.getMailAddress().toLowerCase());
+                            log.error("Indirizzo già presente: " + address.getMailAddress().toLowerCase(), ex);
                         }
                     }
                     list.add(address);
@@ -283,7 +283,7 @@ public class StoreManager implements StoreInterface {
             // aggiorna la tipologia di indirizzo (se PEc o REGULAR_MAIL) prendendo da XML della ricevuta la tipologia dei destinatari
             updateDestinatariType(map);
         } catch (Throwable e) {
-            log.error("errore in saveAndReturnAddresses: " + e);
+            log.error("errore in saveAndReturnAddresses: ", e);
         }
         return list;
     }
@@ -316,7 +316,7 @@ public class StoreManager implements StoreInterface {
                 try {
                     addessRepository.saveAll(addresses);
                 } catch (Exception e) {
-                    log.error("errore updateDestinatariType: " + e);
+                    log.error("errore updateDestinatariType: ", e);
                 }
             }
         }
@@ -334,7 +334,7 @@ public class StoreManager implements StoreInterface {
             try {
                 from = InternetAddress.parseHeader(mailMessage.getOriginal().getHeader("From", ","), true);
             } catch (MessagingException ex) {
-                log.error("unable to determine From address");
+                log.error("unable to determine From address", ex);
             }
         }
 
