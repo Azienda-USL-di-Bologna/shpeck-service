@@ -141,7 +141,7 @@ public class MessageTagStoreManager extends StoreManager {
                 risposta = "Non c'è nessun message tag di technical_error!";
             }
         } catch (Throwable e) {
-            log.error("*** Errore nel rimuovere il messageTag di errore dalla mail ", e.getMessage());
+            log.error("*** Errore nel rimuovere il messageTag di errore dalla mail ", e);
             risposta = "ERRORE: Ho avuto un problema...";
         }
         return risposta;

@@ -107,12 +107,11 @@ public class CleanerWorker implements Runnable {
                     break;
                 } catch (CleanerWorkerException e) {
                     // entrando qua dentro dovrei rollbackare le cancellazioni avvenute usando questo uploadqueue
-                    log.error("Catchato CleanerWorkerException in spazzinoUploadQueue " + e.toString());
+                    log.error("Catchato CleanerWorkerException in spazzinoUploadQueue ", e);
                 } catch (Throwable t) {
                     log.error("QUALCOSA E' ANDATO MALE! Sono arrivato all'upload queue " + id.toString());
                     //log.error(t.toString());
-                    log.error("Errore: " + t.toString());
-                    t.printStackTrace();
+                    log.error("Errore: ", t);
                 }
                 if (messagesToDelete.indexOf(id) < messagesToDelete.size() - 1) {
                     log.info("Fatto " + id.toString() + ": passo al prossimo...");
@@ -121,8 +120,8 @@ public class CleanerWorker implements Runnable {
             }
             log.info("Finito spazzinoUploadQueue: Tutto OK");
         } catch (Throwable e) {
-            e.printStackTrace();
             log.error("Catchato ERRORACCIO in spazzinoUploadQueue " + e.toString());
+            log.error(e.getMessage());
             throw e;
         }
 
@@ -137,8 +136,7 @@ public class CleanerWorker implements Runnable {
             spazzinoUploadQueue();
 
         } catch (Throwable e) {
-            log.error("ERRORE NEL DOWORK " + e.getMessage());
-            e.printStackTrace();
+            log.error("ERRORE NEL DOWORK ", e);
         }
         log.info("------------------------------------------------------------------------");
         log.info("FINE > *CLEANER WORKER* time: " + new Date());
@@ -151,8 +149,9 @@ public class CleanerWorker implements Runnable {
             log.info("Entrato nel run di " + threadName);
             doWork();
         } catch (Throwable e) {
+            log.info("ERRORE nel main run di CelanerWorker: " + e.toString());
+            log.error(e.getMessage());
             e.printStackTrace();
-            log.info(e.toString());
         }
         MDC.remove("logFileName");
     }

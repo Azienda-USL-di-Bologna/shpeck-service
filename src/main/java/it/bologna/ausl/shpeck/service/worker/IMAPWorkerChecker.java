@@ -273,7 +273,7 @@ public class IMAPWorkerChecker implements Runnable {
                         }
                     }
                 } catch (Throwable e) {
-                    log.error("eccezione nel processare il messaggio corrente: " + e);
+                    log.error("eccezione nel processare il messaggio corrente: ", e);
                 }
             }
 
@@ -316,7 +316,7 @@ public class IMAPWorkerChecker implements Runnable {
             }
             log.error("Errore: " + message, e);
         } catch (Throwable e) {
-            log.error("eccezione : " + e);
+            log.error("eccezione : ", e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
 

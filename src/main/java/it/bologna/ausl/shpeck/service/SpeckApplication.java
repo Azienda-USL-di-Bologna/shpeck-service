@@ -123,13 +123,11 @@ public class SpeckApplication {
                 }
 
                 //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
-                //accodaCleanerWorker();
+                accodaCleanerWorker();
 
-               // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
+                // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
-               
-
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -142,8 +140,8 @@ public class SpeckApplication {
     /**
      * Mi restituisce la data di due settimana fa da ora
      */
-    public Date getTheeseDaysAgoDate(Integer numberOfDays) {
-        log.info("getTwoWeeksAgoDate");
+    public Date getTheseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTheseDaysAgoDate");
         log.info("tolgo " + numberOfDays);
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
@@ -243,7 +241,7 @@ public class SpeckApplication {
         log.info("Creazione e schedulazione del worker di pulizia (CleanerWorker)");
         CleanerWorker cleanerWorker = beanFactory.getBean(CleanerWorker.class);
         cleanerWorker.setThreadName("cleanerWorker");
-        cleanerWorker.setEndTime(getTheeseDaysAgoDate(daysBackSpazzino));
+        cleanerWorker.setEndTime(getTheseDaysAgoDate(daysBackSpazzino));
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }

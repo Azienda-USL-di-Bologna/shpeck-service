@@ -30,28 +30,28 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class CleanerManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(CleanerManager.class);
-    
+
     @Autowired
     UploadQueueRepository uploadQueueRepository;
-    
+
     @Autowired
     RawMessageRepository rawMessageRepository;
-    
+
     @Autowired
     MessageRepository messageRepository;
-    
+
     @Autowired
     OutboxRepository outboxRepository;
 
     // E' la data termine dello spazzino: i dati posteriori a questa data non vanno toccati
     private Date endTime;
-    
+
     public Date getEndTime() {
         return endTime;
     }
-    
+
     public void setEndTime(Date endTime) {
         this.endTime = endTime;
     }
@@ -62,7 +62,9 @@ public class CleanerManager {
      */
     public boolean deleteOutboxRow(Message message) throws Throwable {
         boolean hoCancellato = false;
-        log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
+        log.info("Procedo al reperimento dell'outbox di message con id: " + message.getId()
+                + " INOUT: " + message.getInOut().toString() + " idOutbox: " + message.getIdOutbox().toString()
+        );
         Integer idOutbox = message.getIdOutbox();
         if (idOutbox == null) {
             throw new Throwable("Errore, messagio in uscita senza id outbox");
@@ -94,7 +96,7 @@ public class CleanerManager {
             log.info("Recupero il raw_message");
             RawMessage rm = new RawMessage();
             rm = rawMessageRepository.findById(uq.getIdRawMessage().getId()).get();
-            
+
             if (!(rm != null)) {
                 throw new CleanerWorkerException("Non ho il raw message di upload_queue " + uq.getId());
             }
@@ -118,9 +120,10 @@ public class CleanerManager {
 
             // se il messaggio è in uscita (OUT) allora devo cancellare l'outbox
             if (m.getInOut() == Message.InOut.OUT) {
+                log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
                 tuttoOK = deleteOutboxRow(m);
             }
-            
+
             if (!tuttoOK) {
                 log.info("C'è stato un problema con la cancellazione dell'outbox " + m.getIdOutbox());
                 throw new Throwable("Errore nel cancellamento dell'outbox con id = " + m.getIdOutbox());
@@ -139,8 +142,8 @@ public class CleanerManager {
             log.error("[cleanRawMessage()] Catchato CleanerWorkerInterruption: si fa rollback");
             throw e;
         } catch (Throwable e) {
-            e.printStackTrace();
             log.error("Catchato errore in cleanRawMessage " + e.toString());
+            log.error(e.getMessage());
             throw e;
         }
         return tuttoOK;
@@ -157,7 +160,7 @@ public class CleanerManager {
         // carico l'uploadQUeue
         log.info("Recupero upQ con id " + id.toString());
         UploadQueue uq = uploadQueueRepository.findById(id).get();
-        
+
         if (uq != null && uq.getUploaded() == true && uq.getIdRawMessage() != null && uq.getIdRawMessage().getId() != null) {
             log.info("Pulisco il raw message di upQ " + id.toString());
             try {
@@ -172,7 +175,7 @@ public class CleanerManager {
                 throw i;
             } catch (Throwable e) {
                 log.info("Errore ignoto nella cancellazione dell upload_queue con id " + uq.getId());
-                e.printStackTrace();
+                log.error(e.getMessage());
                 throw new Exception("Errore ignoto nella cancellazione dell upload_queue con id " + uq.getId() + "\n" + e.toString(), e);
             }
         } else {
