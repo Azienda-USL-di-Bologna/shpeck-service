@@ -192,7 +192,7 @@ public class IMAPManager {
      * come parametro.
      */
     public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException {
-        log.info("Dentro getMessagesSinceTwoWeeks()");
+        log.info("Dentro getMessagesFromParametrizedDaysAgoToToday()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
             if (store == null || !store.isConnected()) {
