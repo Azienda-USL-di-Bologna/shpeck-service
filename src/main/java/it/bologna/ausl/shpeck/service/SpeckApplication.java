@@ -122,10 +122,12 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
+                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+
+                log.info("Schedulo e accodo il CleanerWorker");
                 accodaCleanerWorker();
 
-                // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
