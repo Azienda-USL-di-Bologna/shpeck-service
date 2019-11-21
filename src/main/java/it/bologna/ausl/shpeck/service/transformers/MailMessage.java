@@ -39,7 +39,7 @@ public class MailMessage implements MailIdentity {
             this.subject = original.getSubject();
             this.receiveDate = original.getReceivedDate();
             this.sendDate = original.getSentDate();
-            this.id = MessageBuilder.getClearMessageID(original.getMessageID());
+            this.id = MessageBuilder.defineMessageID(original);
 
         } catch (Exception ex) {
             throw new MailMessageException("Errore nella creazione del MailMessage", ex);
