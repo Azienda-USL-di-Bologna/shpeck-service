@@ -174,6 +174,7 @@ public class IMAPWorkerChecker implements Runnable {
             // ottenimento dell'oggetto IMAPStore
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             imapManager.setStore(store);
+            imapManager.setMailbox(pec.getIndirizzo());
 
             // ottenimento dei messaggi
             if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {

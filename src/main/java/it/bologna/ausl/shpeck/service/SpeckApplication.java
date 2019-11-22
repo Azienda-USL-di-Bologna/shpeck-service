@@ -2,10 +2,13 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.ReportRepository;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
@@ -28,8 +31,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -69,6 +74,9 @@ public class SpeckApplication {
     @Autowired
     ApplicazioneRepository applicazioneRepository;
 
+    @Autowired
+    Diagnostica diagnostica;
+
     @Value("${shpeck.threads.smtp-delay}")
     String smtpDelay;
 
@@ -101,6 +109,7 @@ public class SpeckApplication {
 
             @Override
             public void run(String... args) throws ShpeckServiceException {
+
                 log.info(". entrato nel run .");
 
                 log.info("Recupero l'applicazione");
@@ -112,9 +121,9 @@ public class SpeckApplication {
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
-//               --- PER DEBUG ---
-//                ArrayList<Pec> pecAttive = new ArrayList<>();
-//                pecAttive.add(pecRepository.findById(inserire_id).get());
+                //               --- PER DEBUG ---
+                //                ArrayList<Pec> pecAttive = new ArrayList<>();
+                //                pecAttive.add(pecRepository.findById(inserire_id).get());
                 log.info("Pec attive #: " + pecAttive.size());
 
                 if (testMode) {

@@ -159,6 +159,7 @@ public class IMAPWorker implements Runnable {
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             log.info("Setto lo store");
             imapManager.setStore(store);
+            imapManager.setMailbox(pec.getIndirizzo());
 
             // prendo il lastUID del messaggio in casella
             log.info("prendo il lastUID del messaggio in casella... ");
