@@ -34,4 +34,21 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     @Transactional
     @Query(value = "update shpeck.messages set id_related = ?2, update_time = now() where id = ?1", nativeQuery = true)
     void updateRelatedMessage(Integer id, Integer idRelated);
+
+    @Query(value = "select count(m.id) from shpeck.upload_queue u join shpeck.raw_messages r on u.id_raw_message = r.id join shpeck.messages m on m.id = r.id_message where u.uploaded = true and m.uuid_repository is null", nativeQuery = true)
+    Integer getNumberOfMessageUploadedWithNoRepositoryInMessage();
+
+    @Modifying
+    @Transactional
+    @Query(value = "with xxx as (select m.id as message, r.id as raw_message, q.uuid, m.uuid_repository, q.path "
+            + "from shpeck.messages m "
+            + "join shpeck.raw_messages r on r.id_message = m.id "
+            + "join shpeck.upload_queue q on q.id_raw_message = r.id "
+            + "where m.uuid_repository is null "
+            + "and q.uploaded = true) "
+            + "update shpeck.messages "
+            + "set uuid_repository = xxx.uuid, path_repository = xxx.path "
+            + "from xxx "
+            + "where id = xxx.message", nativeQuery = true)
+    void fixNumberOfMessageUploadedWithNoRepositoryInMessage();
 }

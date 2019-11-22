@@ -2,13 +2,13 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
-import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
-import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
+import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
@@ -31,10 +31,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.json.simple.JSONObject;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -74,9 +72,6 @@ public class SpeckApplication {
     @Autowired
     ApplicazioneRepository applicazioneRepository;
 
-    @Autowired
-    Diagnostica diagnostica;
-
     @Value("${shpeck.threads.smtp-delay}")
     String smtpDelay;
 
@@ -97,6 +92,9 @@ public class SpeckApplication {
 
     @Value("${days-back-spazzino}")
     Integer daysBackSpazzino;
+
+    @Autowired
+    MessageRepository messageRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
@@ -207,6 +205,12 @@ public class SpeckApplication {
         uploadWorker.setThreadName("uploadWorker");
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
         log.info(uploadWorker.getThreadName() + " schedulato correttamente");
+
+        log.info("Creo CheckUploadedRepositoryWorker");
+        CheckUploadedRepositoryWorker c = beanFactory.getBean(CheckUploadedRepositoryWorker.class);
+        c.setThreadName("checkUploadedRepositoryWorker");
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(c, 0, 1, TimeUnit.HOURS);
+        log.info(c.getThreadName() + " schedulato correttamente");
     }
 
     public void faiGliImapWorker(ArrayList<Pec> pecAttive, Applicazione applicazione) {
