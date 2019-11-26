@@ -48,7 +48,7 @@ public class Diagnostica {
         }
 
         if (!isAlreadyInserted) {
-            log.debug("inserimento dell'errore nella tabella di report");
+            log.debug("!!! inserimento dell'errore nella tabella di report !!!");
             Report report = new Report();
             report.setTipologia("SHPECK_ERROR_BUILD_MESSAGE");
             report.setData_inserimento_riga(LocalDateTime.now());
