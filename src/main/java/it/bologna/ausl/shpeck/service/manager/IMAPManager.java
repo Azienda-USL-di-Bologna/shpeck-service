@@ -202,7 +202,11 @@ public class IMAPManager {
                         MimeMessage mm = (MimeMessage) messagesFromInbox[i];
 
                         reportFrom = mm.getFrom()[0].toString();
-                        reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+
+                        if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                            reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                        }
+
                         reportSubject = mm.getSubject();
                         reportDate = mm.getSentDate().toString();
 

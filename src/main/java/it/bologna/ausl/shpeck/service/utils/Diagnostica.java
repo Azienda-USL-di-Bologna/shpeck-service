@@ -39,7 +39,6 @@ public class Diagnostica {
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditional_data());
                 String mid = (String) additionalData.get("messageID");
-                ;
                 if (mid != null && MessageBuilder.getClearMessageID(mid).equalsIgnoreCase(messageID)) {
                     log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
                     isAlreadyInserted = true;

@@ -118,23 +118,19 @@ public class SpeckApplication {
 
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
-
                 //               --- PER DEBUG ---
-                //                ArrayList<Pec> pecAttive = new ArrayList<>();
-                //                pecAttive.add(pecRepository.findById(inserire_id).get());
-                log.info("Pec attive #: " + pecAttive.size());
+//                ArrayList<Pec> pecAttive = new ArrayList<>();
+//                pecAttive.add(pecRepository.findById(494).get());
+//                log.info("Pec attive #: " + pecAttive.size());
 
                 if (testMode) {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
-
-                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
-                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
-
+//                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
+//                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
                 log.info("Schedulo e accodo il CleanerWorker");
                 accodaCleanerWorker();
-
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
