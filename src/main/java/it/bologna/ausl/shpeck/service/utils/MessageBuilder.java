@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
@@ -158,7 +159,22 @@ public class MessageBuilder {
      * as esempio (added by )
      */
     public static String getClearMessageID(String messageId) {
-        return messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+        if (messageId != null) {
+            return messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+        }
+        return null;
+    }
+
+    public static String defineMessageID(MimeMessage mime) throws MessagingException {
+        String res = null;
+
+        if (mime.getMessageID() != null) {
+            res = mime.getMessageID().replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+        } else {
+            String dateStr = mime.getSentDate().toString().replace(",", "_").replace(" ", "_");
+            res = "<no_messageId_" + mime.getRecipients(Message.RecipientType.TO)[0] + "_" + dateStr + ">";
+        }
+        return res;
     }
 
     public static int messageHasAttachment(Part p) throws ShpeckServiceException {

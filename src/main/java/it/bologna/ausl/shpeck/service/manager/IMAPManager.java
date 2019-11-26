@@ -4,10 +4,14 @@ import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -25,6 +29,7 @@ import javax.mail.search.AndTerm;
 import javax.mail.search.ComparisonTerm;
 import javax.mail.search.ReceivedDateTerm;
 import javax.mail.search.SearchTerm;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +52,13 @@ public class IMAPManager {
     PecRepository pecRepository;
 
     @Autowired
+    ReportRepository reportRepository;
+
+    @Autowired
     StoreManager storeManager;
+
+    @Autowired
+    Diagnostica diagnostica;
 
     @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
@@ -61,6 +72,7 @@ public class IMAPManager {
     @Value("${imap.reset-lastuid-minutes}")
     Integer resetLastuidMinutes;
 
+    private String mailbox;
     private IMAPStore store;
     private long lastUID;
     private long lastUIDToConsider;
@@ -70,6 +82,14 @@ public class IMAPManager {
         lastUID = 0;
         lastUIDToConsider = Long.MAX_VALUE;
 
+    }
+
+    public String getMailbox() {
+        return mailbox;
+    }
+
+    public void setMailbox(String mailbox) {
+        this.mailbox = mailbox;
     }
 
     public IMAPManager(IMAPStore store) {
@@ -167,12 +187,53 @@ public class IMAPManager {
                 log.info("messaggio con UID " + lastUID + " già trattato");
             } else {
                 for (int i = 0; i < messagesFromInbox.length; i++) {
-                    MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
-                    m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
-                    mailMessages.add(m);
-                    if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
-                        lastUID = inbox.getUID(messagesFromInbox[i]);
-                        log.debug("lastUID: " + lastUID);
+                    String reportFrom = null;
+                    String reportTo = null;
+                    String reportSubject = null;
+                    String reportDate = null;
+                    String reportMessageID = null;
+
+                    /**
+                     * tratto ogni messaggio in maniera consistente; se si rompe
+                     * la coastruzione di un messaggio, passo al successivo in
+                     * modo tale da non creare colli di bottiglia
+                     */
+                    try {
+                        MimeMessage mm = (MimeMessage) messagesFromInbox[i];
+
+                        reportFrom = mm.getFrom()[0].toString();
+
+                        if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                            reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                        }
+
+                        reportSubject = mm.getSubject();
+                        reportDate = mm.getSentDate().toString();
+
+                        MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                        reportMessageID = m.getId();
+                        m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                        mailMessages.add(m);
+                        if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
+                            lastUID = inbox.getUID(messagesFromInbox[i]);
+                            log.debug("lastUID: " + lastUID);
+                        }
+                    } catch (Throwable e) {
+                        // creazione messaggio di errore
+                        JSONObject json = new JSONObject();
+                        json.put("Mailbox", this.mailbox);
+                        if (reportMessageID != null) {
+                            json.put("messageID", reportMessageID);
+                        }
+                        json.put("From", reportFrom);
+                        json.put("To", reportTo);
+                        json.put("Subject", reportSubject);
+                        json.put("Date", reportDate);
+                        json.put("lastUID", String.valueOf(lastUID));
+                        json.put("Exception", e.toString());
+                        json.put("ExceptionMessage", e.getMessage());
+
+                        diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_BUILD_MESSAGE", json);
                     }
                 }
             }
@@ -188,10 +249,11 @@ public class IMAPManager {
     }
 
     /**
-     * Recupera i messaggi dal provider da due settimane più indietro...
+     * Recupera i messaggi dal provider andando indietro fino ai giorni passati
+     * come parametro.
      */
-    public ArrayList<MailMessage> getMessagesFromTwoWeeksAgoToToday() throws ShpeckServiceException {
-        log.info("Dentro getMessagesSinceTwoWeeks()");
+    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException {
+        log.info("Dentro getMessagesFromParametrizedDaysAgoToToday()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
             if (store == null || !store.isConnected()) {
@@ -214,7 +276,7 @@ public class IMAPManager {
 
             log.info("Creo il parametro di ricerca per trovare i messaggi nel range di due settimane");
             SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, new Date());
-            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTwoWeeksAgoDate());
+            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTheseDaysAgoDate(daysAgo));
             SearchTerm andTerm = new AndTerm(olderThan, newerThan);
 
             log.info("Lancio la ricerca");
@@ -245,6 +307,21 @@ public class IMAPManager {
         // chiudi la connessione ma non rimuove i messaggi dal server
         // close();
         return mailMessages;
+    }
+
+    /**
+     * Mi restituisce la data del numero di giorni fa passato come parametro.
+     */
+    public Date getTheseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTheseDaysAgoDate", numberOfDays);
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
     /**
@@ -404,7 +481,7 @@ public class IMAPManager {
             String messid;
             for (int i = 0; i < tmpmess.length; i++) {
                 mess = (IMAPMessage) tmpmess[i];
-                messid = MessageBuilder.getClearMessageID(mess.getMessageID());
+                messid = mess.getMessageID();
                 if (messid.equals(message_id)) {
                     tmpmess[i].setFlag(Flags.Flag.DELETED, true);
                     inbox.close(true);

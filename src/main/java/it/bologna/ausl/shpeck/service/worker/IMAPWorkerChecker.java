@@ -45,6 +45,7 @@ public class IMAPWorkerChecker implements Runnable {
     private String threadName;
     private Integer idPec;
     private Applicazione applicazione;
+    private Integer daysBackChecker;
 
     @Autowired
     PecRepository pecRepository;
@@ -119,6 +120,14 @@ public class IMAPWorkerChecker implements Runnable {
         this.lastUIDToConsider = lastUIDToConsider;
     }
 
+    public Integer getDaysBackChecker() {
+        return daysBackChecker;
+    }
+
+    public void setDaysBackChecker(Integer daysBackChecker) {
+        this.daysBackChecker = daysBackChecker;
+    }
+
     private void init() {
         log.debug("setting messages array");
         if (messages == null) {
@@ -140,6 +149,8 @@ public class IMAPWorkerChecker implements Runnable {
         } else {
             messagesOrphans.clear();
         }
+
+        log.debug("setting autowired properties' logs");
     }
 
     @Override
@@ -163,11 +174,12 @@ public class IMAPWorkerChecker implements Runnable {
             // ottenimento dell'oggetto IMAPStore
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             imapManager.setStore(store);
+            imapManager.setMailbox(pec.getIndirizzo());
 
             // ottenimento dei messaggi
             if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
                 log.info("La message policy è NONE: riscorro i messaggi da due settimane a questa parte");
-                messages = imapManager.getMessagesFromTwoWeeksAgoToToday();
+                messages = imapManager.getMessagesFromParametrizedDaysAgoToToday(daysBackChecker);
             } else {
                 log.info("La message policy prevede di spostare i messaggi: quindi li ciclo tutti");
                 messages = imapManager.getMessages();

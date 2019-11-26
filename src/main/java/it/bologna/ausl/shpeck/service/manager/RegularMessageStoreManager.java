@@ -70,8 +70,13 @@ public class RegularMessageStoreManager extends StoreManager {
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         regularMessage.setExternalId(((outbox == null) || (outbox.getExternalId() == null) ? null : outbox.getExternalId()));
+
+        log.info("Verfico presenza messaggio...");
         Message messagePresentInDB = getMessageFromDb(regularMessage);
-        if (messagePresentInDB == null) {
+        if (messagePresentInDB != null) {
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
+            regularMessage = messagePresentInDB;
+        } else {
             try {
                 regularMessage = storeMessage(regularMessage);
                 log.info("Messaggio salvato " + regularMessage.toString());
@@ -87,14 +92,11 @@ public class RegularMessageStoreManager extends StoreManager {
                 throw new StoreManagerExeption("Errore nello storage del regularMessage", e);
             }
 
-        } else {
-            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
-            regularMessage = messagePresentInDB;
+            log.debug("salvo/aggiorno gli indirizzi del regular message");
+            HashMap mapMessagesAddress = upsertAddresses(mailMessage);
+            log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
+            storeMessagesAddresses(regularMessage, mapMessagesAddress);
         }
-        log.debug("salvo/aggiorno gli indirizzi del regular message");
-        HashMap mapMessagesAddress = upsertAddresses(mailMessage);
-        log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
-        storeMessagesAddresses(regularMessage, mapMessagesAddress);
 
         return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, true);
     }

@@ -5,7 +5,10 @@ import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
+import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
@@ -90,6 +93,9 @@ public class SpeckApplication {
     @Value("${days-back-spazzino}")
     Integer daysBackSpazzino;
 
+    @Autowired
+    MessageRepository messageRepository;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -101,6 +107,7 @@ public class SpeckApplication {
 
             @Override
             public void run(String... args) throws ShpeckServiceException {
+
                 log.info(". entrato nel run .");
 
                 log.info("Recupero l'applicazione");
@@ -111,21 +118,19 @@ public class SpeckApplication {
 
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
-
-//               --- PER DEBUG ---
+                //               --- PER DEBUG ---
 //                ArrayList<Pec> pecAttive = new ArrayList<>();
-//                pecAttive.add(pecRepository.findById(inserire_id).get());
-                log.info("Pec attive #: " + pecAttive.size());
+//                pecAttive.add(pecRepository.findById(494).get());
+//                log.info("Pec attive #: " + pecAttive.size());
 
                 if (testMode) {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
-
-                //faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+//                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
+//                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+                log.info("Schedulo e accodo il CleanerWorker");
                 accodaCleanerWorker();
-
-                // log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
@@ -196,6 +201,12 @@ public class SpeckApplication {
         uploadWorker.setThreadName("uploadWorker");
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
         log.info(uploadWorker.getThreadName() + " schedulato correttamente");
+
+        log.info("Creo CheckUploadedRepositoryWorker");
+        CheckUploadedRepositoryWorker c = beanFactory.getBean(CheckUploadedRepositoryWorker.class);
+        c.setThreadName("checkUploadedRepositoryWorker");
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(c, 0, 1, TimeUnit.HOURS);
+        log.info(c.getThreadName() + " schedulato correttamente");
     }
 
     public void faiGliImapWorker(ArrayList<Pec> pecAttive, Applicazione applicazione) {
