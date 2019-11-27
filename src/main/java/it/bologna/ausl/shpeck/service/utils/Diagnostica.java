@@ -35,9 +35,9 @@ public class Diagnostica {
         String messageID = (String) json.get("messageID");
 
         if (messageID != null) {
-            List<Report> list = reportRepository.findByTipologia("SHPECK_ERROR_BUILD_MESSAGE");
+            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalseAndInAttesaDiRisoluzioneIsFalse("SHPECK_ERROR_BUILD_MESSAGE");
             for (Report report : list) {
-                JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditional_data());
+                JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
                 String mid = (String) additionalData.get("messageID");
                 if (mid != null && MessageBuilder.getClearMessageID(mid).equalsIgnoreCase(messageID)) {
                     log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
@@ -51,8 +51,8 @@ public class Diagnostica {
             log.debug("!!! inserimento dell'errore nella tabella di report !!!");
             Report report = new Report();
             report.setTipologia("SHPECK_ERROR_BUILD_MESSAGE");
-            report.setData_inserimento_riga(LocalDateTime.now());
-            report.setAdditional_data(json.toJSONString());
+            report.setDataInserimentoRiga(LocalDateTime.now());
+            report.setAdditionalData(json.toJSONString());
 
             reportRepository.save(report);
         }
