@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
+import java.util.Optional;
 import javax.mail.internet.AddressException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,16 @@ public class RegularMessageStoreManager extends StoreManager {
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
         regularMessage.setIdOutbox(((outbox == null) || (outbox.getId() == null) ? null : outbox.getId()));
+
+        Optional<Message> relatedMessage = null;
+
+        if ((outbox != null) && (outbox.getIdRelated() != null)) {
+            relatedMessage = messageRepository.findById(outbox.getIdRelated());
+            if (relatedMessage.isPresent()) {
+                regularMessage.setIdRelated(relatedMessage.get());
+            }
+        }
+
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         regularMessage.setExternalId(((outbox == null) || (outbox.getExternalId() == null) ? null : outbox.getExternalId()));
