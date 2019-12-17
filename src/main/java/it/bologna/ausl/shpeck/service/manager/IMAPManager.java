@@ -458,31 +458,46 @@ public class IMAPManager {
     }
 
     public void deleteMessage(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
+        log.info("entrato in deleteMessage(ArrayList<MailMessage>): ciclo i messages...");
         for (MailMessage mailMessage : mailMessages) {
+            log.info("mailMessage.getId(): " + mailMessage.getId());
             deleteMessage(mailMessage.getId());
         }
     }
 
     public boolean deleteMessage(String message_id) throws ShpeckServiceException {
+        log.info("entrato in deleteMessage(String message_id) " + message_id);
         try {
+            log.info("Controllo se è connesso lo store.");
             if (!store.isConnected()) {
+                log.info("Non è connesso: lo connetto.");
                 this.store.connect();
             }
             // apertura cartella
+            log.info("Prendo la casella");
             Folder inbox = this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("CARTELLA INBOX NON PRESENTE");
                 System.exit(1);
             }
+            log.info("Apro la casella");
             inbox.open(Folder.READ_WRITE);
             // Get the messages from the server
+
+            log.info("Prendo i messaggi dal server e li metto in un array");
             Message[] tmpmess = inbox.getMessages();
+            log.info("Dimensioni array: " + tmpmess.length);
             IMAPMessage mess;
             String messid;
+            log.info("Ciclo il contentuto dell'array");
             for (int i = 0; i < tmpmess.length; i++) {
+                log.info("Casto in IMAPMessage il messaggio all'indice " + i + "dell'array");
                 mess = (IMAPMessage) tmpmess[i];
-                messid = mess.getMessageID();
+                log.info("Prendo l'id ");
+                messid = MessageBuilder.defineMessageID(mess);
+                log.info("Id: " + messid + "... è quello che devo cancellare?");
                 if (messid.equals(message_id)) {
+                    log.info("Allora lo flaggo da cancellare");
                     tmpmess[i].setFlag(Flags.Flag.DELETED, true);
                     inbox.close(true);
                     return true;
