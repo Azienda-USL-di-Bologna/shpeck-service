@@ -127,8 +127,8 @@ public class SpeckApplication {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
-//                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
-//                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+                log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
+                faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
                 log.info("Schedulo e accodo il CleanerWorker");
                 accodaCleanerWorker();
                 faiGliImapWorker(pecAttive, applicazione);

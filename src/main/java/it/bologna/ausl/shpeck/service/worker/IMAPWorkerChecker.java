@@ -39,95 +39,95 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IMAPWorkerChecker implements Runnable {
-
+    
     private static final Logger log = LoggerFactory.getLogger("checks");
-
+    
     private String threadName;
     private Integer idPec;
     private Applicazione applicazione;
     private Integer daysBackChecker;
-
+    
     @Autowired
     PecRepository pecRepository;
-
+    
     @Autowired
     MessageRepository messageRepository;
-
+    
     @Autowired
     PecProviderRepository pecProviderRepository;
-
+    
     @Autowired
     ApplicazioneRepository applicazioneRepository;
-
+    
     @Autowired
     ProviderConnectionHandler providerConnectionHandler;
-
+    
     @Autowired
     IMAPManager imapManager;
-
+    
     @Autowired
     PecMessageStoreManager pecMessageStoreManager;
-
+    
     @Autowired
     RecepitMessageStoreManager recepitMessageStoreManager;
-
+    
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
-
+    
     @Autowired
     Semaphore messageSemaphore;
-
+    
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> messagesOrphans;
-
+    
     private Long lastUIDToConsider;
-
+    
     public IMAPWorkerChecker() {
         messagesOk = new ArrayList<>();
         messagesOrphans = new ArrayList<>();
     }
-
+    
     public String getThreadName() {
         return threadName;
     }
-
+    
     public void setThreadName(String threadName) {
         this.threadName = threadName;
     }
-
+    
     public Integer getIdPec() {
         return idPec;
     }
-
+    
     public void setIdPec(Integer idPec) {
         this.idPec = idPec;
     }
-
+    
     public Applicazione getApplicazione() {
         return applicazione;
     }
-
+    
     public void setApplicazione(Applicazione applicazione) {
         this.applicazione = applicazione;
     }
-
+    
     public Long getLastUIDToConsider() {
         return lastUIDToConsider;
     }
-
+    
     public void setLastUIDToConsider(Long lastUIDToConsider) {
         this.lastUIDToConsider = lastUIDToConsider;
     }
-
+    
     public Integer getDaysBackChecker() {
         return daysBackChecker;
     }
-
+    
     public void setDaysBackChecker(Integer daysBackChecker) {
         this.daysBackChecker = daysBackChecker;
     }
-
+    
     private void init() {
         log.debug("setting messages array");
         if (messages == null) {
@@ -135,33 +135,33 @@ public class IMAPWorkerChecker implements Runnable {
         } else {
             messages.clear();
         }
-
+        
         log.debug("setting messagesOk array");
         if (messagesOk == null) {
             messagesOk = new ArrayList<>();
         } else {
             messagesOk.clear();
         }
-
+        
         log.debug("setting messagesOrphans array");
         if (messagesOrphans == null) {
             messagesOrphans = new ArrayList<>();
         } else {
             messagesOrphans.clear();
         }
-
+        
         log.debug("setting autowired properties' logs");
     }
-
+    
     @Override
     public void run() {
         MDC.put("logCheckFileName", threadName);
         log.info("------------------------------------------------------------------------");
         log.info("INIZIO IL MESTIERE DI RICONCILIAZIONE");
         log.info("START > idPec: [" + idPec + "]" + " time: " + new Date());
-
+        
         init();
-
+        
         try {
             log.debug("reperimento pec...");
             Pec pec = pecRepository.findById(idPec).get();
@@ -184,17 +184,17 @@ public class IMAPWorkerChecker implements Runnable {
                 log.info("La message policy prevede di spostare i messaggi: quindi li ciclo tutti");
                 messages = imapManager.getMessages();
             }
-
+            
             MailProxy mailProxy;
             StoreResponse res = null;
-
+            
             for (MailMessage message : messages) {
                 log.info("==================== gestione messageId: " + message.getId() + " ====================");
                 log.info("oggetto: " + message.getSubject());
                 log.info("providerUID: " + message.getProviderUid());
                 try {
                     mailProxy = new MailProxy(message);
-
+                    
                     if (null == mailProxy.getType()) {
                         log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
                     } else {
@@ -218,7 +218,7 @@ public class IMAPWorkerChecker implements Runnable {
                                     log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
                                 break;
-
+                            
                             case RECEPIT:
                                 log.info("tipo calcolato: RICEVUTA");
                                 recepitMessageStoreManager.setPecRecepit((PecRecepit) mailProxy.getMail());
@@ -236,7 +236,7 @@ public class IMAPWorkerChecker implements Runnable {
                                     log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
                                 break;
-
+                            
                             case MAIL:
                                 log.info("tipo calcolato: REGULAR MAIL");
                                 regularMessageStoreManager.setMailMessage((MailMessage) mailProxy.getMail());
@@ -253,9 +253,9 @@ public class IMAPWorkerChecker implements Runnable {
                                 } else {
                                     log.info("Il messaggio non è da mettere su mongo: è già presente su DB! " + res.toString());
                                 }
-
+                                
                                 break;
-
+                            
                             default:
                                 res = null;
                                 log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
@@ -277,13 +277,13 @@ public class IMAPWorkerChecker implements Runnable {
                     log.error("eccezione nel processare il messaggio corrente: ", e);
                 }
             }
-
+            
             log.info("___esito e policy___");
             log.info("messaggi 'OK': " + ((messagesOk == null || messagesOk.isEmpty()) ? "nessuno" : ""));
             messagesOk.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
             });
-
+            
             log.info("messaggi 'ORFANI': " + ((messagesOrphans == null || messagesOrphans.isEmpty()) ? "nessuno" : ""));
             messagesOrphans.forEach((mailMessage) -> {
                 log.info(mailMessage.getId());
@@ -300,12 +300,13 @@ public class IMAPWorkerChecker implements Runnable {
                     log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
                     imapManager.messageMover(messagesOk);
                     break;
-
+                
                 case (ApplicationConstant.MESSAGE_POLICY_DELETE):
                     log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
                     imapManager.deleteMessage(messagesOk);
+                    log.info("Finito");
                     break;
-
+                
                 default:
                     log.info("Message Policy della casella: NONE, non si fa nulla");
                     break;
@@ -320,10 +321,10 @@ public class IMAPWorkerChecker implements Runnable {
             log.error("eccezione : ", e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
-
+        
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");
         MDC.remove("logCheckFileName");
     }
-
+    
 }

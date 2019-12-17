@@ -166,7 +166,8 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         switch (pecRecepit.getxRicevuta()) {
             case "accettazione":
-                if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))) {
+                if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))
+                        && !(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.ERROR.toString()))) {
                     relatedMessage.setMessageStatus(Message.MessageStatus.ACCEPTED);
                 }
                 break;
