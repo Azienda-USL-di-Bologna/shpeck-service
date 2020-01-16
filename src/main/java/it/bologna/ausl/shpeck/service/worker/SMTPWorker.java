@@ -108,11 +108,13 @@ public class SMTPWorker implements Runnable {
             // carico i messaggi con message_status 'TO_SEND'
             // prendo il provider
             // creo un'istanza del manager
+            //List<Outbox> messagesToSend = outboxRepository.findByIdPecAndIgnoreFalse(pec);
             List<Integer> messagesToSend = outboxRepository.findOutboxIdByIdPecAndIgnoreFalse(pec.getId());
             if (messagesToSend != null && messagesToSend.size() > 0) {
                 smtpManager.buildSmtpManagerFromPec(pec);
                 log.info("numero messaggi : " + messagesToSend.size() + " --> cicla...");
 
+                //for (Outbox outbox : messagesToSend) {
                 for (Integer idOutbox : messagesToSend) {
                     StoreResponse response = null;
                     try {

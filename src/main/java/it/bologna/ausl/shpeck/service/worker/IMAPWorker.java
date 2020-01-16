@@ -9,6 +9,7 @@ import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.BeanCreationNotAllowedExceptionShpeck;
 import it.bologna.ausl.shpeck.service.exceptions.CannotCreateTransactionShpeck;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
@@ -268,6 +269,9 @@ public class IMAPWorker implements Runnable {
                     throw new CannotCreateTransactionShpeck(ex.getMessage());
                 } catch (BeanCreationNotAllowedException ex) {
                     throw new BeanCreationNotAllowedExceptionShpeck(ex.getMessage());
+                } catch (OutOfMemoryError e) {
+                    log.error("ERRORE: OutOfMemoryError: ", e);
+                    throw new StoreManagerExeption(e.getMessage());
                 } catch (Throwable e) {
                     log.error("eccezione nel processare il messaggio corrente: ", e);
                 }
