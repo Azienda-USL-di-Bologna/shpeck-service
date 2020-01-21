@@ -138,13 +138,28 @@ public class StoreManager implements StoreInterface {
 
     @Override
     public Message getMessageFromDb(Message message) {
-        Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
-        if (messaggioPresente != null) {
-            log.info("Messaggio GIA' presente su database");
-        } else {
-            log.info("Messaggio NON presente su database");
-        }
 
+        Message messaggioPresente = null;
+
+        List<Message> messaggiPresenti = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
+
+        if (messaggiPresenti != null && messaggiPresenti.size() > 0) {
+            if (message.getMessageType() != Message.MessageType.MAIL) {
+                log.info("messaggio trovato su database");
+                messaggioPresente = messaggiPresenti.get(0);
+            } else {
+                for (Message m : messaggiPresenti) {
+                    // devo trovare quella che ha idRelated nullo
+                    if (m.getIdRelated() == null) {
+                        log.info("messaggio già presente su database");
+                        messaggioPresente = m;
+                        break;
+                    }
+                }
+            }
+        } else {
+            log.info("messaggio NON presente su database");
+        }
         return messaggioPresente;
     }
 
