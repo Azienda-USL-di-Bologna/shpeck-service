@@ -454,9 +454,13 @@ public class StoreManager implements StoreInterface {
         Integer idAddress = addessRepository.getIdAddressByUidMessageAndMailAddress(uuid, mailAddress);
         log.debug("idAddress: " + idAddress);
 
-        Optional<Address> address = addessRepository.findById(idAddress);
+        Optional<Address> address = null;
 
-        if (address.isPresent()) {
+        if (idAddress != null) {
+            address = addessRepository.findById(idAddress);
+        }
+
+        if (address != null && address.isPresent()) {
             log.debug("inserimento di address nel risultato");
             res.add(address.get());
         } else {
