@@ -4,14 +4,12 @@ import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -542,4 +540,5 @@ public class IMAPManager {
         log.debug("chiamo lo store manager per salvare in uploadQueue");
         storeManager.insertToUploadQueue(message);
     }
+
 }
