@@ -33,4 +33,7 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
     @Query(value = "select id from shpeck.upload_queue where uploaded = true order by id", nativeQuery = true)
     public ArrayList<Integer> getIdToDelete();
 
+    @Query(value = "select m.uuid_repository from shpeck.messages m join shpeck.raw_messages r on m.id = r.id_message join shpeck.upload_queue u on u.id_raw_message = r.id where u.id = ?1", nativeQuery = true)
+    public String getUuidRepository(Integer idUpload);
+
 }

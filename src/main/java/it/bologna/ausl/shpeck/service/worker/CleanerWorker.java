@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -49,6 +50,9 @@ public class CleanerWorker implements Runnable {
 
     @Autowired
     CleanerManager cleanerManager;
+
+    @Autowired
+    MessageRepository messageRepository;
 
     private String threadName;
 
@@ -98,7 +102,25 @@ public class CleanerWorker implements Runnable {
             for (Integer id : messagesToDelete) {
                 log.info("UploadQueue.ID = " + id.toString() + " ...");
                 try {
-                    cleanerManager.cleanUploadQueue(id);
+                    String uuidRepository = uploadQueueRepository.getUuidRepository(id);
+
+                    if (uuidRepository != null && !uuidRepository.equals("")) {
+                        cleanerManager.cleanUploadQueue(id);
+                    } else {
+                        // salvataggio uuid_repository
+                        Optional<UploadQueue> u = uploadQueueRepository.findById(id);
+                        if (u.isPresent()) {
+                            Integer idMessage = u.get().getIdRawMessage().getIdMessage().getId();
+                            Optional<Message> message = messageRepository.findById(idMessage);
+                            if (message.isPresent()) {
+                                Message tmp = message.get();
+                                tmp.setUuidMessage(u.get().getUuid());
+                                tmp.setPathRepository(u.get().getPath());
+                                tmp.setName(u.get().getName());
+                                messageRepository.save(tmp);
+                            }
+                        }
+                    }
                 } catch (CleanerWorkerInterruption i) {
                     //i.printStackTrace();
                     log.info("Interruzione del CleanerWorker: " + i.getMessage());
