@@ -86,8 +86,8 @@ public class SpeckApplication {
     @Value("${id-applicazione}")
     String idApplicazione;
 
-    @Value("${riconciliazione-attiva}")
-    Boolean riconciliazioneAttiva;
+    @Value("${cleaner-attivo}")
+    Boolean cleanerAttivo;
 
     @Value("${hour-to-start}")
     Integer hourToStart;
@@ -130,15 +130,14 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
-                if (riconciliazioneAttiva) {
-                    log.info("Creo e schedulo gli ImapWorkerDiRiconciliazione");
-                    faiGliImapWorkerDiRiconciliazione(pecAttive, applicazione);
+                if (cleanerAttivo) {
+                    log.info("Schedulo e accodo il CleanerWorker");
+                    accodaCleanerWorker();
                 }
 
-                log.info("Schedulo e accodo il CleanerWorker");
-                accodaCleanerWorker();
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
+
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -226,21 +225,6 @@ public class SpeckApplication {
             log.info(imapWorker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
         }
         log.info("creazione degli IMAPWorker eseguita con successo");
-    }
-
-    public void faiGliImapWorkerDiRiconciliazione(ArrayList<Pec> pecAttive, Applicazione applicazione) {
-        log.info("creazione degli IMAPCheckWorker di check sulle caselle");
-        for (int i = 0; i < pecAttive.size(); i++) {
-            log.info(pecAttive.get(i).getIndirizzo());
-            IMAPWorkerChecker imapWorkerChecker = beanFactory.getBean(IMAPWorkerChecker.class);
-            imapWorkerChecker.setThreadName("IMAP_CHECK_" + pecAttive.get(i).getIndirizzo());
-            imapWorkerChecker.setIdPec(pecAttive.get(i).getId());
-            imapWorkerChecker.setDaysBackChecker(daysBackSpazzino);
-            imapWorkerChecker.setApplicazione(applicazione);
-            scheduledThreadPoolExecutor.scheduleAtFixedRate(imapWorkerChecker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
-            log.info(imapWorkerChecker.getThreadName() + " su PEC " + pecAttive.get(i).getIndirizzo() + " schedulato correttamente");
-        }
-        log.info("creazione degli IMAPWorker per ogni casella PEC attiva...");
     }
 
     public void faiGliSMTPWorker(ArrayList<Pec> pecAttive) {

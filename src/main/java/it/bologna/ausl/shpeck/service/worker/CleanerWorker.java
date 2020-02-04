@@ -6,25 +6,18 @@
 package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.shpeck.Message;
-import it.bologna.ausl.model.entities.shpeck.Outbox;
-import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerException;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerInterruption;
 import it.bologna.ausl.shpeck.service.manager.CleanerManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
-import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
-import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -32,8 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -53,6 +44,9 @@ public class CleanerWorker implements Runnable {
 
     @Autowired
     MessageRepository messageRepository;
+
+    @Autowired
+    Diagnostica diagnostica;
 
     private String threadName;
 
@@ -100,24 +94,35 @@ public class CleanerWorker implements Runnable {
             log.info("Devo ciclare righe " + messagesToDelete.size());
             cleanerManager.setEndTime(endTime);
             for (Integer id : messagesToDelete) {
-                log.info("UploadQueue.ID = " + id.toString() + " ...");
+                log.debug("UploadQueue.ID = " + id.toString());
                 try {
                     String uuidRepository = uploadQueueRepository.getUuidRepository(id);
-
+                    log.debug("uuidRepository = " + uuidRepository);
                     if (uuidRepository != null && !uuidRepository.equals("")) {
+                        log.debug("record da eliminare");
                         cleanerManager.cleanUploadQueue(id);
                     } else {
                         // salvataggio uuid_repository
+                        log.debug("uuidRepository vuoto, salvataggio da UploadQueue");
                         Optional<UploadQueue> u = uploadQueueRepository.findById(id);
                         if (u.isPresent()) {
+                            log.debug("record presente in UploadQueue");
                             Integer idMessage = u.get().getIdRawMessage().getIdMessage().getId();
+                            log.debug("idMessage: " + idMessage.toString());
                             Optional<Message> message = messageRepository.findById(idMessage);
                             if (message.isPresent()) {
+                                log.debug("messaggio presente su DB");
                                 Message tmp = message.get();
-                                tmp.setUuidMessage(u.get().getUuid());
+                                log.debug("uuid = " + u.get().getUuid());
+                                tmp.setUuidRepository(u.get().getUuid());
+                                log.debug("path = " + u.get().getPath());
                                 tmp.setPathRepository(u.get().getPath());
+                                log.debug("name = " + u.get().getName());
                                 tmp.setName(u.get().getName());
                                 messageRepository.save(tmp);
+                            } else {
+                                log.debug("messaggio NON presente su DB");
+                                throw new CleanerWorkerException("messaggio con id: " + idMessage + "NON presente su DB");
                             }
                         }
                     }
@@ -130,10 +135,12 @@ public class CleanerWorker implements Runnable {
                 } catch (CleanerWorkerException e) {
                     // entrando qua dentro dovrei rollbackare le cancellazioni avvenute usando questo uploadqueue
                     log.error("Catchato CleanerWorkerException in spazzinoUploadQueue ", e);
+                    writeReportDiagnostica(e, id);
                 } catch (Throwable t) {
                     log.error("QUALCOSA E' ANDATO MALE! Sono arrivato all'upload queue " + id.toString());
                     //log.error(t.toString());
                     log.error("Errore: ", t);
+                    writeReportDiagnostica(t, id);
                 }
                 if (messagesToDelete.indexOf(id) < messagesToDelete.size() - 1) {
                     log.info("Fatto " + id.toString() + ": passo al prossimo...");
@@ -144,6 +151,7 @@ public class CleanerWorker implements Runnable {
         } catch (Throwable e) {
             log.error("Catchato ERRORACCIO in spazzinoUploadQueue " + e.toString());
             log.error(e.getMessage());
+            writeReportDiagnostica(e, null);
             throw e;
         }
 
@@ -176,6 +184,18 @@ public class CleanerWorker implements Runnable {
             e.printStackTrace();
         }
         MDC.remove("logFileName");
+    }
+
+    private void writeReportDiagnostica(Throwable e, Integer idUploadQueue) {
+        // creazione messaggio di errore
+        JSONObject json = new JSONObject();
+        if (idUploadQueue != null) {
+            json.put("id_upload_queue", idUploadQueue.toString());
+        }
+        json.put("Exception", e.toString());
+        json.put("ExceptionMessage", e.getMessage());
+
+        diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_CLEANER_WORKER", json);
     }
 
 }
