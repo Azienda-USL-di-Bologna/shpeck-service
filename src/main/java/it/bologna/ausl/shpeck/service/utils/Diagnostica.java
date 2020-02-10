@@ -35,7 +35,7 @@ public class Diagnostica {
         String messageID = (String) json.get("messageID");
 
         if (messageID != null) {
-            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalseAndInAttesaDiRisoluzioneIsFalse(tipologiaErrore);
+            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
                 String mid = (String) additionalData.get("messageID");

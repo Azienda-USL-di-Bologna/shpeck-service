@@ -163,6 +163,40 @@ public class StoreManager implements StoreInterface {
         return messaggioPresente;
     }
 
+    @Override
+    public boolean isValidRecord(Message message) {
+        boolean res = false;
+
+        // deve avere i riferimenti al repository
+        if ((message.getUuidRepository() != null && !message.getUuidRepository().equals(""))
+                && (message.getPathRepository() != null && !message.getPathRepository().equals(""))) {
+            // se message != MAIL è sufficiente vedere che uuidRepository e pathRepository siano != NULL
+            // se message == MAIL non basta:
+            // guardo se ha una cartella associata; se questo non è vero, per essere valido allora deve avere righe su krint
+            if (message.getMessageType() == Message.MessageType.MAIL && message.getMessageFolderList().size() <= 0) {
+                // controllo se ha righe su krint
+                Integer rowNumber = 0;
+                try {
+                    rowNumber = messageRepository.getRowFromKrint(String.valueOf(message.getId()));
+                    log.debug("numero di righe di log su krint: " + rowNumber);
+                    if (rowNumber <= 0) {
+                        log.error("record di message con id: " + message.getId() + " non valido");
+                        res = false;
+                    } else {
+                        log.info("record presenti in krint quindi il messaggio è stato gestito");
+                        res = true;
+                    }
+                } catch (Throwable e) {
+                    log.debug("non esistono righe su krint per il messaggio con id: " + message.getId());
+                    res = false;
+                }
+            } else {
+                res = true;
+            }
+        }
+        return res;
+    }
+
     public void insertRawMessage(Message message, String rawData) throws ShpeckServiceException {
         RawMessage rawMessage = new RawMessage();
         rawMessage.setIdMessage(message);
@@ -479,11 +513,20 @@ public class StoreManager implements StoreInterface {
             log.debug("inserimento di address nel risultato");
             res.add(address.get());
         } else {
-            log.debug("address non presente, viene creato e salvato");
-            Address a = new Address();
-            a.setMailAddress(mailAddress);
-            a.setRecipientType(Address.RecipientType.PEC);
-            res.add(addessRepository.save(a));
+            // controllo se esiste l'indirizzo (indipendentemente dall'associazione con uuidMessage)
+            Address tmpAddress = addessRepository.findByMailAddress(mailAddress);
+
+            // se indirizzo non esiste in tabella lo inserisco (vuol dire che non c'è mai stato questo indirizzo)
+            if (tmpAddress == null) {
+                log.debug("address non presente, viene creato e salvato");
+                Address a = new Address();
+                a.setMailAddress(mailAddress);
+                a.setRecipientType(Address.RecipientType.PEC);
+                res.add(addessRepository.save(a));
+            } else {
+                log.info("address già presente su database, non viene inserito");
+                res.add(tmpAddress);
+            }
         }
 
         log.debug("ritorno getAddressFromRecepit con res di dimensione: " + res.size());
@@ -493,13 +536,34 @@ public class StoreManager implements StoreInterface {
     @Override
     public RawMessage storeRawMessage(Message message, String raw
     ) {
-        log.info("--- inizio storeRawMessage ---");
-        RawMessage rawMessage = new RawMessage();
-        rawMessage.setIdMessage(message);
-        rawMessage.setRawData(raw);
-        log.debug("salvataggio del rawMessage...");
-        rawMessage = rawMessageRepository.save(rawMessage);
-        log.debug("rawMessage salvato");
+        // controllo se si deve usare istanza da DB oppure crearne uno nuovo
+        RawMessage rm = null;
+        RawMessage rawMessage = null;
+        try {
+            rm = rawMessageRepository.findByIdMessage(message);
+            if (rm != null) {
+                rawMessage = rm;
+            }
+        } catch (Throwable e) {
+            log.info("non esiste un rawMessage presente in db, lo inserisco");
+        }
+
+        if (rm == null) {
+            log.info("--- inizio storeRawMessage ---");
+            rawMessage = new RawMessage();
+            rawMessage.setIdMessage(message);
+            rawMessage.setRawData(raw);
+            log.debug("salvataggio del rawMessage...");
+            rawMessage = rawMessageRepository.save(rawMessage);
+            log.debug("rawMessage salvato");
+        } else {
+            log.info("--- inizio aggiornamento storeRawMessage ---");
+            rawMessage.setIdMessage(message);
+            rawMessage.setRawData(raw);
+            log.debug("salvataggio del rawMessage...");
+            rawMessage = rawMessageRepository.save(rawMessage);
+            log.debug("rawMessage salvato");
+        }
         return rawMessage;
     }
 

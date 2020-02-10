@@ -23,10 +23,12 @@ import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -77,6 +79,9 @@ public class IMAPWorker implements Runnable {
 
     @Autowired
     RegularMessageStoreManager regularMessageStoreManager;
+
+    @Autowired
+    Diagnostica diagnostica;
 
     @Autowired
     Semaphore messageSemaphore;
@@ -274,6 +279,18 @@ public class IMAPWorker implements Runnable {
                     throw new StoreManagerExeption(e.getMessage());
                 } catch (Throwable e) {
                     log.error("eccezione nel processare il messaggio corrente: ", e);
+                    // scrittura in generic report
+                    JSONObject json = new JSONObject();
+                    json.put("Mailbox", pec.getIndirizzo());
+                    if (message.getId() != null) {
+                        json.put("messageID", message.getId());
+                    }
+                    json.put("From", message.getFrom() != null ? message.getFrom()[0].toString() : null);
+                    json.put("Subject", message.getSubject() != null ? message.getSubject() : null);
+                    json.put("Exception", e.toString());
+                    json.put("ExceptionMessage", e.getMessage());
+                    diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_PROCESSING_MESSAGE", json);
+
                 }
                 // aggiornamento lastUID relativo alla casella appena scaricata
                 imapManager.setLastUID(message.getProviderUid());
@@ -312,6 +329,7 @@ public class IMAPWorker implements Runnable {
 
                 default:
                     log.info("Message Policy della casella: NONE, non si fa nulla");
+                    imapManager.closeFolder();
                     break;
             }
 

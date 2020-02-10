@@ -25,4 +25,6 @@ public interface StoreInterface {
     public void insertToUploadQueue(Message message);
 
     public void removeFromUploadQueue(UploadQueue uq);
+
+    public boolean isValidRecord(Message message);
 }

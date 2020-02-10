@@ -52,4 +52,7 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
             + "from xxx "
             + "where id = xxx.message", nativeQuery = true)
     void fixNumberOfMessageUploadedWithNoRepositoryInMessage();
+
+    @Query(value = "select count(*) from logs.get_logs(null, ?1, null, null, null, null, null, null)", nativeQuery = true)
+    public Integer getRowFromKrint(String id);
 }

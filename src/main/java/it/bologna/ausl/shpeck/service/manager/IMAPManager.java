@@ -74,6 +74,7 @@ public class IMAPManager {
     private IMAPStore store;
     private long lastUID;
     private long lastUIDToConsider;
+    private IMAPFolder inbox;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
@@ -124,6 +125,14 @@ public class IMAPManager {
         this.lastUID = lastUID;
     }
 
+    public IMAPFolder getInbox() {
+        return inbox;
+    }
+
+    public void setInbox(IMAPFolder inbox) {
+        this.inbox = inbox;
+    }
+
     public FetchProfile getNewFetchProfile() {
         /**
          * FetchProfile elenca gli attributi del messaggio che si desidera
@@ -163,7 +172,8 @@ public class IMAPManager {
             FetchProfile fetchProfile = getNewFetchProfile();
 
             log.info("Setto la inbox dello store");
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+//            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -250,7 +260,7 @@ public class IMAPManager {
      * Recupera i messaggi dal provider andando indietro fino ai giorni passati
      * come parametro.
      */
-    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException {
+    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException, MessagingException {
         log.info("Dentro getMessagesFromParametrizedDaysAgoToToday()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
@@ -539,6 +549,12 @@ public class IMAPManager {
         log.debug("enqueueForUpload -> " + message.getId());
         log.debug("chiamo lo store manager per salvare in uploadQueue");
         storeManager.insertToUploadQueue(message);
+    }
+
+    public void closeFolder() throws MessagingException {
+        if (inbox != null) {
+            inbox.close();
+        }
     }
 
 }

@@ -10,7 +10,6 @@ import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
-import it.bologna.ausl.shpeck.service.worker.IMAPWorkerChecker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
