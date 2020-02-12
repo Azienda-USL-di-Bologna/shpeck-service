@@ -17,6 +17,7 @@ import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,12 +132,31 @@ public class CleanerManager {
                 log.info("Sto per cancelare la riga di raw message " + rm.getId());
                 rawMessageRepository.delete(rm);
                 log.info("Ho cancelato la riga!!");
+            } else if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && !uq.getName().equals(m.getName())) {
+                log.info("inserisco il nome del file su mongo nel record di messages");
+                Optional<Message> tmp = messageRepository.findById(m.getId());
+                if (tmp.isPresent()) {
+                    Message tmpMessage = tmp.get();
+                    tmpMessage.setName(uq.getName());
+                    Message resMessage = messageRepository.save(tmpMessage);
+                    log.info("esito dopo aggiornamento");
+                    log.info(" uq.getUuid().equals(m.getUuidRepository()) " + uq.getUuid().equals(resMessage.getUuidRepository()));
+                    log.info(" uq.getPath().equals(m.getPathRepository()) " + uq.getPath().equals(resMessage.getPathRepository()));
+                    log.info(" uq.getName().equals(m.getName()) " + uq.getName().equals(resMessage.getName()));
+                    tuttoOK = true;
+                } else {
+                    log.info("Non posso cancellare il raw message " + rm.getId());
+                    log.info(" uq.getUuid().equals(m.getUuidRepository()) " + uq.getUuid().equals(m.getUuidRepository()));
+                    log.info(" uq.getPath().equals(m.getPathRepository()) " + uq.getPath().equals(m.getPathRepository()));
+                    log.info(" uq.getName().equals(m.getName()) " + uq.getName().equals(m.getName()));
+                    tuttoOK = false;
+                }
             } else {
-                log.info("Non posso cancellare il raw message " + rm.getId());
                 log.info(" uq.getUuid().equals(m.getUuidRepository()) " + uq.getUuid().equals(m.getUuidRepository()));
                 log.info(" uq.getPath().equals(m.getPathRepository()) " + uq.getPath().equals(m.getPathRepository()));
                 log.info(" uq.getName().equals(m.getName()) " + uq.getName().equals(m.getName()));
                 tuttoOK = false;
+
             }
         } catch (CleanerWorkerInterruption e) {
             log.error("[cleanRawMessage()] Catchato CleanerWorkerInterruption: si fa rollback");
