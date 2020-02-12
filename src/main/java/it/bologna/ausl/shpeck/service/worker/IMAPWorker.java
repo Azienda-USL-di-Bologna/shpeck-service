@@ -270,6 +270,13 @@ public class IMAPWorker implements Runnable {
                             messagesOrphans.add(res.getMailMessage());
                         }
                     }
+
+                    // aggiornamento lastUID relativo alla casella appena scaricata
+                    imapManager.setLastUID(message.getProviderUid());
+
+                    pec = imapManager.updateLastUID(pec);
+                    pec = pecRepository.findById(pec.getId()).get();
+
                 } catch (CannotCreateTransactionException ex) {
                     throw new CannotCreateTransactionShpeck(ex.getMessage());
                 } catch (BeanCreationNotAllowedException ex) {
@@ -290,13 +297,8 @@ public class IMAPWorker implements Runnable {
                     json.put("Exception", e.toString());
                     json.put("ExceptionMessage", e.getMessage());
                     diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_PROCESSING_MESSAGE", json);
-
                 }
-                // aggiornamento lastUID relativo alla casella appena scaricata
-                imapManager.setLastUID(message.getProviderUid());
 
-                pec = imapManager.updateLastUID(pec);
-                pec = pecRepository.findById(pec.getId()).get();
             }
 
             log.info("___esito e policy___");
