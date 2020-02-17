@@ -371,7 +371,7 @@ public class StoreManager implements StoreInterface {
         }
     }
 
-    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
+    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException, MessagingException {
 
         boolean ricevutaConsegnaType = false;
 
@@ -384,6 +384,8 @@ public class StoreManager implements StoreInterface {
                 from = InternetAddress.parseHeader(mailMessage.getOriginal().getHeader("From", ","), true);
             } catch (MessagingException ex) {
                 log.error("unable to determine From address", ex);
+                from = new InternetAddress[1];
+                from[0] = new InternetAddress(mailMessage.getOriginal().getHeader("From", ","));
             }
         }
 
@@ -397,7 +399,7 @@ public class StoreManager implements StoreInterface {
             log.info("mittente presente");
         } else {
             log.info("Mittente non presente");
-            throw new StoreManagerExeption("upsertAddresses: Mittente non presente");
+            throw new StoreManagerExeption("upsertAddresses: Mittente non presente o malformato");
         }
 
         // Se non ho neanche un destinatario devo lanciare l'errore il mestiere

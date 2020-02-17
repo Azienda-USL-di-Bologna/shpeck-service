@@ -207,16 +207,6 @@ public class IMAPManager {
                      * modo tale da non creare colli di bottiglia
                      */
                     try {
-                        MimeMessage mm = (MimeMessage) messagesFromInbox[i];
-
-                        reportFrom = mm.getFrom()[0].toString();
-
-                        if (mm.getRecipients(Message.RecipientType.TO) != null) {
-                            reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
-                        }
-
-                        reportSubject = mm.getSubject();
-                        reportDate = mm.getSentDate().toString();
 
                         MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
                         reportMessageID = m.getId();
@@ -227,6 +217,22 @@ public class IMAPManager {
                             log.debug("lastUID: " + lastUID);
                         }
                     } catch (Throwable e) {
+                        try {
+
+                            MimeMessage mm = (MimeMessage) messagesFromInbox[i];
+
+                            reportFrom = mm.getFrom()[0].toString();
+
+                            if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                                reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                            }
+
+                            reportSubject = mm.getSubject();
+                            reportDate = mm.getSentDate().toString();
+                        } catch (Throwable t) {
+                            log.error("Attenzione, non sono riuscito a recuperare tutti i dati per il report");
+                        }
+
                         // creazione messaggio di errore
                         JSONObject json = new JSONObject();
                         json.put("Mailbox", this.mailbox);
