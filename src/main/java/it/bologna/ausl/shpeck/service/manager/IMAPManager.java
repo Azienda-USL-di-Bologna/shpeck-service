@@ -446,7 +446,7 @@ public class IMAPManager {
                 IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
                 IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
-            List<MimeMessage> messageToMove = new ArrayList<>(100);
+            List<MimeMessage> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();
 
             for (Message m : messages) {
@@ -458,15 +458,16 @@ public class IMAPManager {
                 }
             }
             dstFolder.open(IMAPFolder.READ_WRITE);
-            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
-            for (Message m : messages) {
-                MimeMessage tmp = (MimeMessage) m;
-                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
-                if (idSet.contains(messageId)) {
-                    tmp.setFlag(Flags.Flag.DELETED, true);
-                }
-            }
-            srcFolder.expunge();
+//            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+            srcFolder.moveMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+//            for (Message m : messages) {
+//                MimeMessage tmp = (MimeMessage) m;
+//                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
+//                if (idSet.contains(messageId)) {
+//                    tmp.setFlag(Flags.Flag.DELETED, true);
+//                }
+//            }
+//            srcFolder.expunge();
         }
         store.close();
     }

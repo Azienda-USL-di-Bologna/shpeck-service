@@ -169,10 +169,17 @@ public class IMAPWorker implements Runnable {
 
             // prendo il lastUID del messaggio in casella
             log.info("prendo il lastUID del messaggio in casella... ");
-            if (pec.getLastuid() != null) {
-                log.info("Setto il last uuid " + pec.getLastuid());
-                imapManager.setLastUID(pec.getLastuid());
-                //imapManager.setLastUID(1119);
+
+            if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
+                if (pec.getLastuid() != null) {
+                    log.info("Setto il last uuid " + pec.getLastuid());
+                    imapManager.setLastUID(pec.getLastuid());
+                    //imapManager.setLastUID(1119);
+                }
+            } else {
+                // se sono in policy BACKUP o DELETE
+                log.info("message policy backup o delete");
+                imapManager.setLastUID(0);
             }
 
             // ottenimento dei messaggi
@@ -272,10 +279,11 @@ public class IMAPWorker implements Runnable {
                     }
 
                     // aggiornamento lastUID relativo alla casella appena scaricata
-                    imapManager.setLastUID(message.getProviderUid());
-
-                    pec = imapManager.updateLastUID(pec);
-                    pec = pecRepository.findById(pec.getId()).get();
+                    if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
+                        imapManager.setLastUID(message.getProviderUid());
+                        pec = imapManager.updateLastUID(pec);
+                        pec = pecRepository.findById(pec.getId()).get();
+                    }
 
                 } catch (CannotCreateTransactionException ex) {
                     throw new CannotCreateTransactionShpeck(ex.getMessage());
