@@ -371,7 +371,7 @@ public class StoreManager implements StoreInterface {
         }
     }
 
-    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException, MessagingException {
+    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
 
         boolean ricevutaConsegnaType = false;
 
@@ -385,7 +385,12 @@ public class StoreManager implements StoreInterface {
             } catch (MessagingException ex) {
                 log.error("unable to determine From address", ex);
                 from = new InternetAddress[1];
-                from[0] = new InternetAddress(mailMessage.getOriginal().getHeader("From", ","));
+                try {
+                    from[0] = new InternetAddress(mailMessage.getOriginal().getHeader("From", ","));
+                } catch (Throwable e) {
+                    throw new StoreManagerExeption("errore nel settare un mittente già rotto in partenza", e);
+                }
+
             }
         }
 
