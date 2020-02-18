@@ -55,4 +55,7 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
 
     @Query(value = "select count(*) from logs.get_logs(null, ?1, null, null, null, null, null, null)", nativeQuery = true)
     public Integer getRowFromKrint(String id);
+
+    @Query(value = "select count(id) from shpeck.messages_folders where id_message = ?1", nativeQuery = true)
+    public Integer getMessagesFolderCount(Integer idMessage);
 }

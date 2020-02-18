@@ -167,28 +167,41 @@ public class StoreManager implements StoreInterface {
     public boolean isValidRecord(Message message) {
         boolean res = false;
 
+        if (message.getIdMessagePecgw() != null) {
+            log.info("Messaggio importato... è OK per definizione: VALIDATO");
+            return true;
+        }
+
         // deve avere i riferimenti al repository
         if ((message.getUuidRepository() != null && !message.getUuidRepository().equals(""))
                 && (message.getPathRepository() != null && !message.getPathRepository().equals(""))) {
             // se message != MAIL è sufficiente vedere che uuidRepository e pathRepository siano != NULL
             // se message == MAIL non basta:
             // guardo se ha una cartella associata; se questo non è vero, per essere valido allora deve avere righe su krint
-            if (message.getMessageType() == Message.MessageType.MAIL && message.getMessageFolderList().size() <= 0) {
-                // controllo se ha righe su krint
-                Integer rowNumber = 0;
-                try {
-                    rowNumber = messageRepository.getRowFromKrint(String.valueOf(message.getId()));
-                    log.debug("numero di righe di log su krint: " + rowNumber);
-                    if (rowNumber <= 0) {
-                        log.error("record di message con id: " + message.getId() + " non valido");
+            if (message.getMessageType() == Message.MessageType.MAIL) {
+                log.info("E' una mail normale, quindi vediamo se si trova in una cartella...");
+                int quanteFolder = messageRepository.getMessagesFolderCount(message.getId());
+                if (quanteFolder > 0) {
+                    log.info("E' in una qualche folder, quindi tutto a posto!");
+                    return true;
+                } else {
+                    // controllo se ha righe su krint
+                    Integer rowNumber = 0;
+                    try {
+                        rowNumber = messageRepository.getRowFromKrint(String.valueOf(message.getId()));
+                        log.debug("numero di righe di log su krint: " + rowNumber);
+                        if (rowNumber <= 0) {
+                            log.error("record di message con id: " + message.getId() + " non valido");
+                            log.info("Ultima spiaggia: è settata come seen?" + message.getSeen());
+                            res = message.getSeen();
+                        } else {
+                            log.info("record presenti in krint quindi il messaggio è stato gestito");
+                            res = true;
+                        }
+                    } catch (Throwable e) {
+                        log.debug("non esistono righe su krint per il messaggio con id: " + message.getId());
                         res = false;
-                    } else {
-                        log.info("record presenti in krint quindi il messaggio è stato gestito");
-                        res = true;
                     }
-                } catch (Throwable e) {
-                    log.debug("non esistono righe su krint per il messaggio con id: " + message.getId());
-                    res = false;
                 }
             } else {
                 res = true;
