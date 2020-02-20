@@ -307,6 +307,8 @@ public class IMAPWorker implements Runnable {
                     diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_PROCESSING_MESSAGE", json);
                 }
 
+                // TODO: spostare messaggio per messaggio e non tutto insieme come ora
+                // una volta fatto significa che se un messaggio è già presente su DB e un caso stranissimo e si deve segnalare
             }
 
             log.info("___esito e policy___");
