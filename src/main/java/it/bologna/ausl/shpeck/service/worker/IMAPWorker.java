@@ -273,6 +273,17 @@ public class IMAPWorker implements Runnable {
                     if (res != null) {
                         if (res.getStatus().equals(ApplicationConstant.OK_KEY)) {
                             messagesOk.add(res.getMailMessage());
+                            if (pec.getMessagePolicy().equals(ApplicationConstant.MESSAGE_POLICY_BACKUP)) {
+                                try {
+                                    log.info("Sposto il messaggio in backup");
+                                    ArrayList<MailMessage> tmp = new ArrayList<MailMessage>();
+                                    tmp.add(message);
+                                    imapManager.messageMover(tmp);
+                                } catch (Throwable ex) {
+                                    log.error("ERRORE nello spostamento del messaggio in cartella di backup: ATTENZIONE, controllare perché il messaggio potrebbe essere gia' stato salvato", ex);
+                                    throw ex;
+                                }
+                            }
                         } else {
                             messagesOrphans.add(res.getMailMessage());
                         }
@@ -328,8 +339,9 @@ public class IMAPWorker implements Runnable {
             // individuazione della policy della casella
             switch (pec.getMessagePolicy()) {
                 case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
-                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
-                    imapManager.messageMover(messagesOk);
+//                    // spostato il move sopra al controllo se è tutto ok
+//                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
+//                    imapManager.messageMover(messagesOk);
                     break;
 
                 case (ApplicationConstant.MESSAGE_POLICY_DELETE):
