@@ -84,10 +84,17 @@ public class RegularMessageStoreManager extends StoreManager {
 
         log.info("Verfico presenza messaggio...");
         Message messagePresentInDB = getMessageFromDb(regularMessage);
-        if (messagePresentInDB != null) {
+
+        // ho un messaggio? è valido? allora uso l'istanza caricata da DB
+        if (messagePresentInDB != null && isValidRecord(messagePresentInDB)) {
             log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
             regularMessage = messagePresentInDB;
         } else {
+            // se messaggio è presenta allora non è valido: quindi lo devo aggiornare e prendo l'istanza su DB; altrimenti usa una istanza nuova
+            if (messagePresentInDB != null) {
+                log.info("messaggio presente in DB ma non valido, procedo a reperire istanza presente");
+                regularMessage = messagePresentInDB;
+            }
             try {
                 regularMessage = storeMessage(regularMessage);
                 log.info("Messaggio salvato " + regularMessage.toString());
@@ -109,6 +116,7 @@ public class RegularMessageStoreManager extends StoreManager {
             storeMessagesAddresses(regularMessage, mapMessagesAddress);
         }
 
-        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, true);
+        boolean isToUpload = ((regularMessage.getUuidRepository() != null && !regularMessage.getUuidRepository().equals("")) ? false : true);
+        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, isToUpload);
     }
 }

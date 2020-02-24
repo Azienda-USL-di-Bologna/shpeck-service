@@ -18,5 +18,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReportRepository extends
         JpaRepository<Report, Integer> {
 
-    public List<Report> findByTipologiaAndRisoltoIsFalseAndInAttesaDiRisoluzioneIsFalse(String tipologia);
+    public List<Report> findByTipologiaAndRisoltoIsFalse(String tipologia);
 }

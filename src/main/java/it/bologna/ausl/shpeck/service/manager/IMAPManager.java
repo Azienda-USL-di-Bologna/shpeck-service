@@ -4,14 +4,12 @@ import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -76,6 +74,7 @@ public class IMAPManager {
     private IMAPStore store;
     private long lastUID;
     private long lastUIDToConsider;
+    private IMAPFolder inbox;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
@@ -126,6 +125,14 @@ public class IMAPManager {
         this.lastUID = lastUID;
     }
 
+    public IMAPFolder getInbox() {
+        return inbox;
+    }
+
+    public void setInbox(IMAPFolder inbox) {
+        this.inbox = inbox;
+    }
+
     public FetchProfile getNewFetchProfile() {
         /**
          * FetchProfile elenca gli attributi del messaggio che si desidera
@@ -165,7 +172,8 @@ public class IMAPManager {
             FetchProfile fetchProfile = getNewFetchProfile();
 
             log.info("Setto la inbox dello store");
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+//            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -199,16 +207,6 @@ public class IMAPManager {
                      * modo tale da non creare colli di bottiglia
                      */
                     try {
-                        MimeMessage mm = (MimeMessage) messagesFromInbox[i];
-
-                        reportFrom = mm.getFrom()[0].toString();
-
-                        if (mm.getRecipients(Message.RecipientType.TO) != null) {
-                            reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
-                        }
-
-                        reportSubject = mm.getSubject();
-                        reportDate = mm.getSentDate().toString();
 
                         MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
                         reportMessageID = m.getId();
@@ -219,6 +217,22 @@ public class IMAPManager {
                             log.debug("lastUID: " + lastUID);
                         }
                     } catch (Throwable e) {
+                        try {
+
+                            MimeMessage mm = (MimeMessage) messagesFromInbox[i];
+
+                            reportFrom = mm.getFrom()[0].toString();
+
+                            if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                                reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                            }
+
+                            reportSubject = mm.getSubject();
+                            reportDate = mm.getSentDate().toString();
+                        } catch (Throwable t) {
+                            log.error("Attenzione, non sono riuscito a recuperare tutti i dati per il report");
+                        }
+
                         // creazione messaggio di errore
                         JSONObject json = new JSONObject();
                         json.put("Mailbox", this.mailbox);
@@ -252,7 +266,7 @@ public class IMAPManager {
      * Recupera i messaggi dal provider andando indietro fino ai giorni passati
      * come parametro.
      */
-    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException {
+    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException, MessagingException {
         log.info("Dentro getMessagesFromParametrizedDaysAgoToToday()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
@@ -432,7 +446,7 @@ public class IMAPManager {
                 IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
                 IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
-            List<MimeMessage> messageToMove = new ArrayList<>(100);
+            List<MimeMessage> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();
 
             for (Message m : messages) {
@@ -444,15 +458,16 @@ public class IMAPManager {
                 }
             }
             dstFolder.open(IMAPFolder.READ_WRITE);
-            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
-            for (Message m : messages) {
-                MimeMessage tmp = (MimeMessage) m;
-                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
-                if (idSet.contains(messageId)) {
-                    tmp.setFlag(Flags.Flag.DELETED, true);
-                }
-            }
-            srcFolder.expunge();
+//            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+            srcFolder.moveMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+//            for (Message m : messages) {
+//                MimeMessage tmp = (MimeMessage) m;
+//                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
+//                if (idSet.contains(messageId)) {
+//                    tmp.setFlag(Flags.Flag.DELETED, true);
+//                }
+//            }
+//            srcFolder.expunge();
         }
         store.close();
     }
@@ -542,4 +557,11 @@ public class IMAPManager {
         log.debug("chiamo lo store manager per salvare in uploadQueue");
         storeManager.insertToUploadQueue(message);
     }
+
+    public void closeFolder() throws MessagingException {
+        if (inbox != null) {
+            inbox.close();
+        }
+    }
+
 }

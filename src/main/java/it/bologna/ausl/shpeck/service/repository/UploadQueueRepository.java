@@ -6,10 +6,7 @@ import it.bologna.ausl.model.entities.shpeck.projections.generated.UploadQueueWi
 import java.util.ArrayList;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * per convenzione nostra, collectionResourceRel e path devono avere lo stesso
@@ -32,5 +29,8 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
 
     @Query(value = "select id from shpeck.upload_queue where uploaded = true order by id", nativeQuery = true)
     public ArrayList<Integer> getIdToDelete();
+
+    @Query(value = "select m.uuid_repository from shpeck.messages m join shpeck.raw_messages r on m.id = r.id_message join shpeck.upload_queue u on u.id_raw_message = r.id where u.id = ?1", nativeQuery = true)
+    public String getUuidRepository(Integer idUpload);
 
 }

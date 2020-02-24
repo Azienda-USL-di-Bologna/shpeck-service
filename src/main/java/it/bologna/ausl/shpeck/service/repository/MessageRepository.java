@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.repository;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.MessageWithPlainFields;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,7 +19,7 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
 
     Message findByUuidMessageAndIsPecFalse(String uuid);
 
-    Message findByUuidMessageAndIdPecAndMessageType(String uuid, Pec pec, String messageType);
+    List<Message> findByUuidMessageAndIdPecAndMessageType(String uuid, Pec pec, String messageType);
 
     @Modifying
     @Transactional
@@ -51,4 +52,10 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
             + "from xxx "
             + "where id = xxx.message", nativeQuery = true)
     void fixNumberOfMessageUploadedWithNoRepositoryInMessage();
+
+    @Query(value = "select count(*) from logs.get_logs(null, ?1, null, null, null, null, null, null)", nativeQuery = true)
+    public Integer getRowFromKrint(String id);
+
+    @Query(value = "select count(id) from shpeck.messages_folders where id_message = ?1", nativeQuery = true)
+    public Integer getMessagesFolderCount(Integer idMessage);
 }

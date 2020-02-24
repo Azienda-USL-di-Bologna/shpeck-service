@@ -35,7 +35,7 @@ public class Diagnostica {
         String messageID = (String) json.get("messageID");
 
         if (messageID != null) {
-            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalseAndInAttesaDiRisoluzioneIsFalse("SHPECK_ERROR_BUILD_MESSAGE");
+            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
                 String mid = (String) additionalData.get("messageID");
@@ -50,7 +50,7 @@ public class Diagnostica {
         if (!isAlreadyInserted) {
             log.debug("!!! inserimento dell'errore nella tabella di report !!!");
             Report report = new Report();
-            report.setTipologia("SHPECK_ERROR_BUILD_MESSAGE");
+            report.setTipologia(tipologiaErrore);
             report.setDataInserimentoRiga(LocalDateTime.now());
             report.setAdditionalData(json.toJSONString());
 
