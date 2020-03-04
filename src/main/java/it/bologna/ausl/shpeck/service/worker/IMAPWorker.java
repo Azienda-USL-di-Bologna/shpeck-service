@@ -145,6 +145,30 @@ public class IMAPWorker implements Runnable {
         }
     }
 
+    private void handleMessageSwitchingByPolicy(Pec pec, MailMessage message) throws Throwable {
+        try {
+            ArrayList<MailMessage> tmp = new ArrayList<MailMessage>();
+            tmp.add(message);
+            switch (pec.getMessagePolicy()) {
+                case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
+                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
+                    imapManager.messageMover(tmp);
+                    break;
+
+                case (ApplicationConstant.MESSAGE_POLICY_DELETE):
+                    log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
+                    imapManager.deleteMessage(tmp);
+                    break;
+                default:
+                    log.info("Message Policy della casella: NONE, non si fa nulla");
+                    break;
+            }
+        } catch (Throwable e) {
+            log.error("ERRORE nella gestione del messaggio " + message.getId() + " in base alla POLICY " + pec.getMessagePolicy(), e);
+            throw e;
+        }
+    }
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
@@ -273,17 +297,6 @@ public class IMAPWorker implements Runnable {
                     if (res != null) {
                         if (res.getStatus().equals(ApplicationConstant.OK_KEY)) {
                             messagesOk.add(res.getMailMessage());
-                            if (pec.getMessagePolicy().equals(ApplicationConstant.MESSAGE_POLICY_BACKUP)) {
-                                try {
-                                    log.info("Sposto il messaggio in backup");
-                                    ArrayList<MailMessage> tmp = new ArrayList<MailMessage>();
-                                    tmp.add(message);
-                                    imapManager.messageMover(tmp);
-                                } catch (Throwable ex) {
-                                    log.error("ERRORE nello spostamento del messaggio in cartella di backup: ATTENZIONE, controllare perché il messaggio potrebbe essere gia' stato salvato", ex);
-                                    throw ex;
-                                }
-                            }
                         } else {
                             messagesOrphans.add(res.getMailMessage());
                         }
@@ -320,6 +333,7 @@ public class IMAPWorker implements Runnable {
 
                 // TODO: spostare messaggio per messaggio e non tutto insieme come ora
                 // una volta fatto significa che se un messaggio è già presente su DB e un caso stranissimo e si deve segnalare
+                handleMessageSwitchingByPolicy(pec, message);
             }
 
             log.info("___esito e policy___");
@@ -338,24 +352,7 @@ public class IMAPWorker implements Runnable {
                 imapManager.messageMover(tmpMessage.getId());
             }
 
-            // individuazione della policy della casella
-            switch (pec.getMessagePolicy()) {
-                case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
-//                    // spostato il move sopra al controllo se è tutto ok
-//                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
-//                    imapManager.messageMover(messagesOk);
-                    break;
-
-                case (ApplicationConstant.MESSAGE_POLICY_DELETE):
-                    log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
-                    imapManager.deleteMessage(messagesOk);
-                    break;
-
-                default:
-                    log.info("Message Policy della casella: NONE, non si fa nulla");
-                    imapManager.closeFolder();
-                    break;
-            }
+            imapManager.closeFolder();
 
             // aggiornamento lastUID relativo alla casella appena scaricata
             //imapManager.updateLastUID(pec);
