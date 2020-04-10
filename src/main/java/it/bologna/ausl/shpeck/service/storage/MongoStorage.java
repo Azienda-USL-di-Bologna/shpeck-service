@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -60,7 +61,13 @@ public class MongoStorage implements StorageStrategy {
 
             if (mimeMessage.getSentDate() != null) {
                 SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
-                String asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
+                String asGmt="";
+                try {
+                    asGmt = df.format(MailMessage.getSendDateInGMT(mimeMessage)) + " GMT"; 
+                    
+                } catch (Exception e) {
+                    asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
+                }
                 filename = asGmt + " " + from + ".eml";
             } else {
                 filename = MessageBuilder.getClearMessageID(mimeMessage.getMessageID()) + " " + from + ".eml";
