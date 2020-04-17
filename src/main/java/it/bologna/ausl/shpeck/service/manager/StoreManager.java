@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import java.util.Optional;
+import java.util.logging.Level;
 import javax.mail.internet.MimeMessage;
 
 /**
@@ -94,7 +95,11 @@ public class StoreManager implements StoreInterface {
             message.setInOut(Message.InOut.IN);
             message.setIsPec(mailMessage.getIsPec());
             if (mailMessage.getSendDate() != null) {
-                message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                 try {
+                    message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
+                } catch (MessagingException ex) {
+                    message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                }
             } else {
                 message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
             }
