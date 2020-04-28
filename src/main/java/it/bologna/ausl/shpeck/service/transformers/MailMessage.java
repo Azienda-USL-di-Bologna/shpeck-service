@@ -44,7 +44,7 @@ public class MailMessage implements MailIdentity {
             this.id = MessageBuilder.defineMessageID(original);
 
         } catch (Exception ex) {
-            throw new MailMessageException("Errore nella creazione del MailMessage", ex);
+            throw new MailMessageException("Errore nella creazione del MailMessage" + ex.getMessage());
         }
     }
 
@@ -247,7 +247,7 @@ public class MailMessage implements MailIdentity {
             MailDateFormat maildate = new MailDateFormat();
             Date parse = maildate.parse(originalDate);
             String[] split = originalDate.split(" ");
-            
+
             if (split.length > 5) {
                 switch (split[5]) {
                     case "CHAST":

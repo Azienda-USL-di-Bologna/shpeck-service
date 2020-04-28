@@ -121,10 +121,11 @@ public class SMTPWorker implements Runnable {
                 //for (Outbox outbox : messagesToSend) {
                 for (Integer idOutbox : messagesToSend) {
                     StoreResponse response = null;
+                    Outbox outbox = new Outbox();
+                    outbox = outboxRepository.findById(idOutbox).get();
                     try {
                         log.info("Provo a caricare OUTBOX con id " + idOutbox);
-                        Outbox outbox = new Outbox();
-                        outbox = outboxRepository.findById(idOutbox).get();
+
                         log.info("==================== gestione message in outbox con id: " + outbox.getId() + " ====================");
                         response = smtpManager.saveMessageAndRaw(outbox);
                         Message m = response.getMessage();
@@ -184,6 +185,10 @@ public class SMTPWorker implements Runnable {
                         log.info("aggiornato");
                     } catch (BeforeSendOuboxException e) {
                         log.error("BeforeSendOuboxException: ", e);
+
+                        if (e.getMessage().equals("BUILD_MAILMESSAGE_FAILED")) {
+                            log.error("errore creazione Message su outbox con id: " + outbox.getId());
+                        }
                         log.error("Però continuo");
                         continue;
                     } catch (Exception e) {

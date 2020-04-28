@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
@@ -19,6 +20,7 @@ import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +137,13 @@ public class SMTPManager {
 //            }
 
         } catch (Throwable e) {
-            log.error("BeforeSendOuboxException", e);
-            throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
+            if (e instanceof MailMessageException) {
+                log.error("BeforeSendOuboxException - errore nella costruzione mailMessage", e);
+                throw new BeforeSendOuboxException("BUILD_MAILMESSAGE_FAILED");
+            } else {
+                log.error("BeforeSendOuboxException - generic error", e);
+                throw new BeforeSendOuboxException("GENERIC_ERROR");
+            }
 
         }
         return storeResponse;
