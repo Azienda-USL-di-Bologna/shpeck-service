@@ -5,16 +5,20 @@ import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.model.entities.shpeck.Tag;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.MessageTagStoreManager;
 import it.bologna.ausl.shpeck.service.manager.SMTPManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import javax.mail.MessagingException;
+import javax.mail.SendFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -125,18 +129,41 @@ public class SMTPWorker implements Runnable {
                         response = smtpManager.saveMessageAndRaw(outbox);
                         Message m = response.getMessage();
                         log.info("salvataggio eseguito > provo a inviare messaggio con id outbox " + outbox.getId() + "...");
-                        String messagID = smtpManager.sendMessage(outbox.getRawData());
-                        if (messagID == null) {
+                        String messagID = null;
+                        try {
+                            messagID = smtpManager.sendMessage(outbox.getRawData());
+                        } catch (Throwable ex) {
                             log.error("Errore invio messaggio > metadati già salvati: " + response.getMessage().toString());
-                            log.error("metto in stato di errore il messaggio " + m.getId());
-                            m.setMessageStatus(Message.MessageStatus.ERROR);
-                            log.error("Metto il tag Errore al messaggio");
-                            try {
-                                messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m, Tag.SystemTagName.technical_error);
-                            } catch (Exception e) {
-                                log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString(), e);
+                            if (ex instanceof SendFailedException) {
+                                // caso di indirizzo non valido
+                                log.error("metto in stato di errore il messaggio " + m.getId() + " a causa di indirizzo errato");
+                                log.error("indirizzi: " + Arrays.toString(((SendFailedException) ex).getInvalidAddresses()));
+                                m.setMessageStatus(Message.MessageStatus.ERROR);
+                                log.error("Metto il tag Errore al messaggio");
+                                outbox.setIgnore(true);
+                                try {
+                                    messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m, Tag.SystemTagName.technical_error);
+                                } catch (Exception e) {
+                                    log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString(), e);
+                                }
+                            } else if (ex instanceof MessagingException) {
+                                // caso di connessione momentaneamente non disponibile
+                                log.info("connessione momentaneamente non disponibile, riprovo a inviare al prossimo giro");
+                            } else {
+                                log.error("Errore generico su messaggio con id " + m.getId());
+                                log.error("Errore :" + ex.getMessage());
+                                log.error("Metto il tag Errore al messaggio");
+                                m.setMessageStatus(Message.MessageStatus.ERROR);
+                                outbox.setIgnore(true);
+                                try {
+                                    messageTagStoreManager.createAndSaveErrorMessageTagFromMessage(m, Tag.SystemTagName.technical_error);
+                                } catch (Exception e) {
+                                    log.error("ERRORE: Ho avuto problemi con il salvataggio dell message tag del messaggio " + m.toString(), e);
+                                }
                             }
-                        } else {
+                        }
+
+                        if (messagID != null) {
                             log.info("Messaggio inviato correttamente, setto il messaggio come spedito");
                             m.setMessageStatus(Message.MessageStatus.SENT);
                             m.setUuidMessage(messagID);

@@ -16,6 +16,7 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
@@ -96,19 +97,16 @@ public class SMTPManager {
         }
     }
 
-    public String sendMessage(String rawData) {
+    public String sendMessage(String rawData) throws ShpeckServiceException, MessagingException {
         String res = null;
-        try {
-            MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
-            //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
-            mimeMessage.saveChanges();
-            smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-            log.info("sendMessage >> Messaggio inviato!");
-            res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
-            log.info("Mime Message Id: " + res);
-        } catch (Throwable e) {
-            log.error("sendMessage >> Messaggio non inviato: " + e);
-        }
+
+        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
+        //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
+        mimeMessage.saveChanges();
+        smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        log.info("sendMessage >> Messaggio inviato!");
+        res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
+        log.info("Mime Message Id: " + res);
         return res;
     }
 
