@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
+import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
@@ -16,8 +17,10 @@ import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,19 +99,16 @@ public class SMTPManager {
         }
     }
 
-    public String sendMessage(String rawData) {
+    public String sendMessage(String rawData) throws ShpeckServiceException, MessagingException {
         String res = null;
-        try {
-            MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
-            //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
-            mimeMessage.saveChanges();
-            smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-            log.info("sendMessage >> Messaggio inviato!");
-            res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
-            log.info("Mime Message Id: " + res);
-        } catch (Throwable e) {
-            log.error("sendMessage >> Messaggio non inviato: " + e);
-        }
+
+        MimeMessage mimeMessage = MessageBuilder.buildMailMessageFromString(rawData);
+        //aggiorna i campi dell'header del messaggio per essere consistente con il contenuto del messaggio
+        mimeMessage.saveChanges();
+        smtpConnectionHandler.getTransport().sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        log.info("sendMessage >> Messaggio inviato!");
+        res = MessageBuilder.getClearMessageID(mimeMessage.getMessageID());
+        log.info("Mime Message Id: " + res);
         return res;
     }
 
@@ -137,8 +137,13 @@ public class SMTPManager {
 //            }
 
         } catch (Throwable e) {
-            log.error("BeforeSendOuboxException", e);
-            throw new BeforeSendOuboxException("Non sono riuscito a salvare i metadati del messaggio in outbox con id " + outbox.getId(), e);
+            if (e instanceof MailMessageException) {
+                log.error("BeforeSendOuboxException - errore nella costruzione mailMessage", e);
+                throw new BeforeSendOuboxException("BUILD_MAILMESSAGE_FAILED");
+            } else {
+                log.error("BeforeSendOuboxException - generic error", e);
+                throw new BeforeSendOuboxException("GENERIC_ERROR");
+            }
 
         }
         return storeResponse;
