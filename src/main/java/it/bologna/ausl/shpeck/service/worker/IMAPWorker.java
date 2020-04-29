@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -85,6 +86,9 @@ public class IMAPWorker implements Runnable {
 
     @Autowired
     Semaphore messageSemaphore;
+
+    @Value("${test-mode}")
+    Boolean testMode;
 
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
@@ -347,9 +351,11 @@ public class IMAPWorker implements Runnable {
                 log.info(mailMessage.getId());
             });
 
-            // le ricevute orfane si salvano sempre nella cartella di backup
-            for (MailMessage tmpMessage : messagesOrphans) {
-                imapManager.messageMover(tmpMessage.getId());
+            if (!testMode) {
+                // le ricevute orfane si salvano sempre nella cartella di backup
+                for (MailMessage tmpMessage : messagesOrphans) {
+                    imapManager.messageMover(tmpMessage.getId());
+                }
             }
 
             imapManager.closeFolder();
