@@ -196,11 +196,13 @@ public class SpeckApplication {
     }
 
     public void filtraPecDiParmaProd(ArrayList<Pec> pecAttive) {
+        log.info("Filtro via le pec relative alle aziende di Parma");
         Azienda auslParma = aziendaRepository.findByCodice("102");
         Azienda aospParma = aziendaRepository.findByCodice("902");
         for (Pec pec : pecAttive) {
             if (pec.getIdAziendaRepository().getId().equals(auslParma.getId())
                     || pec.getIdAziendaRepository().getId().equals(aospParma.getId())) {
+                log.info("(tolgo " + pec.getIndirizzo() + " perché è di Parma");
                 pecAttive.remove(pec);
             }
         }
