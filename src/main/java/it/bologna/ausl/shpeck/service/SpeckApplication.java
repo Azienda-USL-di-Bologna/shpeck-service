@@ -1,10 +1,12 @@
 package it.bologna.ausl.shpeck.service;
 
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
+import it.bologna.ausl.shpeck.service.repository.AziendaRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
@@ -97,6 +99,9 @@ public class SpeckApplication {
     @Autowired
     MessageRepository messageRepository;
 
+    @Autowired
+    AziendaRepository aziendaRepository;
+
     public static void main(String[] args) {
         SpringApplication.run(SpeckApplication.class, args);
     }
@@ -119,6 +124,8 @@ public class SpeckApplication {
 
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
+
+                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
 //                ArrayList<Pec> pecAttive = new ArrayList<>();
 //                pecAttive.add(pecRepository.findById(494).get());
@@ -186,6 +193,17 @@ public class SpeckApplication {
 
         Duration duration = Duration.between(now, nextRun);
         return duration.getSeconds();
+    }
+
+    public void filtraPecDiParmaProd(ArrayList<Pec> pecAttive) {
+        Azienda auslParma = aziendaRepository.findByCodice("102");
+        Azienda aospParma = aziendaRepository.findByCodice("902");
+        for (Pec pec : pecAttive) {
+            if (pec.getIdAziendaRepository().getId().equals(auslParma.getId())
+                    || pec.getIdAziendaRepository().getId().equals(aospParma.getId())) {
+                pecAttive.remove(pec);
+            }
+        }
     }
 
     public void filtraPecAttiveDiProdAndMantieniQuelleDiTest(ArrayList<Pec> pecAttive) {
