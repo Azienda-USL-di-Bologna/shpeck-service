@@ -125,11 +125,17 @@ public class SMTPWorker implements Runnable {
                     outbox = outboxRepository.findById(idOutbox).get();
                     try {
                         log.info("Provo a caricare OUTBOX con id " + idOutbox);
-
                         log.info("==================== gestione message in outbox con id: " + outbox.getId() + " ====================");
-                        response = smtpManager.saveMessageAndRaw(outbox);
-                        Message m = response.getMessage();
-                        log.info("salvataggio eseguito > provo a inviare messaggio con id outbox " + outbox.getId() + "...");
+                        log.info("Cerco un message con questo idOutbox");
+                        Message m = null;
+                        m = messageRepository.getMessageByIdOutbox(idOutbox);
+                        if (m == null) {
+                            log.info("Non ho ancora un messaggio con questo outbox, quindi salvo i metadati");
+                            response = smtpManager.saveMessageAndRaw(outbox);
+                            m = response.getMessage();
+                            log.info("salvataggio eseguito");
+                        }
+                        log.info("Provo a inviare messaggio con id outbox " + outbox.getId() + "...");
                         String messagID = null;
                         try {
                             messagID = smtpManager.sendMessage(outbox.getRawData());
@@ -196,11 +202,7 @@ public class SMTPWorker implements Runnable {
                     }
 
                     log.debug("se mail non ha invio massivo viene fatto uno sleep");
-                    if (pec.getSendDelay() != null && pec.getSendDelay() >= 0) {
-                        TimeUnit.MILLISECONDS.sleep(pec.getSendDelay());
-                    } else {
-                        TimeUnit.MILLISECONDS.sleep(sendDelay);
-                    }
+                    TimeUnit.MILLISECONDS.sleep(sendDelay);
                     log.debug("sleep terminato, continuo");
                 }
             }
