@@ -312,6 +312,9 @@ public class IMAPWorker implements Runnable {
                         pec = imapManager.updateLastUID(pec);
                         pec = pecRepository.findById(pec.getId()).get();
                     }
+                    // TODO: spostare messaggio per messaggio e non tutto insieme come ora
+                    // una volta fatto significa che se un messaggio è già presente su DB e un caso stranissimo e si deve segnalare
+                    handleMessageSwitchingByPolicy(pec, message);
 
                 } catch (CannotCreateTransactionException ex) {
                     throw new CannotCreateTransactionShpeck(ex.getMessage());
@@ -334,10 +337,6 @@ public class IMAPWorker implements Runnable {
                     json.put("ExceptionMessage", e.getMessage());
                     diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_PROCESSING_MESSAGE", json);
                 }
-
-                // TODO: spostare messaggio per messaggio e non tutto insieme come ora
-                // una volta fatto significa che se un messaggio è già presente su DB e un caso stranissimo e si deve segnalare
-                handleMessageSwitchingByPolicy(pec, message);
             }
 
             log.info("___esito e policy___");
