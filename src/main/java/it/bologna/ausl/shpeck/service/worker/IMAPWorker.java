@@ -374,6 +374,7 @@ public class IMAPWorker implements Runnable {
             log.error("eccezione : ", e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
+        imapManager.close();
 
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");

@@ -469,7 +469,6 @@ public class IMAPManager {
 //            }
 //            srcFolder.expunge();
         }
-        store.close();
     }
 
     public void deleteMessage(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
