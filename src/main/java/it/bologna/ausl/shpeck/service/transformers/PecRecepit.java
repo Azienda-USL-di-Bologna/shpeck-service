@@ -115,7 +115,7 @@ public class PecRecepit extends MailMessage {
                 if (nodes.size() > 0) {
                     Text msgIdNode = (Text) nodes.get(0).getChild(0);
                     if (msgIdNode != null) {
-                        return StringEscapeUtils.unescapeHtml4(msgIdNode.toXML());
+                        return MessageBuilder.getClearMessageID(StringEscapeUtils.unescapeHtml4(msgIdNode.toXML()));
                     }
                 }
             }

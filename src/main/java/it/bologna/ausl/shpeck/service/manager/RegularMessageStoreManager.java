@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
 import java.util.HashMap;
+import java.util.Optional;
 import javax.mail.internet.AddressException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +68,33 @@ public class RegularMessageStoreManager extends StoreManager {
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
         regularMessage.setIdOutbox(((outbox == null) || (outbox.getId() == null) ? null : outbox.getId()));
+
+        Optional<Message> relatedMessage = null;
+
+        if ((outbox != null) && (outbox.getIdRelated() != null)) {
+            relatedMessage = messageRepository.findById(outbox.getIdRelated());
+            if (relatedMessage.isPresent()) {
+                regularMessage.setIdRelated(relatedMessage.get());
+            }
+        }
+
         regularMessage.setMessageType(Message.MessageType.MAIL);
         regularMessage.setIsPec(Boolean.FALSE);
         regularMessage.setExternalId(((outbox == null) || (outbox.getExternalId() == null) ? null : outbox.getExternalId()));
+
+        log.info("Verfico presenza messaggio...");
         Message messagePresentInDB = getMessageFromDb(regularMessage);
-        if (messagePresentInDB == null) {
+
+        // ho un messaggio? è valido? allora uso l'istanza caricata da DB
+        if (messagePresentInDB != null && isValidRecord(messagePresentInDB)) {
+            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
+            regularMessage = messagePresentInDB;
+        } else {
+            // se messaggio è presenta allora non è valido: quindi lo devo aggiornare e prendo l'istanza su DB; altrimenti usa una istanza nuova
+            if (messagePresentInDB != null) {
+                log.info("messaggio presente in DB ma non valido, procedo a reperire istanza presente");
+                regularMessage = messagePresentInDB;
+            }
             try {
                 regularMessage = storeMessage(regularMessage);
                 log.info("Messaggio salvato " + regularMessage.toString());
@@ -87,15 +110,13 @@ public class RegularMessageStoreManager extends StoreManager {
                 throw new StoreManagerExeption("Errore nello storage del regularMessage", e);
             }
 
-        } else {
-            log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
-            regularMessage = messagePresentInDB;
+            log.debug("salvo/aggiorno gli indirizzi del regular message");
+            HashMap mapMessagesAddress = upsertAddresses(mailMessage);
+            log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
+            storeMessagesAddresses(regularMessage, mapMessagesAddress);
         }
-        log.debug("salvo/aggiorno gli indirizzi del regular message");
-        HashMap mapMessagesAddress = upsertAddresses(mailMessage);
-        log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
-        storeMessagesAddresses(regularMessage, mapMessagesAddress);
 
-        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, true);
+        boolean isToUpload = ((regularMessage.getUuidRepository() != null && !regularMessage.getUuidRepository().equals("")) ? false : true);
+        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, isToUpload);
     }
 }

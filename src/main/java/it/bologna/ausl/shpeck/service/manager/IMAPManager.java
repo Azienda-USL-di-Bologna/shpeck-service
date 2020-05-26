@@ -6,9 +6,10 @@ import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
+import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
+import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -26,6 +27,7 @@ import javax.mail.search.AndTerm;
 import javax.mail.search.ComparisonTerm;
 import javax.mail.search.ReceivedDateTerm;
 import javax.mail.search.SearchTerm;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +50,13 @@ public class IMAPManager {
     PecRepository pecRepository;
 
     @Autowired
+    ReportRepository reportRepository;
+
+    @Autowired
     StoreManager storeManager;
+
+    @Autowired
+    Diagnostica diagnostica;
 
     @Value("${mailbox.backup-folder}")
     String BACKUP_FOLDER_NAME;
@@ -62,15 +70,25 @@ public class IMAPManager {
     @Value("${imap.reset-lastuid-minutes}")
     Integer resetLastuidMinutes;
 
+    private String mailbox;
     private IMAPStore store;
     private long lastUID;
     private long lastUIDToConsider;
+    private IMAPFolder inbox;
     IMAPFolder workingFolder = null;
 
     public IMAPManager() {
         lastUID = 0;
         lastUIDToConsider = Long.MAX_VALUE;
 
+    }
+
+    public String getMailbox() {
+        return mailbox;
+    }
+
+    public void setMailbox(String mailbox) {
+        this.mailbox = mailbox;
     }
 
     public IMAPManager(IMAPStore store) {
@@ -105,6 +123,14 @@ public class IMAPManager {
 
     public void setLastUID(long lastUID) {
         this.lastUID = lastUID;
+    }
+
+    public IMAPFolder getInbox() {
+        return inbox;
+    }
+
+    public void setInbox(IMAPFolder inbox) {
+        this.inbox = inbox;
     }
 
     public FetchProfile getNewFetchProfile() {
@@ -146,7 +172,8 @@ public class IMAPManager {
             FetchProfile fetchProfile = getNewFetchProfile();
 
             log.info("Setto la inbox dello store");
-            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+//            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
@@ -168,12 +195,59 @@ public class IMAPManager {
                 log.info("messaggio con UID " + lastUID + " già trattato");
             } else {
                 for (int i = 0; i < messagesFromInbox.length; i++) {
-                    MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
-                    m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
-                    mailMessages.add(m);
-                    if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
-                        lastUID = inbox.getUID(messagesFromInbox[i]);
-                        log.debug("lastUID: " + lastUID);
+                    String reportFrom = null;
+                    String reportTo = null;
+                    String reportSubject = null;
+                    String reportDate = null;
+                    String reportMessageID = null;
+
+                    /**
+                     * tratto ogni messaggio in maniera consistente; se si rompe
+                     * la coastruzione di un messaggio, passo al successivo in
+                     * modo tale da non creare colli di bottiglia
+                     */
+                    try {
+
+                        MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                        reportMessageID = m.getId();
+                        m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                        mailMessages.add(m);
+                        if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
+                            lastUID = inbox.getUID(messagesFromInbox[i]);
+                            log.debug("lastUID: " + lastUID);
+                        }
+                    } catch (Throwable e) {
+                        try {
+
+                            MimeMessage mm = (MimeMessage) messagesFromInbox[i];
+
+                            reportFrom = mm.getFrom()[0].toString();
+
+                            if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                                reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                            }
+
+                            reportSubject = mm.getSubject();
+                            reportDate = mm.getSentDate().toString();
+                        } catch (Throwable t) {
+                            log.error("Attenzione, non sono riuscito a recuperare tutti i dati per il report");
+                        }
+
+                        // creazione messaggio di errore
+                        JSONObject json = new JSONObject();
+                        json.put("Mailbox", this.mailbox);
+                        if (reportMessageID != null) {
+                            json.put("messageID", reportMessageID);
+                        }
+                        json.put("From", reportFrom);
+                        json.put("To", reportTo);
+                        json.put("Subject", reportSubject);
+                        json.put("Date", reportDate);
+                        json.put("lastUID", String.valueOf(lastUID));
+                        json.put("Exception", e.toString());
+                        json.put("ExceptionMessage", e.getMessage());
+
+                        diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_BUILD_MESSAGE", json);
                     }
                 }
             }
@@ -189,10 +263,11 @@ public class IMAPManager {
     }
 
     /**
-     * Recupera i messaggi dal provider da due settimane più indietro...
+     * Recupera i messaggi dal provider andando indietro fino ai giorni passati
+     * come parametro.
      */
-    public ArrayList<MailMessage> getMessagesFromTwoWeeksAgoToToday() throws ShpeckServiceException {
-        log.info("Dentro getMessagesSinceTwoWeeks()");
+    public ArrayList<MailMessage> getMessagesFromParametrizedDaysAgoToToday(Integer daysAgo) throws ShpeckServiceException, MessagingException {
+        log.info("Dentro getMessagesFromParametrizedDaysAgoToToday()");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
         try {
             if (store == null || !store.isConnected()) {
@@ -215,7 +290,7 @@ public class IMAPManager {
 
             log.info("Creo il parametro di ricerca per trovare i messaggi nel range di due settimane");
             SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, new Date());
-            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTwoWeeksAgoDate());
+            SearchTerm newerThan = new ReceivedDateTerm(ComparisonTerm.GT, getTheseDaysAgoDate(daysAgo));
             SearchTerm andTerm = new AndTerm(olderThan, newerThan);
 
             log.info("Lancio la ricerca");
@@ -246,6 +321,21 @@ public class IMAPManager {
         // chiudi la connessione ma non rimuove i messaggi dal server
         // close();
         return mailMessages;
+    }
+
+    /**
+     * Mi restituisce la data del numero di giorni fa passato come parametro.
+     */
+    public Date getTheseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTheseDaysAgoDate", numberOfDays);
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
     /**
@@ -356,57 +446,72 @@ public class IMAPManager {
                 IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
                 IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
-            List<MimeMessage> messageToMove = new ArrayList<>(100);
+            List<MimeMessage> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();
 
             for (Message m : messages) {
                 MimeMessage tmp = (MimeMessage) m;
-                String messageId = tmp.getMessageID();
+                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
                 if (idSet.contains(messageId)) {
                     messageToMove.add(tmp);
                     log.debug("messageMover: " + messageId + " selezionato per lo spostamento");
                 }
             }
             dstFolder.open(IMAPFolder.READ_WRITE);
-            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
-            for (Message m : messages) {
-                MimeMessage tmp = (MimeMessage) m;
-                String messageId = tmp.getMessageID();
-                if (idSet.contains(messageId)) {
-                    tmp.setFlag(Flags.Flag.DELETED, true);
-                }
-            }
-            srcFolder.expunge();
+//            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+            srcFolder.moveMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+//            for (Message m : messages) {
+//                MimeMessage tmp = (MimeMessage) m;
+//                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
+//                if (idSet.contains(messageId)) {
+//                    tmp.setFlag(Flags.Flag.DELETED, true);
+//                }
+//            }
+//            srcFolder.expunge();
         }
-        store.close();
     }
 
     public void deleteMessage(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
+        log.info("entrato in deleteMessage(ArrayList<MailMessage>): ciclo i messages...");
         for (MailMessage mailMessage : mailMessages) {
+            log.info("mailMessage.getId(): " + mailMessage.getId());
             deleteMessage(mailMessage.getId());
         }
     }
 
     public boolean deleteMessage(String message_id) throws ShpeckServiceException {
+        log.info("entrato in deleteMessage(String message_id) " + message_id);
         try {
+            log.info("Controllo se è connesso lo store.");
             if (!store.isConnected()) {
+                log.info("Non è connesso: lo connetto.");
                 this.store.connect();
             }
             // apertura cartella
+            log.info("Prendo la casella");
             Folder inbox = this.store.getFolder(INBOX_FOLDER_NAME);
             if (inbox == null) {
                 log.error("CARTELLA INBOX NON PRESENTE");
                 System.exit(1);
             }
+            log.info("Apro la casella");
             inbox.open(Folder.READ_WRITE);
             // Get the messages from the server
+
+            log.info("Prendo i messaggi dal server e li metto in un array");
             Message[] tmpmess = inbox.getMessages();
+            log.info("Dimensioni array: " + tmpmess.length);
             IMAPMessage mess;
             String messid;
+            log.info("Ciclo il contentuto dell'array");
             for (int i = 0; i < tmpmess.length; i++) {
+                log.info("Casto in IMAPMessage il messaggio all'indice " + i + "dell'array");
                 mess = (IMAPMessage) tmpmess[i];
-                messid = mess.getMessageID();
+                log.info("Prendo l'id ");
+                messid = MessageBuilder.defineMessageID(mess);
+                log.info("Id: " + messid + "... è quello che devo cancellare?");
                 if (messid.equals(message_id)) {
+                    log.info("Allora lo flaggo da cancellare");
                     tmpmess[i].setFlag(Flags.Flag.DELETED, true);
                     inbox.close(true);
                     return true;
@@ -419,7 +524,7 @@ public class IMAPManager {
     }
 
     // aggiorna la pec con campo uid dell'ultima mail analizzata
-    public void updateLastUID(Pec pec) {
+    public Pec updateLastUID(Pec pec) {
         log.info("salvataggio lastUID nella PEC...");
 
         if (pec.getResetLastuidTime() == null) {
@@ -441,8 +546,9 @@ public class IMAPManager {
             log.info("lastUID = " + getLastUID());
 //            }
         }
-        pecRepository.save(pec);
+        pec = pecRepository.save(pec);
         log.info("salvataggio lastUID -> OK");
+        return pec;
     }
 
     public void enqueueForUpload(it.bologna.ausl.model.entities.shpeck.Message message) {
@@ -450,4 +556,11 @@ public class IMAPManager {
         log.debug("chiamo lo store manager per salvare in uploadQueue");
         storeManager.insertToUploadQueue(message);
     }
+
+    public void closeFolder() throws MessagingException {
+        if (inbox != null) {
+            inbox.close();
+        }
+    }
+
 }

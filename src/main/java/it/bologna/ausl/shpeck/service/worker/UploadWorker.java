@@ -116,8 +116,7 @@ public class UploadWorker implements Runnable {
 //                }
 //            }
         } catch (Throwable e) {
-            e.printStackTrace();
-            log.info(e.toString());
+            log.error("ERRORE", e);
         }
         MDC.remove("logFileName");
     }
@@ -153,6 +152,10 @@ public class UploadWorker implements Runnable {
             log.info("oggetto Message creato");
             Pec p = pecRepository.findById(m.getIdPec().getId()).get();
             log.info("oggetto Pec creato");
+            if (p.getIdAziendaRepository() == null) {
+                log.warn("la pec con indirizzo " + p.getIndirizzo() + " non ha un id_repository associato");
+                continue;
+            }
             Azienda a = aziendaRepository.findById(p.getIdAziendaRepository().getId()).get();
             log.info("oggetto Azienda creato");
             p.setIdAziendaRepository(a);

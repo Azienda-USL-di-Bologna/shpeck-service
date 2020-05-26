@@ -6,7 +6,10 @@ import it.bologna.ausl.model.entities.baborg.PecProvider;
 import it.bologna.ausl.model.entities.configuration.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
+import it.bologna.ausl.shpeck.service.exceptions.BeanCreationNotAllowedExceptionShpeck;
+import it.bologna.ausl.shpeck.service.exceptions.CannotCreateTransactionShpeck;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
 import it.bologna.ausl.shpeck.service.manager.IMAPManager;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
@@ -20,17 +23,22 @@ import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.CannotCreateTransactionException;
 
 /**
  *
@@ -74,7 +82,13 @@ public class IMAPWorker implements Runnable {
     RegularMessageStoreManager regularMessageStoreManager;
 
     @Autowired
+    Diagnostica diagnostica;
+
+    @Autowired
     Semaphore messageSemaphore;
+
+    @Value("${test-mode}")
+    Boolean testMode;
 
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
@@ -135,6 +149,30 @@ public class IMAPWorker implements Runnable {
         }
     }
 
+    private void handleMessageSwitchingByPolicy(Pec pec, MailMessage message) throws Throwable {
+        try {
+            ArrayList<MailMessage> tmp = new ArrayList<MailMessage>();
+            tmp.add(message);
+            switch (pec.getMessagePolicy()) {
+                case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
+                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
+                    imapManager.messageMover(tmp);
+                    break;
+
+                case (ApplicationConstant.MESSAGE_POLICY_DELETE):
+                    log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
+                    imapManager.deleteMessage(tmp);
+                    break;
+                default:
+                    log.info("Message Policy della casella: NONE, non si fa nulla");
+                    break;
+            }
+        } catch (Throwable e) {
+            log.error("ERRORE nella gestione del messaggio " + message.getId() + " in base alla POLICY " + pec.getMessagePolicy(), e);
+            throw e;
+        }
+    }
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
@@ -155,13 +193,21 @@ public class IMAPWorker implements Runnable {
             IMAPStore store = providerConnectionHandler.createProviderConnectionHandler(pec);
             log.info("Setto lo store");
             imapManager.setStore(store);
+            imapManager.setMailbox(pec.getIndirizzo());
 
             // prendo il lastUID del messaggio in casella
             log.info("prendo il lastUID del messaggio in casella... ");
-            if (pec.getLastuid() != null) {
-                log.info("Setto il last uuid " + pec.getLastuid());
-                imapManager.setLastUID(pec.getLastuid());
-                //imapManager.setLastUID(1119);
+
+            if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
+                if (pec.getLastuid() != null) {
+                    log.info("Setto il last uuid " + pec.getLastuid());
+                    imapManager.setLastUID(pec.getLastuid());
+                    //imapManager.setLastUID(1119);
+                }
+            } else {
+                // se sono in policy BACKUP o DELETE
+                log.info("message policy backup o delete");
+                imapManager.setLastUID(0);
             }
 
             // ottenimento dei messaggi
@@ -209,13 +255,17 @@ public class IMAPWorker implements Runnable {
                                 log.info("salvataggio metadati...");
                                 res = recepitMessageStoreManager.store();
                                 log.info("gestione metadati -> OK");
-                                if (res.isToUpload()) {
-                                    log.info("prendo il message ricevuta dalla res");
-                                    Message ricevuta = messageRepository.findById(res.getMessage().getId()).get();
-                                    log.info("metto in upload queue la ricevuta");
-                                    recepitMessageStoreManager.insertToUploadQueue(ricevuta);
+                                if (res != null) {
+                                    if (res.isToUpload()) {
+                                        log.info("prendo il message ricevuta dalla res");
+                                        Message ricevuta = messageRepository.findById(res.getMessage().getId()).get();
+                                        log.info("metto in upload queue la ricevuta");
+                                        recepitMessageStoreManager.insertToUploadQueue(ricevuta);
+                                    } else {
+                                        log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    }
                                 } else {
-                                    log.info("Il messaggio non è da mettere su mongo: " + res.toString());
+                                    log.info("ricevuta già presente");
                                 }
                                 break;
 
@@ -255,12 +305,38 @@ public class IMAPWorker implements Runnable {
                             messagesOrphans.add(res.getMailMessage());
                         }
                     }
+
+                    // aggiornamento lastUID relativo alla casella appena scaricata
+                    if (pec.getMessagePolicy() == ApplicationConstant.MESSAGE_POLICY_NONE) {
+                        imapManager.setLastUID(message.getProviderUid());
+                        pec = imapManager.updateLastUID(pec);
+                        pec = pecRepository.findById(pec.getId()).get();
+                    }
+                    // TODO: spostare messaggio per messaggio e non tutto insieme come ora
+                    // una volta fatto significa che se un messaggio è già presente su DB e un caso stranissimo e si deve segnalare
+                    handleMessageSwitchingByPolicy(pec, message);
+
+                } catch (CannotCreateTransactionException ex) {
+                    throw new CannotCreateTransactionShpeck(ex.getMessage());
+                } catch (BeanCreationNotAllowedException ex) {
+                    throw new BeanCreationNotAllowedExceptionShpeck(ex.getMessage());
+                } catch (OutOfMemoryError e) {
+                    log.error("ERRORE: OutOfMemoryError: ", e);
+                    throw new StoreManagerExeption(e.getMessage());
                 } catch (Throwable e) {
-                    log.error("eccezione nel processare il messaggio corrente: " + e);
+                    log.error("eccezione nel processare il messaggio corrente: ", e);
+                    // scrittura in generic report
+                    JSONObject json = new JSONObject();
+                    json.put("Mailbox", pec.getIndirizzo());
+                    if (message.getId() != null) {
+                        json.put("messageID", message.getId());
+                    }
+                    json.put("From", message.getFrom() != null ? message.getFrom()[0].toString() : null);
+                    json.put("Subject", message.getSubject() != null ? message.getSubject() : null);
+                    json.put("Exception", e.toString());
+                    json.put("ExceptionMessage", e.getMessage());
+                    diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_PROCESSING_MESSAGE", json);
                 }
-                // aggiornamento lastUID relativo alla casella appena scaricata
-                imapManager.setLastUID(message.getProviderUid());
-                imapManager.updateLastUID(pec);
             }
 
             log.info("___esito e policy___");
@@ -274,31 +350,20 @@ public class IMAPWorker implements Runnable {
                 log.info(mailMessage.getId());
             });
 
-            // le ricevute orfane si salvano sempre nella cartella di backup
-            for (MailMessage tmpMessage : messagesOrphans) {
-                imapManager.messageMover(tmpMessage.getId());
+            if (!testMode) {
+                // le ricevute orfane si salvano sempre nella cartella di backup
+                for (MailMessage tmpMessage : messagesOrphans) {
+                    imapManager.messageMover(tmpMessage.getId());
+                }
             }
 
-            // individuazione della policy della casella
-            switch (pec.getMessagePolicy()) {
-                case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
-                    log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
-                    imapManager.messageMover(messagesOk);
-                    break;
-
-                case (ApplicationConstant.MESSAGE_POLICY_DELETE):
-                    log.info("Message Policy della casella: DELETE, Cancella i messaggi salvati");
-                    imapManager.deleteMessage(messagesOk);
-                    break;
-
-                default:
-                    log.info("Message Policy della casella: NONE, non si fa nulla");
-                    break;
-            }
+            imapManager.closeFolder();
 
             // aggiornamento lastUID relativo alla casella appena scaricata
-            imapManager.updateLastUID(pec);
-
+            //imapManager.updateLastUID(pec);
+        } catch (CannotCreateTransactionShpeck | BeanCreationNotAllowedExceptionShpeck e) {
+            log.error("eccezione : ", e);
+            log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         } catch (ShpeckServiceException e) {
             String message = "";
             if (e.getCause().getClass().isInstance(com.sun.mail.util.FolderClosedIOException.class)) {
@@ -306,9 +371,10 @@ public class IMAPWorker implements Runnable {
             }
             log.error("Errore: " + message, e);
         } catch (Throwable e) {
-            log.error("eccezione : " + e);
+            log.error("eccezione : ", e);
             log.info("STOP_WITH_EXCEPTION -> " + " idPec: [" + idPec + "]" + " time: " + new Date());
         }
+        imapManager.close();
 
         log.info("STOP -> idPec: [" + idPec + "]" + " time: " + new Date());
         log.info("------------------------------------------------------------------------");

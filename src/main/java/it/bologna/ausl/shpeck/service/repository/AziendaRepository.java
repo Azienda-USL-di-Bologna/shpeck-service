@@ -12,4 +12,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 @RepositoryRestResource(collectionResourceRel = "azienda", path = "azienda", exported = false, excerptProjection = AziendaWithPlainFields.class)
 public interface AziendaRepository extends
         JpaRepository<Azienda, Integer> {
+
+    Azienda findByCodice(String codice);
 }

@@ -36,7 +36,6 @@ import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import java.util.Optional;
 import java.util.logging.Level;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 
 /**
@@ -96,7 +95,11 @@ public class StoreManager implements StoreInterface {
             message.setInOut(Message.InOut.IN);
             message.setIsPec(mailMessage.getIsPec());
             if (mailMessage.getSendDate() != null) {
-                message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                try {
+                    message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
+                } catch (Exception ex) {
+                    message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                }
             } else {
                 message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
             }
@@ -140,14 +143,76 @@ public class StoreManager implements StoreInterface {
 
     @Override
     public Message getMessageFromDb(Message message) {
-        Message messaggioPresente = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
-        if (messaggioPresente != null) {
-            log.info("Messaggio GIA' presente su database");
+
+        Message messaggioPresente = null;
+
+        List<Message> messaggiPresenti = messageRepository.findByUuidMessageAndIdPecAndMessageType(message.getUuidMessage(), message.getIdPec(), message.getMessageType().toString());
+
+        if (messaggiPresenti != null && messaggiPresenti.size() > 0) {
+            if (message.getMessageType() != Message.MessageType.MAIL) {
+                log.info("messaggio trovato su database");
+                messaggioPresente = messaggiPresenti.get(0);
+            } else {
+                for (Message m : messaggiPresenti) {
+                    // devo trovare quella che ha idRelated nullo
+                    if (m.getIdRelated() == null) {
+                        log.info("messaggio già presente su database");
+                        messaggioPresente = m;
+                        break;
+                    }
+                }
+            }
         } else {
-            log.info("Messaggio NON presente su database");
+            log.info("messaggio NON presente su database");
+        }
+        return messaggioPresente;
+    }
+
+    @Override
+    public boolean isValidRecord(Message message) {
+        boolean res = false;
+
+        if (message.getIdMessagePecgw() != null) {
+            log.info("Messaggio importato... è OK per definizione: VALIDATO");
+            return true;
         }
 
-        return messaggioPresente;
+        // deve avere i riferimenti al repository
+        if ((message.getUuidRepository() != null && !message.getUuidRepository().equals(""))
+                && (message.getPathRepository() != null && !message.getPathRepository().equals(""))) {
+            // se message != MAIL è sufficiente vedere che uuidRepository e pathRepository siano != NULL
+            // se message == MAIL non basta:
+            // guardo se ha una cartella associata; se questo non è vero, per essere valido allora deve avere righe su krint
+            if (message.getMessageType() == Message.MessageType.MAIL) {
+                log.info("E' una mail normale, quindi vediamo se si trova in una cartella...");
+                int quanteFolder = messageRepository.getMessagesFolderCount(message.getId());
+                if (quanteFolder > 0) {
+                    log.info("E' in una qualche folder, quindi tutto a posto!");
+                    return true;
+                } else {
+                    // controllo se ha righe su krint
+                    Integer rowNumber = 0;
+                    try {
+                        rowNumber = messageRepository.getRowFromKrint(String.valueOf(message.getId()));
+                        log.debug("numero di righe di log su krint: " + rowNumber);
+                        if (rowNumber <= 0) {
+                            log.error("record di message con id: " + message.getId() + " non valido");
+                            log.info("Ultima spiaggia: è settata come seen?" + message.getSeen());
+                            res = message.getSeen();
+                        } else {
+                            log.info("record presenti in krint quindi il messaggio è stato gestito");
+                            res = true;
+                        }
+                    } catch (Throwable e) {
+                        log.debug("non esistono righe su krint per il messaggio con id: " + message.getId());
+                        res = false;
+                    }
+                }
+            } else {
+                res = true;
+            }
+        }
+        return res;
     }
 
     public void insertRawMessage(Message message, String rawData) throws ShpeckServiceException {
@@ -239,7 +304,7 @@ public class StoreManager implements StoreInterface {
                         try {
                             addessRepository.save(address);
                         } catch (Exception ex) {
-                            log.error("Indirizzo già presente: " + address.getMailAddress());
+                            log.error("Indirizzo già presente: " + address.getMailAddress(), ex);
                         }
                     }
                     list.add(address);
@@ -275,7 +340,7 @@ public class StoreManager implements StoreInterface {
                         try {
                             addessRepository.save(address);
                         } catch (Exception ex) {
-                            log.error("Indirizzo già presente: " + address.getMailAddress().toLowerCase());
+                            log.error("Indirizzo già presente: " + address.getMailAddress().toLowerCase(), ex);
                         }
                     }
                     list.add(address);
@@ -285,7 +350,7 @@ public class StoreManager implements StoreInterface {
             // aggiorna la tipologia di indirizzo (se PEc o REGULAR_MAIL) prendendo da XML della ricevuta la tipologia dei destinatari
             updateDestinatariType(map);
         } catch (Throwable e) {
-            log.error("errore in saveAndReturnAddresses: " + e);
+            log.error("errore in saveAndReturnAddresses: ", e);
         }
         return list;
     }
@@ -318,7 +383,7 @@ public class StoreManager implements StoreInterface {
                 try {
                     addessRepository.saveAll(addresses);
                 } catch (Exception e) {
-                    log.error("errore updateDestinatariType: " + e);
+                    log.error("errore updateDestinatariType: ", e);
                 }
             }
         }
@@ -336,7 +401,14 @@ public class StoreManager implements StoreInterface {
             try {
                 from = InternetAddress.parseHeader(mailMessage.getOriginal().getHeader("From", ","), true);
             } catch (MessagingException ex) {
-                log.error("unable to determine From address");
+                log.error("unable to determine From address", ex);
+                from = new InternetAddress[1];
+                try {
+                    from[0] = new InternetAddress(mailMessage.getOriginal().getHeader("From", ","));
+                } catch (Throwable e) {
+                    throw new StoreManagerExeption("errore nel settare un mittente già rotto in partenza", e);
+                }
+
             }
         }
 
@@ -350,7 +422,7 @@ public class StoreManager implements StoreInterface {
             log.info("mittente presente");
         } else {
             log.info("Mittente non presente");
-            throw new StoreManagerExeption("upsertAddresses: Mittente non presente");
+            throw new StoreManagerExeption("upsertAddresses: Mittente non presente o malformato");
         }
 
         // Se non ho neanche un destinatario devo lanciare l'errore il mestiere
@@ -456,17 +528,30 @@ public class StoreManager implements StoreInterface {
         Integer idAddress = addessRepository.getIdAddressByUidMessageAndMailAddress(uuid, mailAddress);
         log.debug("idAddress: " + idAddress);
 
-        Optional<Address> address = addessRepository.findById(idAddress);
+        Optional<Address> address = null;
 
-        if (address.isPresent()) {
+        if (idAddress != null) {
+            address = addessRepository.findById(idAddress);
+        }
+
+        if (address != null && address.isPresent()) {
             log.debug("inserimento di address nel risultato");
             res.add(address.get());
         } else {
-            log.debug("address non presente, viene creato e salvato");
-            Address a = new Address();
-            a.setMailAddress(mailAddress);
-            a.setRecipientType(Address.RecipientType.PEC);
-            res.add(addessRepository.save(a));
+            // controllo se esiste l'indirizzo (indipendentemente dall'associazione con uuidMessage)
+            Address tmpAddress = addessRepository.findByMailAddress(mailAddress);
+
+            // se indirizzo non esiste in tabella lo inserisco (vuol dire che non c'è mai stato questo indirizzo)
+            if (tmpAddress == null) {
+                log.debug("address non presente, viene creato e salvato");
+                Address a = new Address();
+                a.setMailAddress(mailAddress);
+                a.setRecipientType(Address.RecipientType.PEC);
+                res.add(addessRepository.save(a));
+            } else {
+                log.info("address già presente su database, non viene inserito");
+                res.add(tmpAddress);
+            }
         }
 
         log.debug("ritorno getAddressFromRecepit con res di dimensione: " + res.size());
@@ -476,13 +561,34 @@ public class StoreManager implements StoreInterface {
     @Override
     public RawMessage storeRawMessage(Message message, String raw
     ) {
-        log.info("--- inizio storeRawMessage ---");
-        RawMessage rawMessage = new RawMessage();
-        rawMessage.setIdMessage(message);
-        rawMessage.setRawData(raw);
-        log.debug("salvataggio del rawMessage...");
-        rawMessage = rawMessageRepository.save(rawMessage);
-        log.debug("rawMessage salvato");
+        // controllo se si deve usare istanza da DB oppure crearne uno nuovo
+        RawMessage rm = null;
+        RawMessage rawMessage = null;
+        try {
+            rm = rawMessageRepository.findByIdMessage(message);
+            if (rm != null) {
+                rawMessage = rm;
+            }
+        } catch (Throwable e) {
+            log.info("non esiste un rawMessage presente in db, lo inserisco");
+        }
+
+        if (rm == null) {
+            log.info("--- inizio storeRawMessage ---");
+            rawMessage = new RawMessage();
+            rawMessage.setIdMessage(message);
+            rawMessage.setRawData(raw);
+            log.debug("salvataggio del rawMessage...");
+            rawMessage = rawMessageRepository.save(rawMessage);
+            log.debug("rawMessage salvato");
+        } else {
+            log.info("--- inizio aggiornamento storeRawMessage ---");
+            rawMessage.setIdMessage(message);
+            rawMessage.setRawData(raw);
+            log.debug("salvataggio del rawMessage...");
+            rawMessage = rawMessageRepository.save(rawMessage);
+            log.debug("rawMessage salvato");
+        }
         return rawMessage;
     }
 

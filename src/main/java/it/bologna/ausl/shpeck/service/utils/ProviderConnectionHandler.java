@@ -2,6 +2,8 @@ package it.bologna.ausl.shpeck.service.utils;
 
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Properties;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
@@ -53,16 +55,16 @@ public class ProviderConnectionHandler {
         return (IMAPStore) Session.getInstance(properties).getStore(new URLName(uri));
     }
 
-    private String build_uri(String host, int port, String username, String password, String protocol) {
+    private String build_uri(String host, int port, String username, String password, String protocol) throws UnsupportedEncodingException {
         String uri;
         if (host == null || port < 0 || port > 65535 || username == null || password == null || protocol == null) {
             throw new IllegalArgumentException("Parametri errati");
         }
-        uri = protocol.toLowerCase() + "://" + username + ":" + password + "@" + host + ":" + Integer.toString(port) + "/" + INBOX_FOLDER_NAME;
+        uri = protocol.toLowerCase() + "://" + username + ":" + URLEncoder.encode(password, "UTF-8") + "@" + host + ":" + Integer.toString(port) + "/" + INBOX_FOLDER_NAME;
         return uri;
     }
 
-    public IMAPStore createProviderConnectionHandler(Pec pec) throws NoSuchProviderException {
+    public IMAPStore createProviderConnectionHandler(Pec pec) throws NoSuchProviderException, UnsupportedEncodingException {
         String uri = build_uri(pec.getIdPecProvider().getHost(), pec.getIdPecProvider().getPort(), pec.getUsername(), pec.getPassword(), pec.getIdPecProvider().getProtocol());
         log.info("URI creato per creazione di IMAPStore: " + uri);
         return createIMAPStore(uri);

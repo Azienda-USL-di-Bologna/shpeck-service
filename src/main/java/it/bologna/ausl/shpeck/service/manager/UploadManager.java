@@ -4,20 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
-import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.storage.MongoStorage;
 import it.bologna.ausl.shpeck.service.storage.StorageContext;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +48,10 @@ public class UploadManager {
     @Autowired
     Semaphore messageSemaphore;
 
-    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    //@Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
         try {
             log.info("Entrato in manage con id su upload_queue: " + messageToStore.getId() + " carico i parametri azienda");
@@ -82,22 +84,30 @@ public class UploadManager {
                 messageToUpdate.setPathRepository(objectUploaded.getPath());
                 messageToUpdate.setName(objectUploaded.getName());
                 log.info("--> " + messageToUpdate.toString());
-                // update del mesaggio con i nuovi parametri   
+                // update del mesaggio con i nuovi parametri
                 log.info("salvo");
                 //messageRepository.save(messageToUpdate);
-                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
-                if (objectUploaded.getUuid() != null) {
+
+                // update Uuid e Path Mongo e il Name
+                String updateQuery = "update shpeck.messages set uuid_repository = ?, path_repository = ?, name = ?, update_time = now() where id = ?";
+                int updatedRow = jdbcTemplate.update(updateQuery, objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
+//                messageRepository.updateUuidAndPathMongoAndName(objectUploaded.getUuid(), objectUploaded.getPath(), objectUploaded.getName(), message.get().getId());
+
+//                if (objectUploaded.getUuid() != null) {
+                if (updatedRow > 0) {
                     log.info("setto uploaded true");
                     // set come file già trattato nella tabella upload_queue
                     objectUploaded.setUploaded(Boolean.TRUE);
                     log.info("aggiorno objectUploaded");
                     uploadQueueRepository.save(objectUploaded);
                 }
+            } else {
+                log.error("ERRORE: Message con id " + messageToStore.getIdRawMessage().getIdMessage().getId() + " non presente");
             }
 
         } catch (Throwable e) {
             log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
-            log.error("con errore: " + e);
+            log.error("con errore: ", e);
             throw new ShpeckServiceException("errore nell'upload del messaggio");
         } finally {
             log.info("manage finito");
