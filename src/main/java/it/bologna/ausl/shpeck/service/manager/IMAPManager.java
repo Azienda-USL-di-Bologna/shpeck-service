@@ -446,20 +446,25 @@ public class IMAPManager {
                 IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
                 IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
-            List<MimeMessage> messageToMove = new ArrayList<>();
+            List<Message> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();
 
             for (Message m : messages) {
                 MimeMessage tmp = (MimeMessage) m;
                 String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
+                if (messageId == null) {
+                    log.info("Non posso usare il messageID del provider, perché è null");
+                    messageId = MessageBuilder.defineMessageID(tmp);
+                    log.info("Provo a cercare questo: ", messageId);
+                }
                 if (idSet.contains(messageId)) {
-                    messageToMove.add(tmp);
+                    messageToMove.add(m);
                     log.debug("messageMover: " + messageId + " selezionato per lo spostamento");
                 }
             }
             dstFolder.open(IMAPFolder.READ_WRITE);
 //            srcFolder.copyMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
-            srcFolder.moveMessages(messageToMove.toArray(new MimeMessage[messageToMove.size()]), dstFolder);
+            srcFolder.moveMessages(messageToMove.toArray(new Message[messageToMove.size()]), dstFolder);
 //            for (Message m : messages) {
 //                MimeMessage tmp = (MimeMessage) m;
 //                String messageId = MessageBuilder.getClearMessageID(tmp.getMessageID());
