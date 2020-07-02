@@ -144,7 +144,12 @@ public class PecMessageStoreManager extends StoreManager {
         }
 
         if (!skipBustato) {
-            messaggioBustato = storeMessage(messaggioBustato);
+            if (skipSbustato && messagePresentInDB != null) {
+                messaggioBustato.setIdRelated(messagePresentInDB);
+                messaggioBustato = storeMessage(messaggioBustato);
+            } else {
+                messaggioBustato = storeMessage(messaggioBustato);
+            }
             try {
                 log.debug("Salvo il RawMessage della BUSTA");
                 storeRawMessage(messaggioBustato, envelope.getRaw_message());
