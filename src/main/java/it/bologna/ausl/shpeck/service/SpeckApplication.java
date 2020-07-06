@@ -125,12 +125,11 @@ public class SpeckApplication {
                 log.info("Recupero le pec attive");
                 ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
-                filtraPecDiParmaProd(pecAttive);
+//                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
 //                ArrayList<Pec> pecAttive = new ArrayList<>();
 //                pecAttive.add(pecRepository.findById(494).get());
 //                log.info("Pec attive #: " + pecAttive.size());
-
                 if (testMode) {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
