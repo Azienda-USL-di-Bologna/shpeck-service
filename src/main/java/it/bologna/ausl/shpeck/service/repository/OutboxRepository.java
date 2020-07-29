@@ -19,6 +19,9 @@ public interface OutboxRepository extends JpaRepository<Outbox, Integer> {
 
     public List<Outbox> findByIdPecAndIgnoreFalse(Pec pec);
 
+    @Query(value = "select o.id from shpeck.outbox o where o.ignore = true", nativeQuery = true)
+    public List<Integer> findAllIdOutboxIgnoreTrue();
+
     @Query(value = "select o.id from shpeck.outbox o where o.id_pec = ?1 and o.ignore = false order by id", nativeQuery = true)
     public List<Integer> findOutboxIdByIdPecAndIgnoreFalse(Integer idPec);
 }
