@@ -11,8 +11,9 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
  * @author Salo
  */
 @RepositoryRestResource(collectionResourceRel = "pec", path = "pec", exported = false, excerptProjection = PecWithPlainFields.class)
-public interface PecRepository extends JpaRepository<Pec, Integer>{
-    
+public interface PecRepository extends JpaRepository<Pec, Integer> {
+
     ArrayList<Pec> findByAttivaTrueAndIdAziendaRepositoryNotNull();
-    
+
+    ArrayList<Pec> findByAttivaTrueAndIdAziendaRepositoryNotNullAndMessagePolicy(int policy);
 }
