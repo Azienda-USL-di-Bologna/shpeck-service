@@ -96,7 +96,11 @@ public class CleanerBackupWorker implements Runnable {
             ArrayList<Pec> list = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNullAndMessagePolicy(ApplicationConstant.MESSAGE_POLICY_BACKUP);
             // per ogni casella pulisci da backup i messaggi vecchi
             for (Pec casella : list) {
-                CleanBackup(casella);
+                // se -1 non cancellare mail backup
+                if (casella.getKeepBackup() != -1) {
+                    log.info("calsella: " + casella.getDescrizione() + " elimina vecchi backup con data maggiore di " + casella.getKeepBackup() + " giorni");
+                    CleanBackup(casella);
+                }
             }
         } catch (Throwable e) {
             log.error("errore nel doWork ", e);
