@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.repository.AziendaRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
+import it.bologna.ausl.shpeck.service.worker.CleanerBackupWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
@@ -138,11 +139,12 @@ public class SpeckApplication {
                 if (cleanerAttivo) {
                     log.info("Schedulo e accodo il CleanerWorker");
                     accodaCleanerWorker();
+                    log.info("Schedulo e accodo il CleanerBackupWorker");
+                    accodaCleanerBackupWorker();
                 }
 
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
-
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -264,6 +266,14 @@ public class SpeckApplication {
         cleanerWorker.setEndTime(getTheseDaysAgoDate(daysBackSpazzino));
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
+    }
+
+    public void accodaCleanerBackupWorker() {
+        log.info("Creazione e schedulazione del worker di pulizia della cartella di Backup");
+        CleanerBackupWorker cleanerBackupWorker = beanFactory.getBean(CleanerBackupWorker.class);
+        cleanerBackupWorker.setThreadName("cleanerBackupWorker");
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerBackupWorker, 0, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        log.info(cleanerBackupWorker.getThreadName() + " schedulato correttamente");
     }
 
 }

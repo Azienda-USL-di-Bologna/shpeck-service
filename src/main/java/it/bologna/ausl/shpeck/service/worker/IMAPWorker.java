@@ -54,6 +54,9 @@ public class IMAPWorker implements Runnable {
     private Integer idPec;
     private Applicazione applicazione;
 
+    @Value("${mailbox.backup-orphan-message-folder}")
+    String BACKUP_ORPHAN_MESSAGE_FOLDER_NAME;
+
     @Autowired
     PecRepository pecRepository;
 
@@ -156,7 +159,7 @@ public class IMAPWorker implements Runnable {
             switch (pec.getMessagePolicy()) {
                 case (ApplicationConstant.MESSAGE_POLICY_BACKUP):
                     log.info("Message Policy della casella: BACKUP, sposta nella cartella di backup");
-                    imapManager.messageMover(tmp);
+                    imapManager.messageMover(tmp, null);
                     break;
 
                 case (ApplicationConstant.MESSAGE_POLICY_DELETE):
@@ -351,9 +354,9 @@ public class IMAPWorker implements Runnable {
             });
 
             if (!testMode) {
-                // le ricevute orfane si salvano sempre nella cartella di backup
+                // le ricevute orfane si salvano sempre nella cartella di backup apposita
                 for (MailMessage tmpMessage : messagesOrphans) {
-                    imapManager.messageMover(tmpMessage.getId());
+                    imapManager.messageMover(tmpMessage.getId(), BACKUP_ORPHAN_MESSAGE_FOLDER_NAME);
                 }
             }
 
