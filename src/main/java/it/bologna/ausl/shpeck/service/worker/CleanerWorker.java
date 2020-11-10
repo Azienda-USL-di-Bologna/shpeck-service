@@ -10,6 +10,7 @@ import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerException;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerInterruption;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.CleanerManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
@@ -169,12 +170,17 @@ public class CleanerWorker implements Runnable {
             outboxMessageToDelete = outboxRepository.findAllIdOutboxIgnoreTrue();
 
             for (Integer idOutbox : outboxMessageToDelete) {
+                log.info("id Outbox ---> " + idOutbox.toString());
+                
                 Message message = messageRepository.getMessageByIdOutbox(idOutbox);
-                if (message.getUuidMessage() != null && !message.getUuidMessage().equals("")
+                if (message != null && message.getUuidMessage() != null && !message.getUuidMessage().equals("")
                         && message.getUuidRepository() != null && !message.getUuidRepository().equals("")) {
                     log.info("elimino idOutbox: " + idOutbox + " relativo a idMessage: " + message.getId());
                     Outbox outbox = outboxRepository.findById(idOutbox).get();
                     outboxRepository.delete(outbox);
+                }
+                if (message==null){
+                    writeReportDiagnostica(new ShpeckServiceException("Nessun message trovato con id outbox "+idOutbox.toString()), null);
                 }
             }
         } catch (Throwable e) {
