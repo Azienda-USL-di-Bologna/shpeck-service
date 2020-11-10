@@ -10,6 +10,9 @@ import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -324,6 +327,68 @@ public class IMAPManager {
     }
 
     /**
+     * Recupera i messaggi dal provider, fino a una certa data
+     */
+    public ArrayList<MailMessage> getMessagesUntilDateByFolder(Integer daysAgo, String folderName) throws ShpeckServiceException, MessagingException {
+        log.info("getMessagesUntilDateByFolder");
+        ArrayList<MailMessage> mailMessages = new ArrayList<>();
+        try {
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+
+            log.info("Connesso al provider");
+            FetchProfile fetchProfile = getNewFetchProfile();
+
+            log.info("Setto la cartella " + folderName);
+            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(folderName);
+            if (inbox == null) {
+                log.error("FATAL: no INBOX");
+                System.exit(1);
+            }
+
+            // apertura della cartella in lettura/scrittura
+            inbox.open(Folder.READ_WRITE);
+
+            // calcollo giorni indietro
+            LocalDateTime localDate = LocalDateTime.now().minusDays(daysAgo);
+            // trasformazione LocalDateTime in Date
+            Date untilDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            log.info("Creazione parametro di ricerca");
+            SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, untilDate);
+
+            log.info("Lancio la ricerca");
+            Message[] messagesFromInbox = inbox.search(olderThan);
+
+            log.info("fetch messaggi...");
+            inbox.fetch(messagesFromInbox, fetchProfile);
+
+            log.info("length " + messagesFromInbox.length);
+            log.info("Ciclo... ");
+            for (int i = 0; i < messagesFromInbox.length; i++) {
+                MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                log.info("* \t * \t *");
+                log.info("UUID:\t " + m.getProviderUid());
+                log.info("SUBJECT:\t " + m.getSubject());
+                log.info("getReceiveDate " + m.getReceiveDate());
+                log.info("getSendDate " + m.getSendDate());
+                log.info("..............................");
+                mailMessages.add(m);
+            }
+            log.info("---FINE CICLAGGIO---");
+
+        } catch (Throwable e) {
+            log.error("errore durante il recupero dei messaggi da imap server (2-weeks range) " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server (2-weeks range) ", e);
+        }
+        // chiudi la connessione ma non rimuove i messaggi dal server
+        // close();
+        return mailMessages;
+    }
+
+    /**
      * Mi restituisce la data del numero di giorni fa passato come parametro.
      */
     public Date getTheseDaysAgoDate(Integer numberOfDays) {
@@ -380,17 +445,21 @@ public class IMAPManager {
         close();
     }
 
-    public void messageMover(ArrayList<MailMessage> mailMessages) throws ShpeckServiceException {
+    public void messageMover(ArrayList<MailMessage> mailMessages, String folderName) throws ShpeckServiceException {
         for (MailMessage mailMessage : mailMessages) {
-            messageMover(mailMessage.getId());
+            messageMover(mailMessage.getId(), folderName);
         }
     }
 
-    public void messageMover(String messageId) throws ShpeckServiceException {
-        messageMover(Arrays.asList(messageId));
+    public void messageMover(String messageId, String folderName) throws ShpeckServiceException {
+        messageMover(Arrays.asList(messageId), folderName);
     }
 
-    public void messageMover(List<String> list) throws ShpeckServiceException {
+    public void messageMover(List<String> list, String folderName) throws ShpeckServiceException {
+        if (folderName == null) {
+            folderName = BACKUP_FOLDER_NAME;
+        }
+
         if (list == null) {
             log.debug("lista di messaggi da spostare = null");
             return;
@@ -404,8 +473,8 @@ public class IMAPManager {
             if (!store.isConnected()) {
                 store.connect();
             }
-            createWorkingFolder(BACKUP_FOLDER_NAME);
-            messageMover(store, BACKUP_SOURCE_FOLDER, INBOX_FOLDER_NAME + "/" + BACKUP_FOLDER_NAME, list);
+            createWorkingFolder(folderName);
+            messageMover(store, BACKUP_SOURCE_FOLDER, INBOX_FOLDER_NAME + "/" + folderName, list);
         } catch (Exception e) {
             throw new ShpeckServiceException("Errore nel muovere i messaggi nella cartella di backup", e);
         }
@@ -528,6 +597,50 @@ public class IMAPManager {
         return false;
     }
 
+    public void deleteMessageFromFolder(String folderName, int daysAgo) throws ShpeckServiceException {
+        try {
+            log.info("Controllo se è connesso lo store.");
+            if (!store.isConnected()) {
+                log.info("Non è connesso: lo connetto.");
+                this.store.connect();
+            }
+            // apertura cartella
+            log.info("Prendo la casella");
+            Folder folder = this.store.getFolder(INBOX_FOLDER_NAME + "/" + folderName);
+            if (folder == null) {
+                log.error("cartella " + folderName + " non presente");
+                System.exit(1);
+            }
+            log.info("Apro la casella");
+            folder.open(Folder.READ_WRITE);
+
+            // calcollo giorni indietro
+            //LocalDateTime localDate = LocalDateTime.now().minusDays(daysAgo);
+            // trasformazione LocalDateTime in Date
+            //Date untilDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo);
+            Date untilDate = calendar.getTime();
+
+            log.info("Creazione parametro di ricerca");
+            SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, untilDate);
+
+            log.info("Lancio la ricerca");
+            Message[] tmpmess = folder.search(olderThan);
+            log.info("Dimensioni array: " + tmpmess.length);
+
+            log.info("Ciclo il contentuto");
+            for (int i = 0; i < tmpmess.length; i++) {
+                tmpmess[i].setFlag(Flags.Flag.DELETED, true);
+            }
+            log.info("messaggi impostati per la cancellazione");
+            folder.close(true);
+        } catch (Exception e) {
+            throw new ShpeckServiceException("errore: ", e);
+        }
+    }
+
     // aggiorna la pec con campo uid dell'ultima mail analizzata
     public Pec updateLastUID(Pec pec) {
         log.info("salvataggio lastUID nella PEC...");
@@ -554,6 +667,97 @@ public class IMAPManager {
         pec = pecRepository.save(pec);
         log.info("salvataggio lastUID -> OK");
         return pec;
+    }
+
+    public ArrayList<MailMessage> getMessagesFromFolder(String folder) throws ShpeckServiceException {
+        log.info("Faccio getMessages dal provider... ");
+        ArrayList<MailMessage> mailMessages = new ArrayList<>();
+
+        try {
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+
+            log.info("Get FetchProfile...");
+            FetchProfile fetchProfile = getNewFetchProfile();
+
+            log.info("Setto la folder dello store");
+            inbox = (IMAPFolder) this.store.getFolder(folder);
+            if (inbox == null) {
+                log.error("FATAL: no INBOX");
+                System.exit(1);
+            }
+
+            // apertura della cartella in lettura/scrittura
+            log.info("Apro la folder");
+            inbox.open(Folder.READ_WRITE);
+
+            // ottieni i messaggi dal server
+            log.info("Prendo i messaggi");
+            Message[] messagesFromInbox = inbox.getMessagesByUID(1, getLastUIDToConsider());
+
+            log.info("Fetching dei messaggi");
+            inbox.fetch(messagesFromInbox, fetchProfile);
+
+            for (int i = 0; i < messagesFromInbox.length; i++) {
+                String reportFrom = null;
+                String reportTo = null;
+                String reportSubject = null;
+                String reportDate = null;
+                String reportMessageID = null;
+
+                /**
+                 * tratto ogni messaggio in maniera consistente; se si rompe la
+                 * coastruzione di un messaggio, passo al successivo in modo
+                 * tale da non creare colli di bottiglia
+                 */
+                try {
+                    MailMessage m = new MailMessage((MimeMessage) messagesFromInbox[i]);
+                    reportMessageID = m.getId();
+                    m.setProviderUid(inbox.getUID(messagesFromInbox[i]));
+                    mailMessages.add(m);
+                    if (inbox.getUID(messagesFromInbox[i]) > lastUID) {
+                        lastUID = inbox.getUID(messagesFromInbox[i]);
+                        log.debug("lastUID: " + lastUID);
+                    }
+                } catch (Throwable e) {
+                    try {
+                        MimeMessage mm = (MimeMessage) messagesFromInbox[i];
+                        reportFrom = mm.getFrom()[0].toString();
+                        if (mm.getRecipients(Message.RecipientType.TO) != null) {
+                            reportTo = mm.getRecipients(Message.RecipientType.TO)[0].toString();
+                        }
+                        reportSubject = mm.getSubject();
+                        reportDate = mm.getSentDate().toString();
+                    } catch (Throwable t) {
+                        log.error("Attenzione, non sono riuscito a recuperare tutti i dati per il report");
+                    }
+
+                    // creazione messaggio di errore
+                    JSONObject json = new JSONObject();
+                    json.put("Mailbox", this.mailbox);
+                    if (reportMessageID != null) {
+                        json.put("messageID", reportMessageID);
+                    }
+                    json.put("From", reportFrom);
+                    json.put("To", reportTo);
+                    json.put("Subject", reportSubject);
+                    json.put("Date", reportDate);
+                    json.put("lastUID", String.valueOf(lastUID));
+                    json.put("Exception", e.toString());
+                    json.put("ExceptionMessage", e.getMessage());
+
+                    diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_BUILD_MESSAGE_FROM_FOLDER", json);
+                }
+            }
+
+            // chiudi la connessione ma non rimuove i messaggi dal server
+            return mailMessages;
+
+        } catch (Throwable e) {
+            log.error("errore durante il recupero dei messaggi da imap server " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero dei messaggi da imap server ", e);
+        }
     }
 
     public void enqueueForUpload(it.bologna.ausl.model.entities.shpeck.Message message) {

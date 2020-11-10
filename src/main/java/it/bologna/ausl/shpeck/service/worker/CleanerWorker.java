@@ -6,11 +6,14 @@
 package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerException;
 import it.bologna.ausl.shpeck.service.exceptions.CleanerWorkerInterruption;
+import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.manager.CleanerManager;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
+import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import java.util.ArrayList;
@@ -38,6 +41,9 @@ public class CleanerWorker implements Runnable {
 
     @Autowired
     UploadQueueRepository uploadQueueRepository;
+
+    @Autowired
+    OutboxRepository outboxRepository;
 
     @Autowired
     CleanerManager cleanerManager;
@@ -154,7 +160,35 @@ public class CleanerWorker implements Runnable {
             writeReportDiagnostica(e, null);
             throw e;
         }
+    }
 
+    public void spazzinoOutbox() throws Throwable {
+        try {
+            // carica outbox
+            log.info("ottieni outbox con ignore a true");
+            List<Integer> outboxMessageToDelete = new ArrayList<>();
+            outboxMessageToDelete = outboxRepository.findAllIdOutboxIgnoreTrue();
+
+            for (Integer idOutbox : outboxMessageToDelete) {
+                log.info("id Outbox ---> " + idOutbox.toString());
+                
+                Message message = messageRepository.getMessageByIdOutbox(idOutbox);
+                if (message != null && message.getUuidMessage() != null && !message.getUuidMessage().equals("")
+                        && message.getUuidRepository() != null && !message.getUuidRepository().equals("")) {
+                    log.info("elimino idOutbox: " + idOutbox + " relativo a idMessage: " + message.getId());
+                    Outbox outbox = outboxRepository.findById(idOutbox).get();
+                    outboxRepository.delete(outbox);
+                }
+                if (message==null){
+                    writeReportDiagnostica(new ShpeckServiceException("Nessun message trovato con id outbox "+idOutbox.toString()), null);
+                }
+            }
+        } catch (Throwable e) {
+            log.error("Catchato ERRORACCIO in spazzinoOutbox " + e.toString());
+            log.error(e.getMessage());
+            writeReportDiagnostica(e, null);
+            throw e;
+        }
     }
 
     public void doWork() {
@@ -164,6 +198,7 @@ public class CleanerWorker implements Runnable {
 
             // spazziono uploadqueue
             spazzinoUploadQueue();
+            spazzinoOutbox();
 
         } catch (Throwable e) {
             log.error("ERRORE NEL DOWORK ", e);

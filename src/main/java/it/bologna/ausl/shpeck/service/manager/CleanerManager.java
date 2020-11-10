@@ -120,19 +120,15 @@ public class CleanerManager {
             }
 
             // se il messaggio è in uscita (OUT) allora devo cancellare l'outbox
-            if (m.getInOut() == Message.InOut.OUT) {
-                log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
-                tuttoOK = deleteOutboxRow(m);
-            }
-
-            if (!tuttoOK) {
-                log.info("C'è stato un problema con la cancellazione dell'outbox " + m.getIdOutbox());
-                throw new Throwable("Errore nel cancellamento dell'outbox con id = " + m.getIdOutbox());
-            } else if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && uq.getName().equals(m.getName())) {
+//            if (m.getInOut() == Message.InOut.OUT) {
+//                log.info("Ho trovato che questo message è in uscita, quindi carico l'outbox");
+//                tuttoOK = deleteOutboxRow(m);
+//            }
+            if (uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && uq.getName().equals(m.getName())) {
                 log.info("Sto per cancelare la riga di raw message " + rm.getId());
                 rawMessageRepository.delete(rm);
                 log.info("Ho cancelato la riga!!");
-            } else if (tuttoOK && uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && !uq.getName().equals(m.getName())) {
+            } else if (uq.getUuid().equals(m.getUuidRepository()) && uq.getPath().equals(m.getPathRepository()) && !uq.getName().equals(m.getName())) {
                 log.info("inserisco il nome del file su mongo nel record di messages");
                 Optional<Message> tmp = messageRepository.findById(m.getId());
                 if (tmp.isPresent()) {
@@ -143,7 +139,6 @@ public class CleanerManager {
                     log.info(" uq.getUuid().equals(m.getUuidRepository()) " + uq.getUuid().equals(resMessage.getUuidRepository()));
                     log.info(" uq.getPath().equals(m.getPathRepository()) " + uq.getPath().equals(resMessage.getPathRepository()));
                     log.info(" uq.getName().equals(m.getName()) " + uq.getName().equals(resMessage.getName()));
-                    tuttoOK = true;
                 } else {
                     log.info("Non posso cancellare il raw message " + rm.getId());
                     log.info(" uq.getUuid().equals(m.getUuidRepository()) " + uq.getUuid().equals(m.getUuidRepository()));
