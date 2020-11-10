@@ -33,13 +33,37 @@ public class Diagnostica {
 
         // guarda che il messaggio non sia stato inserito
         String messageID = (String) json.get("messageID");
-
+        Integer idOutbox = (Integer) json.get("idOutbox");
+        Integer idUploadQueue = (Integer) json.get("id_upload_queue");
+        
         if (messageID != null) {
             List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
                 String mid = (String) additionalData.get("messageID");
                 if (mid != null && MessageBuilder.getClearMessageID(mid).equalsIgnoreCase(messageID)) {
+                    log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
+                    isAlreadyInserted = true;
+                    break;
+                }
+            }
+        }else if (idOutbox != null) {
+            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
+            for (Report report : list) {
+                JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
+                Integer mid = (Integer) additionalData.get("idOutbox");
+                if (mid != null && mid.equals(idOutbox)) {
+                    log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
+                    isAlreadyInserted = true;
+                    break;
+                }
+            }
+        }else if (idUploadQueue != null) {
+            List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
+            for (Report report : list) {
+                JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
+                Integer mid = (Integer) additionalData.get("id_upload_queue");
+                if (mid != null && mid.equals(idUploadQueue)) {
                     log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
                     isAlreadyInserted = true;
                     break;
