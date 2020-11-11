@@ -180,7 +180,7 @@ public class CleanerWorker implements Runnable {
                     outboxRepository.delete(outbox);
                 }
                 if (message==null){
-                    writeReportDiagnostica(new ShpeckServiceException("Nessun message trovato con id outbox "+idOutbox.toString()), null);
+                    writeReportDiagnosticaOutbox(new ShpeckServiceException("Nessun message trovato con id outbox "+idOutbox.toString()), idOutbox);
                 }
             }
         } catch (Throwable e) {
@@ -226,6 +226,18 @@ public class CleanerWorker implements Runnable {
         JSONObject json = new JSONObject();
         if (idUploadQueue != null) {
             json.put("id_upload_queue", idUploadQueue.toString());
+        }
+        json.put("Exception", e.toString());
+        json.put("ExceptionMessage", e.getMessage());
+
+        diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_CLEANER_WORKER", json);
+    }
+    
+    private void writeReportDiagnosticaOutbox(Throwable e, Integer idOutbox) {
+        // creazione messaggio di errore
+        JSONObject json = new JSONObject();
+        if (idOutbox != null) {
+            json.put("idOutbox", idOutbox.toString());
         }
         json.put("Exception", e.toString());
         json.put("ExceptionMessage", e.getMessage());
