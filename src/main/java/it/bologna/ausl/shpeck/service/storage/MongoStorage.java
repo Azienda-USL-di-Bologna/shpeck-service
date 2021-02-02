@@ -12,9 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.logging.Level;
 import java.util.Map;
-import java.util.logging.Logger;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
@@ -110,8 +108,6 @@ public class MongoStorage implements StorageStrategy {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex);
         } catch (IOException e) {
             throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
-        } catch (MongoWrapperException e) {
-            throw new ShpeckServiceException("Errore nell'inizializzazione del Repository", e);
         }
 
         return objectToUpload;
