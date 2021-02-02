@@ -628,7 +628,7 @@ public class IMAPManager {
             LocalDateTime localDateTime = currentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
             // plus one
-            localDateTime = localDateTime.minusDays(179);
+            localDateTime = localDateTime.minusDays(daysAgo);
 
             // convert LocalDateTime to date
             Date untilDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
