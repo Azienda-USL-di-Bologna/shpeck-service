@@ -1,5 +1,6 @@
 package it.bologna.ausl.shpeck.service.storage;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.logging.Level;
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -31,6 +33,22 @@ public class MongoStorage implements StorageStrategy {
     public MongoStorage(String mongouri, String folderPath) throws UnknownHostException, MongoWrapperException {
         mongo = new MongoWrapper(mongouri);
         this.folderPath = folderPath;
+    }
+
+    public MongoStorage(String mongouri, String folderPath,
+            Map<String, Object> minIOConfigurationObject,
+            ObjectMapper om,
+            String codiceAzienda) throws UnknownHostException, MongoWrapperException {
+        mongo = MongoWrapper.getWrapper((Boolean) minIOConfigurationObject.get("active"),
+                mongouri, (String) minIOConfigurationObject.get("DBDriver"),
+                (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
+                (String) minIOConfigurationObject.get("DBPassword"), codiceAzienda, om);
+        //mongo = new MongoWrapper(mongouri);
+        this.folderPath = folderPath;
+    }
+
+    public void setMongo(MongoWrapper mongo) {
+        this.mongo = mongo;
     }
 
     @Override
@@ -92,6 +110,8 @@ public class MongoStorage implements StorageStrategy {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex);
         } catch (IOException e) {
             throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
+        } catch (MongoWrapperException e) {
+            throw new ShpeckServiceException("Errore nell'inizializzazione del Repository", e);
         }
 
         return objectToUpload;

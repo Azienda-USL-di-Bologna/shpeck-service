@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.manager;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
+import com.sun.mail.imap.OlderTerm;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
@@ -28,6 +29,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.search.AndTerm;
 import javax.mail.search.ComparisonTerm;
+import javax.mail.search.OrTerm;
 import javax.mail.search.ReceivedDateTerm;
 import javax.mail.search.SearchTerm;
 import org.json.simple.JSONObject;
@@ -606,7 +608,7 @@ public class IMAPManager {
             }
             // apertura cartella
             log.info("Prendo la casella");
-            Folder folder = this.store.getFolder(INBOX_FOLDER_NAME + "/" + folderName);
+            IMAPFolder folder = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME + "/" + folderName);
             if (folder == null) {
                 log.error("cartella " + folderName + " non presente");
                 System.exit(1);
@@ -615,13 +617,21 @@ public class IMAPManager {
             folder.open(Folder.READ_WRITE);
 
             // calcollo giorni indietro
-            //LocalDateTime localDate = LocalDateTime.now().minusDays(daysAgo);
-            // trasformazione LocalDateTime in Date
-            //Date untilDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(new Date());
-            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo);
-            Date untilDate = calendar.getTime();
+//            Calendar calendar = Calendar.getInstance();
+//            calendar.setTime(new Date());
+//            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo);
+//            Date untilDate = calendar.getTime();
+            // Get current date
+            Date currentDate = new Date();
+
+            // convert date to localdatetime
+            LocalDateTime localDateTime = currentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+            // plus one
+            localDateTime = localDateTime.minusDays(daysAgo);
+
+            // convert LocalDateTime to date
+            Date untilDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
 
             log.info("Creazione parametro di ricerca");
             SearchTerm olderThan = new ReceivedDateTerm(ComparisonTerm.LT, untilDate);

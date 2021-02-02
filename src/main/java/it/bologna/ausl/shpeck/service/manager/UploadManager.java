@@ -1,10 +1,13 @@
 package it.bologna.ausl.shpeck.service.manager;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
+import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.configuration.ParametroAziende;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
+import it.bologna.ausl.shpeck.service.factory.MongoStorageFactory;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.storage.MongoStorage;
@@ -18,8 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import it.bologna.ausl.shpeck.service.repository.ParametroAziendeRepository;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 
 /**
  *
@@ -40,6 +45,9 @@ public class UploadManager {
     MessageRepository messageRepository;
 
     @Autowired
+    ParametroAziendeRepository parametroAziendaRepository;
+
+    @Autowired
     UploadQueueRepository uploadQueueRepository;
 
     @Value("${mailbox.inbox-folder}")
@@ -49,21 +57,43 @@ public class UploadManager {
     Semaphore messageSemaphore;
 
     @Autowired
+    MongoStorageFactory mongoStorageFactory;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private Map<String, Object> getMinIOConfigurationObject(Integer idAzienda) throws IOException, ShpeckServiceException {
+        Map<String, Object> minIOConfigMap = null;
+        ArrayList<ParametroAziende> minIOParametroAziendeListByIdAzienda = parametroAziendaRepository.getMinIOParametroAziendeListByIdAzienda(idAzienda);
+        if (minIOParametroAziendeListByIdAzienda != null && minIOParametroAziendeListByIdAzienda.size() == 1) {
+            for (ParametroAziende parametroAziende : minIOParametroAziendeListByIdAzienda) {
+                minIOConfigMap = objectMapper.readValue(parametroAziende.getValore(), new TypeReference<Map<String, Object>>() {
+                });
+            }
+        } else {
+            throw new ShpeckServiceException("Parametro minIOConfig non trovato o doppio per azienda " + idAzienda);
+        }
+        return minIOConfigMap;
+    }
 
     //@Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
         try {
             log.info("Entrato in manage con id su upload_queue: " + messageToStore.getId() + " carico i parametri azienda");
             // ottieni parametri di mongo di un specifico ambiente guardando l'azienda associata alla pec
-            AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());
-
-            log.info("aziendaParams " + aziendaParams.toString());
-            AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
-
-            log.info("setto lo storageStrategy");
-            // inizializzazione del context storage
-            storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot()));
+//            AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getParametri());
+//
+//            log.info("aziendaParams " + aziendaParams.toString());
+//            AziendaParametriJson.MongoParams mongoParams = aziendaParams.getMongoParams();
+//
+//            Map<String, Object> minIOConfigurationObject = getMinIOConfigurationObject(messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getId());
+//
+//            log.info("setto lo storageStrategy");
+//            // inizializzazione del context storage
+//            storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot(), minIOConfigurationObject, objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getCodice()));
+            Azienda azienda = messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository();
+            MongoStorage mongoStorage = mongoStorageFactory.getMongoStorageByAzienda(azienda);
+            storageContext.setStorageStrategy(mongoStorage);
 
             log.info("Fatto lo store del message");
             // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
