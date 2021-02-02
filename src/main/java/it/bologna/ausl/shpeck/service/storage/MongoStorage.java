@@ -11,6 +11,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
@@ -61,10 +63,10 @@ public class MongoStorage implements StorageStrategy {
 
             if (mimeMessage.getSentDate() != null) {
                 SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
-                String asGmt="";
+                String asGmt = "";
                 try {
-                    asGmt = df.format(MailMessage.getSendDateInGMT(mimeMessage)) + " GMT"; 
-                    
+                    asGmt = df.format(MailMessage.getSendDateInGMT(mimeMessage)) + " GMT";
+
                 } catch (Exception e) {
                     asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
                 }
@@ -86,6 +88,8 @@ public class MongoStorage implements StorageStrategy {
 
         } catch (MessagingException e) {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
+        } catch (MongoWrapperException ex) {
+            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex);
         } catch (IOException e) {
             throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
         }
