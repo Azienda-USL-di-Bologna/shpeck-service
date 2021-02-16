@@ -155,6 +155,48 @@ public class IMAPManager {
     }
 
     /**
+     * *
+     * Ottiene tutte le cartelle presenti nella casella del provider
+     *
+     * @return array di Folder
+     * @throws ShpeckServiceException
+     */
+    public Folder[] getFolders() throws ShpeckServiceException {
+        try {
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+
+            return store.getDefaultFolder().list();
+
+        } catch (Throwable e) {
+            log.error("errore durante il recupero delle folder da imap server " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero delle folder da imap server ", e);
+        }
+    }
+
+    /**
+     * *
+     * Ottiene la cartella di default della casella del provider
+     *
+     * @return array di Folder
+     * @throws ShpeckServiceException
+     */
+    public Folder getDefaultFolder() throws ShpeckServiceException {
+        try {
+            if (store == null || !store.isConnected()) {
+                this.store.connect();
+            }
+
+            return store.getDefaultFolder();
+
+        } catch (Throwable e) {
+            log.error("errore durante il recupero della folder di default da imap server " + store.getURLName().toString(), e);
+            throw new ShpeckServiceException("errore durante il recupero della folder di default da imap server ", e);
+        }
+    }
+
+    /**
      * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
      *
      * @return messaggi presenti in inbox

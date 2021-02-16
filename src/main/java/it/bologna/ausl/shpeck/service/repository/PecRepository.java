@@ -16,4 +16,6 @@ public interface PecRepository extends JpaRepository<Pec, Integer> {
     ArrayList<Pec> findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
     ArrayList<Pec> findByAttivaTrueAndIdAziendaRepositoryNotNullAndMessagePolicy(int policy);
+
+    ArrayList<Pec> findByAttivaTrueAndIdAziendaRepositoryNotNullAndImportaCasellaTrue();
 }

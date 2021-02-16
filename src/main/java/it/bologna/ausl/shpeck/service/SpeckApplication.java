@@ -13,6 +13,7 @@ import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerBackupWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.ImportWorker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,6 +146,9 @@ public class SpeckApplication {
 
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
+
+                avviaImportWorker();
+
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -274,6 +278,21 @@ public class SpeckApplication {
         cleanerBackupWorker.setThreadName("cleanerBackupWorker");
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerBackupWorker, 0, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerBackupWorker.getThreadName() + " schedulato correttamente");
+    }
+
+    public void avviaImportWorker() {
+        log.info("creazione degli ImportWorker sulle caselle che necessitano importazione");
+        // prendi le caselle attive che devono essere importate
+        ArrayList<Pec> list = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNullAndImportaCasellaTrue();
+//        DEBUG: ArrayList<Pec> list = new ArrayList<>(); list.add(pecRepository.findById(ID).get());
+        for (int i = 0; i < list.size(); i++) {
+            ImportWorker importWorker = beanFactory.getBean(ImportWorker.class);
+            importWorker.setThreadName("IMPORT_" + list.get(i).getIndirizzo());
+            importWorker.setIdPec(list.get(i).getId());
+            scheduledThreadPoolExecutor.schedule(importWorker, i + 5, TimeUnit.SECONDS);
+            log.info(importWorker.getThreadName() + " su PEC " + list.get(i).getIndirizzo() + " schedulato correttamente");
+        }
+        log.info("creazione degli ImportWorker eseguita con successo");
     }
 
 }
