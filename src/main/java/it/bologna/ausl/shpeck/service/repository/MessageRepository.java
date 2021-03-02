@@ -2,7 +2,9 @@ package it.bologna.ausl.shpeck.service.repository;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.MessageWithPlainFields;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -62,4 +64,10 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     @Query(value = "select * from shpeck.messages where id_outbox = ?1 order by id desc limit 1", nativeQuery = true)
     public Message getMessageByIdOutbox(Integer idOutbox);
 
-}
+    @Query(value = "select id from shpeck.messages where in_out = 'OUT' and message_status not in ('CONFIRMED', 'ACCEPTED') and update_time > (current_date - 1)", nativeQuery = true)
+    public ArrayList<Integer> getCurrentMessagesError();
+    
+    @Query(value = "select * from shpeck.messages m where id_related  = ?1 and message_type = 'RECEPIT'", nativeQuery = true)
+    public ArrayList<Recepit> getAllRecepitError(Integer id);
+    
+}   

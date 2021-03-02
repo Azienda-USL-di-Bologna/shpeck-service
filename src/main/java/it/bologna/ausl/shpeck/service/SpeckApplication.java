@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.repository.AziendaRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
+import it.bologna.ausl.shpeck.service.worker.CheckerRecepitWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerBackupWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
@@ -122,32 +123,33 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 log.info("Creo e schedulo l'Upload Worker");
-                faiGliUploadWorker();
+                //faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
+                //ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
 //                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
-//                ArrayList<Pec> pecAttive = new ArrayList<>();
-//                pecAttive.add(pecRepository.findById(494).get());
+                ArrayList<Pec> pecAttive = new ArrayList<>();
+                pecAttive.add(pecRepository.findById(1502).get());
 //                log.info("Pec attive #: " + pecAttive.size());
-                if (testMode) {
-                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
-                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
-                }
+//                if (testMode) {
+//                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
+//                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
+//                }
 
-                if (cleanerAttivo) {
-                    log.info("Schedulo e accodo il CleanerWorker");
-                    accodaCleanerWorker();
-                    log.info("Schedulo e accodo il CleanerBackupWorker");
-                    accodaCleanerBackupWorker();
-                }
+//                if (cleanerAttivo) {
+//                    log.info("Schedulo e accodo il CleanerWorker");
+//                    accodaCleanerWorker();
+//                    log.info("Schedulo e accodo il CleanerBackupWorker");
+//                    accodaCleanerBackupWorker();
+//                }
 
-                faiGliImapWorker(pecAttive, applicazione);
-                faiGliSMTPWorker(pecAttive);
+                //faiGliImapWorker(pecAttive, applicazione);
+                //faiGliSMTPWorker(pecAttive);
+                accodaCheckerRecepitWorker();
 
-                avviaImportWorker();
+                //avviaImportWorker();
 
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
@@ -271,6 +273,15 @@ public class SpeckApplication {
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
+    
+    public void accodaCheckerRecepitWorker() {
+        log.info("Creazione e schedulazione del worker di checker delle ricevute (CheckerRecepitWorker)");
+        CheckerRecepitWorker checkerWorker = beanFactory.getBean(CheckerRecepitWorker.class);
+        checkerWorker.setThreadName("checkerRecepitWorker");
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(checkerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        log.info(checkerWorker.getThreadName() + " schedulato correttamente");
+    }
+
 
     public void accodaCleanerBackupWorker() {
         log.info("Creazione e schedulazione del worker di pulizia della cartella di Backup");
