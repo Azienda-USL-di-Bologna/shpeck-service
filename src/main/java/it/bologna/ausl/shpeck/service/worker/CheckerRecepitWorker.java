@@ -63,7 +63,7 @@ public class CheckerRecepitWorker implements Runnable {
 
     private ArrayList<Integer> errorMessageIds;
 
-    private ArrayList<Recepit> recepitList;
+    private ArrayList<Integer> recepitList;
 
     public void setThreadName(String s) {
         threadName = s;
@@ -82,18 +82,33 @@ public class CheckerRecepitWorker implements Runnable {
             Integer tempId = errorMessageIds.get(i);
 
             recepitList = messageRepository.getAllRecepitError(tempId);
+            
+            if (recepitList.isEmpty()) {
+
+                JSONObject json = new JSONObject();
+
+                log.info("Son entrato nel caso da segnalare");
+                
+                json.put("Id messaggio senza ricevuta d'accettazione: ", tempId.toString());
+
+                diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);
+            }
+            
+            //log.info(recepitList.toString());
         }
 
         for (int i = 0; i < recepitList.size(); i++) {
 
-            Integer tempId = recepitList.get(i).getId();
+            Integer tempId = recepitList.get(i);
 
-            ResultSet r = recepitRepository.getRecepitAccettazione(tempId);
+            ArrayList<Integer> r = recepitRepository.getRecepitAccettazione(tempId);
 
-            if (!(r.next())) {
+            if (r.isEmpty()) {
 
                 JSONObject json = new JSONObject();
 
+                log.info("Son entrato nel caso da segnalare");
+                
                 json.put("Id messaggio senza ricevuta d'accettazione: ", tempId.toString());
 
                 diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);

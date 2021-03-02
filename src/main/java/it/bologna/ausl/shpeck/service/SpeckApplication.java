@@ -123,33 +123,33 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 log.info("Creo e schedulo l'Upload Worker");
-                //faiGliUploadWorker();
+                faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                //ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
+                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
 //                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
-                ArrayList<Pec> pecAttive = new ArrayList<>();
-                pecAttive.add(pecRepository.findById(1502).get());
-//                log.info("Pec attive #: " + pecAttive.size());
-//                if (testMode) {
-//                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
-//                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
-//                }
+                //ArrayList<Pec> pecAttive = new ArrayList<>();
+                //pecAttive.add(pecRepository.findById(1502).get());
+                log.info("Pec attive #: " + pecAttive.size());
+                if (testMode) {
+                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
+                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
+                }
 
-//                if (cleanerAttivo) {
-//                    log.info("Schedulo e accodo il CleanerWorker");
-//                    accodaCleanerWorker();
-//                    log.info("Schedulo e accodo il CleanerBackupWorker");
-//                    accodaCleanerBackupWorker();
-//                }
+               if (cleanerAttivo) {
+                   log.info("Schedulo e accodo il CleanerWorker");
+                   accodaCleanerWorker();
+                   log.info("Schedulo e accodo il CleanerBackupWorker");
+                   accodaCleanerBackupWorker();
+                }
 
-                //faiGliImapWorker(pecAttive, applicazione);
-                //faiGliSMTPWorker(pecAttive);
+                faiGliImapWorker(pecAttive, applicazione);
+                faiGliSMTPWorker(pecAttive);
                 accodaCheckerRecepitWorker();
 
-                //avviaImportWorker();
+                avviaImportWorker();
 
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
