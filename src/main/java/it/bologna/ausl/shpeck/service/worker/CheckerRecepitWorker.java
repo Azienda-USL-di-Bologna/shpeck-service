@@ -40,8 +40,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-public class CheckerRecepitWorker implements Runnable{
-    
+public class CheckerRecepitWorker implements Runnable {
+
     private static final Logger log = LoggerFactory.getLogger(CleanerWorker.class);
 
     @Autowired
@@ -54,53 +54,53 @@ public class CheckerRecepitWorker implements Runnable{
     RecepitRepository recepitRepository;
 
     @Value("${test-mode}")
-    Boolean testMode;    
-    
+    Boolean testMode;
+
+    public CheckerRecepitWorker() {
+    }
+
     private String threadName;
-    
-    private ArrayList<Integer> errorMessageIds = messageRepository.getCurrentMessagesError();
-    
+
+    private ArrayList<Integer> errorMessageIds;
+
     private ArrayList<Recepit> recepitList;
-    
+
     public void setThreadName(String s) {
         threadName = s;
     }
-    
+
     public String getThreadName() {
         return threadName;
     }
 
-    public CheckerRecepitWorker() {
-    }
-    
-
-    
     public void doWork() throws SQLException {
-        
-        for(int i=0; i < errorMessageIds.size(); i++) {
-            
+
+        errorMessageIds = messageRepository.getCurrentMessagesError();
+
+        for (int i = 0; i < errorMessageIds.size(); i++) {
+
             Integer tempId = errorMessageIds.get(i);
-            
+
             recepitList = messageRepository.getAllRecepitError(tempId);
         }
-    
-        for(int i=0; i < recepitList.size(); i++) {
-            
+
+        for (int i = 0; i < recepitList.size(); i++) {
+
             Integer tempId = recepitList.get(i).getId();
-            
+
             ResultSet r = recepitRepository.getRecepitAccettazione(tempId);
 
-            if(!(r.next())) {
-                
+            if (!(r.next())) {
+
                 JSONObject json = new JSONObject();
-                
+
                 json.put("Id messaggio senza ricevuta d'accettazione: ", tempId.toString());
-                   
-                diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);         
+
+                diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);
             }
-        }       
+        }
     }
-    
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
@@ -114,5 +114,5 @@ public class CheckerRecepitWorker implements Runnable{
         }
         MDC.remove("logFileName");
     }
- 
+
 }
