@@ -64,10 +64,10 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     @Query(value = "select * from shpeck.messages where id_outbox = ?1 order by id desc limit 1", nativeQuery = true)
     public Message getMessageByIdOutbox(Integer idOutbox);
 
-    @Query(value = "select id from shpeck.messages where in_out = 'OUT' and message_status not in ('CONFIRMED', 'ACCEPTED') and update_time > (current_date - 1)", nativeQuery = true)
+    @Query(value = "select cast (id as int) id from shpeck.messages where in_out = 'OUT' and message_status not in ('CONFIRMED', 'ACCEPTED') and (DATE_PART('day', current_date - update_time) * 24 + DATE_PART('hour', current_date - update_time) <= 3)", nativeQuery = true)
     public ArrayList<Integer> getCurrentMessagesError();
     
-    @Query(value = "select * from shpeck.messages m where id_related  = ?1 and message_type = 'RECEPIT'", nativeQuery = true)
-    public ArrayList<Recepit> getAllRecepitError(Integer id);
+    @Query(value = "select cast (id as int) id from shpeck.messages m where id_related  = ?1 and message_type = 'RECEPIT'", nativeQuery = true)
+    public ArrayList<Integer> getAllRecepitError(Integer id);
     
 }   
