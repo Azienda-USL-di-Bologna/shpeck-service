@@ -68,7 +68,6 @@ public class IMAPManager {
 
     @Value("${mailbox.inbox-folder}")
     String INBOX_FOLDER_NAME;
-
     @Value("${mailbox.backup-source-folder}")
     String BACKUP_SOURCE_FOLDER;
 
@@ -202,7 +201,7 @@ public class IMAPManager {
      * @return messaggi presenti in inbox
      * @throws ShpeckServiceException
      */
-    public ArrayList<MailMessage> getMessages() throws ShpeckServiceException {
+    public ArrayList<MailMessage> getMessages(String folder) throws ShpeckServiceException {
         log.info("Faccio getMessages dal provider... ");
         ArrayList<MailMessage> mailMessages = new ArrayList<>();
 
@@ -220,7 +219,7 @@ public class IMAPManager {
 
             log.info("Setto la inbox dello store");
 //            IMAPFolder inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
-            inbox = (IMAPFolder) this.store.getFolder(INBOX_FOLDER_NAME);
+            inbox = (IMAPFolder) this.store.getFolder(folder);
             if (inbox == null) {
                 log.error("FATAL: no INBOX");
                 //TODO: da vedere se va bene System.exit
