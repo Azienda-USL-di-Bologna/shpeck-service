@@ -99,7 +99,7 @@ public class SpeckApplication {
     @Value("${days-back-spazzino}")
     Integer daysBackSpazzino;
 
-    @Value("{mail.upload.number-of-threads}")
+    @Value("${mail.upload.number-of-threads}")
     Integer numberOfThreads;
 
     @Autowired
@@ -235,7 +235,7 @@ public class SpeckApplication {
             UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
             uploadWorker.setThreadName("uploadWorker" + i);
             uploadWorker.setIdentifier(i);
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, i * 3, TimeUnit.SECONDS);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, i + 3, 5, TimeUnit.SECONDS);
         }
         log.info("creazione degli UploadWorker eseguita con successo");
 

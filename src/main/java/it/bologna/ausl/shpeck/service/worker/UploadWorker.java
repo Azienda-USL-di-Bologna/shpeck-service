@@ -63,7 +63,7 @@ public class UploadWorker implements Runnable {
     @Autowired
     UploadManager uploadManager;
 
-    @Value("{mail.upload.number-of-threads}")
+    @Value("${mail.upload.number-of-threads}")
     Integer numberOfThreads;
 
     public UploadWorker() {
