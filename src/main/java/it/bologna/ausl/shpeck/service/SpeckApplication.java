@@ -99,6 +99,9 @@ public class SpeckApplication {
     @Value("${days-back-spazzino}")
     Integer daysBackSpazzino;
 
+    @Value("{mail.upload.number-of-threads}")
+    Integer numberOfThreads;
+
     @Autowired
     MessageRepository messageRepository;
 
@@ -138,11 +141,11 @@ public class SpeckApplication {
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
                 }
 
-               if (cleanerAttivo) {
-                   log.info("Schedulo e accodo il CleanerWorker");
-                   accodaCleanerWorker();
-                   log.info("Schedulo e accodo il CleanerBackupWorker");
-                   accodaCleanerBackupWorker();
+                if (cleanerAttivo) {
+                    log.info("Schedulo e accodo il CleanerWorker");
+                    accodaCleanerWorker();
+                    log.info("Schedulo e accodo il CleanerBackupWorker");
+                    accodaCleanerBackupWorker();
                 }
 
                 faiGliImapWorker(pecAttive, applicazione);
@@ -228,10 +231,13 @@ public class SpeckApplication {
     public void faiGliUploadWorker() {
         log.info("Creo l'uploadWorker");
 
-        UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
-        uploadWorker.setThreadName("uploadWorker");
-        scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
-        log.info(uploadWorker.getThreadName() + " schedulato correttamente");
+        for (int i = 0; i < numberOfThreads; i++) {
+            UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
+            uploadWorker.setThreadName("uploadWorker" + i);
+            uploadWorker.setIdentifier(i);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, i * 3, TimeUnit.SECONDS);
+        }
+        log.info("creazione degli UploadWorker eseguita con successo");
 
         log.info("Creo CheckUploadedRepositoryWorker");
         CheckUploadedRepositoryWorker c = beanFactory.getBean(CheckUploadedRepositoryWorker.class);
@@ -273,7 +279,7 @@ public class SpeckApplication {
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
-    
+
     public void accodaCheckerRecepitWorker() {
         log.info("Creazione e schedulazione del worker di checker delle ricevute (CheckerRecepitWorker)");
         CheckerRecepitWorker checkerWorker = beanFactory.getBean(CheckerRecepitWorker.class);
@@ -281,7 +287,6 @@ public class SpeckApplication {
         scheduledThreadPoolExecutor.scheduleAtFixedRate(checkerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(checkerWorker.getThreadName() + " schedulato correttamente");
     }
-
 
     public void accodaCleanerBackupWorker() {
         log.info("Creazione e schedulazione del worker di pulizia della cartella di Backup");

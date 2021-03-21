@@ -23,6 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,11 +33,14 @@ import org.springframework.stereotype.Component;
  * @author spritz
  */
 @Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UploadWorker implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(UploadWorker.class);
 
     private String threadName;
+
+    private int identifier;
 
     @Autowired
     UploadQueueRepository uploadQueueRepository;
@@ -57,19 +63,9 @@ public class UploadWorker implements Runnable {
     @Autowired
     UploadManager uploadManager;
 
-//    @Value("${spring.datasource.driver-class-name}")
-//    String driverClass;
-//
-//    @Value("${spring.datasource.url}")
-//    String url;
-//
-//    @Value("${spring.datasource.username}")
-//    String username;
-//
-//    @Value("${spring.datasource.password}")
-//    String password;
-//    @Autowired
-//    Test test;
+    @Value("{mail.upload.number-of-threads}")
+    Integer numberOfThreads;
+
     public UploadWorker() {
     }
 
@@ -81,40 +77,23 @@ public class UploadWorker implements Runnable {
         this.threadName = threadName;
     }
 
-//    HikariConfig hikariConfig;
-//    HikariDataSource hikariDataSource;
-    //Sql2o sql2o;
+    public int getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(int identifier) {
+        this.identifier = identifier;
+    }
+
     @Override
     public void run() {
         MDC.put("logFileName", threadName);
         try {
-//            hikariConfig = new HikariConfig();
-//            hikariConfig.setDriverClassName(driverClass);
-//            hikariConfig.setJdbcUrl(url);
-//            hikariConfig.setUsername(username);
-//            hikariConfig.setPassword(password);
-//            hikariDataSource = new HikariDataSource(hikariConfig);
-//            sql2o = new Sql2o(hikariDataSource);
             /**
              * esegue un primo doWork() perchè se il sistema riparte, si
              * potrebbe avere dei record in upload_queue ancora da uploadare
              */
             doWork();
-//            while (true) {
-//                try {
-//                    // aspetta dal semaforo di avere elementi disponibili sulla tabella upload_queue
-//                    log.info("attesa di acquisizione del semaforo per gestire nuovi messaggi...");
-//                    //messageSemaphore.acquire();
-//                    log.info("semaforo preso");
-//                    doWork();
-//                    //messageSemaphore.drainPermits();
-//                    log.info("semaforo rilasciato");
-//                    TimeUnit.SECONDS.sleep(5);
-//                } catch (ShpeckServiceException | UnknownHostException ex) {
-//                    log.warn("InterruptedException: continue. " + ex);
-//                    //continue;
-//                }
-//            }
         } catch (Throwable e) {
             log.error("ERRORE", e);
         }
@@ -126,22 +105,11 @@ public class UploadWorker implements Runnable {
         log.info("START -> doWork()," + " time: " + new Date());
 
         List<Integer> messagesToUpload = new ArrayList<>();
-        log.info("obtain message to upload...");
-//        try (Connection conn = (Connection) sql2o.open()) {
-//            log.info("eseguo query");
-//            messagesToUpload = conn.createQuery("select id from shpeck.upload_queue where uploaded = false").executeAndFetch(Integer.class);
-//        } catch (Throwable e) {
-//            e.printStackTrace();
-//            log.info(e.getMessage());
-//        }
-        //do {
-        // prendi i messaggi da caricare presenti in upload_queue
-        //messagesToUpload = uploadQueueRepository.getFromUploadQueue(Boolean.FALSE);
-        //messagesToUpload = uploadQueueRepository.findByUploaded(Boolean.FALSE);
-        messagesToUpload = uploadQueueRepository.getIdToUpload();
-        log.info("query executed");
+        log.info("ottieni i messaggi da uploadrare...");
+        messagesToUpload = uploadQueueRepository.getIdToUpload(numberOfThreads, identifier);
+        log.info("query eseguita");
 
-        log.info("messages to upload: " + messagesToUpload.size());
+        log.info("messaggi da uploadare: " + messagesToUpload.size());
 
         for (Integer uq : messagesToUpload) {
             UploadQueue u = uploadQueueRepository.findById(uq).get();
@@ -165,11 +133,6 @@ public class UploadWorker implements Runnable {
             uploadManager.manage(u);
         }
 
-//            for (Integer messageToStore : messagesToUpload) {
-//                UploadQueue u = uploadQueueRepository.findById(messageToStore).get();
-//                uploadManager.manage(u);
-//            }
-        //} while (!messagesToUpload.isEmpty());
         log.info("STOP -> doWork()," + " time: " + new Date());
         log.info("------------------------------------------------------------------------");
     }
