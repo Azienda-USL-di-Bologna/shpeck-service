@@ -159,7 +159,7 @@ public class ImportWorker implements Runnable {
 
         // controlla se importare messaggi
         if (pec.getImportaMessages()) {
-            log.info("importazione dei messaggi non ancora implementata");
+            log.info("importazione dei messaggi");
 
             //creazione lista di folder da scannare
             ArrayList<it.bologna.ausl.model.entities.shpeck.Folder> folders = (ArrayList<it.bologna.ausl.model.entities.shpeck.Folder>) folderRepository.findAllByIdPec(pec);
@@ -273,6 +273,7 @@ public class ImportWorker implements Runnable {
             log.info("==================== gestione messageId: " + message.getId() + " ====================");
             log.info("oggetto: " + message.getSubject());
             log.info("providerUID: " + message.getProviderUid());
+
             try {
                 mailProxy = new MailProxy(message);
 
@@ -298,6 +299,18 @@ public class ImportWorker implements Runnable {
                             } else {
                                 log.info("Il messaggio non è da mettere su mongo: " + res.toString());
                             }
+
+                            if (res.getMessaggioSbustato() != null) {
+                                MessageFolder mf = messageFolderRepository.findByIdMessageAndDeletedFalse(res.getMessaggioSbustato());
+                                if (mf != null) {
+                                    log.info("inserimento messaggio nella folder " + folder);
+                                    mf.setIdFolder(folder);
+                                    messageFolderRepository.save(mf);
+                                }
+                            } else {
+                                log.info("nessun spostamento folder da attuare");
+                            }
+
                             break;
 
                         case RECEPIT:
@@ -338,23 +351,23 @@ public class ImportWorker implements Runnable {
                             } else {
                                 log.info("Il messaggio non è da mettere su mongo: " + res.toString());
                             }
+
+                            if (res.getMessaggioSbustato() != null) {
+                                MessageFolder mf = messageFolderRepository.findByIdMessageAndDeletedFalse(res.getMessaggioSbustato());
+                                if (mf != null) {
+                                    log.info("inserimento messaggio nella folder " + folder);
+                                    mf.setIdFolder(folder);
+                                    messageFolderRepository.save(mf);
+                                }
+                            } else {
+                                log.info("nessun spostamento folder da attuare");
+                            }
+
                             break;
 
                         default:
                             res = null;
                             log.error("tipo calcolato: *** DATO SCONOSCIUTO ***");
-                    }
-                }
-
-                // puntamento del messaggio nella folder corretta
-                if (res != null) {
-                    if (res.getMessage().getId() != null
-                            && (res.getStatus().equals(ApplicationConstant.OK_KEY) || res.getStatus().equals(ApplicationConstant.ORPHAN_KEY))) {
-
-                        MessageFolder mf = new MessageFolder();
-                        mf.setIdFolder(folder);
-                        mf.setIdMessage(res.getMessage());
-                        messageFolderRepository.save(mf);
                     }
                 }
 

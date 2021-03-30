@@ -64,6 +64,8 @@ public class RegularMessageStoreManager extends StoreManager {
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, AddressException {
 
+        boolean isPresentAndValid = false;
+
         log.info("--- inizio RegularMessageStoreManager.store() ---");
         Message regularMessage = createMessageForStorage((MailMessage) mailMessage, pec);
         regularMessage.setIdApplicazione(getApplicazione());
@@ -88,6 +90,7 @@ public class RegularMessageStoreManager extends StoreManager {
         // ho un messaggio? è valido? allora uso l'istanza caricata da DB
         if (messagePresentInDB != null && isValidRecord(messagePresentInDB)) {
             log.info("Messaggio già presente in tabella Messages: " + messagePresentInDB.toString());
+            isPresentAndValid = true;
             regularMessage = messagePresentInDB;
         } else {
             // se messaggio è presenta allora non è valido: quindi lo devo aggiornare e prendo l'istanza su DB; altrimenti usa una istanza nuova
@@ -117,6 +120,6 @@ public class RegularMessageStoreManager extends StoreManager {
         }
 
         boolean isToUpload = ((regularMessage.getUuidRepository() != null && !regularMessage.getUuidRepository().equals("")) ? false : true);
-        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, isToUpload);
+        return new StoreResponse(ApplicationConstant.OK_KEY, mailMessage, regularMessage, isToUpload, ((isPresentAndValid == true) ? null : regularMessage));
     }
 }
