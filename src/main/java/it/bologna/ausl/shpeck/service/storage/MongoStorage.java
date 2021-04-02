@@ -1,5 +1,6 @@
 package it.bologna.ausl.shpeck.service.storage;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
@@ -11,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.Map;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
@@ -29,6 +31,22 @@ public class MongoStorage implements StorageStrategy {
     public MongoStorage(String mongouri, String folderPath) throws UnknownHostException, MongoWrapperException {
         mongo = new MongoWrapper(mongouri);
         this.folderPath = folderPath;
+    }
+
+    public MongoStorage(String mongouri, String folderPath,
+            Map<String, Object> minIOConfigurationObject,
+            ObjectMapper om,
+            String codiceAzienda) throws UnknownHostException, MongoWrapperException {
+        mongo = MongoWrapper.getWrapper((Boolean) minIOConfigurationObject.get("active"),
+                mongouri, (String) minIOConfigurationObject.get("DBDriver"),
+                (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
+                (String) minIOConfigurationObject.get("DBPassword"), codiceAzienda, om);
+        //mongo = new MongoWrapper(mongouri);
+        this.folderPath = folderPath;
+    }
+
+    public void setMongo(MongoWrapper mongo) {
+        this.mongo = mongo;
     }
 
     @Override
@@ -61,10 +79,10 @@ public class MongoStorage implements StorageStrategy {
 
             if (mimeMessage.getSentDate() != null) {
                 SimpleDateFormat df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
-                String asGmt="";
+                String asGmt = "";
                 try {
-                    asGmt = df.format(MailMessage.getSendDateInGMT(mimeMessage)) + " GMT"; 
-                    
+                    asGmt = df.format(MailMessage.getSendDateInGMT(mimeMessage)) + " GMT";
+
                 } catch (Exception e) {
                     asGmt = df.format(mimeMessage.getSentDate().getTime()) + " GMT";
                 }
@@ -86,6 +104,8 @@ public class MongoStorage implements StorageStrategy {
 
         } catch (MessagingException e) {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
+        } catch (MongoWrapperException ex) {
+            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex);
         } catch (IOException e) {
             throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
         }

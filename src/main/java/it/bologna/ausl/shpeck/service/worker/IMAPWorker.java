@@ -93,6 +93,9 @@ public class IMAPWorker implements Runnable {
     @Value("${test-mode}")
     Boolean testMode;
 
+    @Value("${mailbox.inbox-folder}")
+    String INBOX_FOLDER_NAME;
+
     private ArrayList<MailMessage> messages;
     private ArrayList<MailMessage> messagesOk;
     private ArrayList<MailMessage> messagesOrphans;
@@ -214,7 +217,7 @@ public class IMAPWorker implements Runnable {
             }
 
             // ottenimento dei messaggi
-            messages = imapManager.getMessages();
+            messages = imapManager.getMessages(INBOX_FOLDER_NAME);
 
             MailProxy mailProxy;
             StoreResponse res = null;

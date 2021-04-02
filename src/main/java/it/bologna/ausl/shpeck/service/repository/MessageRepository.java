@@ -2,7 +2,9 @@ package it.bologna.ausl.shpeck.service.repository;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.model.entities.shpeck.projections.generated.MessageWithPlainFields;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -61,5 +63,12 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
 
     @Query(value = "select * from shpeck.messages where id_outbox = ?1 order by id desc limit 1", nativeQuery = true)
     public Message getMessageByIdOutbox(Integer idOutbox);
+
+    // prendi i messaggi in OUT che non sono in CONFIRMED, ACCEPTED tali per cui la differenza tra data aggiornamento e data creazione è superiore a 2 giorni
+    @Query(value = "select cast (id as int) id from shpeck.messages where in_out = 'OUT' and message_status not in ('CONFIRMED', 'ACCEPTED') and ((DATE_PART('day', update_time::timestamp - create_time::timestamp)) >=2) and DATE_PART('year', create_time::timestamp) >= 2021", nativeQuery = true)
+    public ArrayList<Integer> getCurrentMessagesError();
+
+    @Query(value = "select cast (id as int) id from shpeck.messages m where id_related  = ?1 and message_type = 'RECEPIT'", nativeQuery = true)
+    public ArrayList<Integer> getAllRecepitError(Integer id);
 
 }

@@ -10,9 +10,11 @@ import it.bologna.ausl.shpeck.service.repository.AziendaRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.worker.CheckUploadedRepositoryWorker;
+import it.bologna.ausl.shpeck.service.worker.CheckerRecepitWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerBackupWorker;
 import it.bologna.ausl.shpeck.service.worker.CleanerWorker;
 import it.bologna.ausl.shpeck.service.worker.IMAPWorker;
+import it.bologna.ausl.shpeck.service.worker.ImportWorker;
 import it.bologna.ausl.shpeck.service.worker.SMTPWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +99,9 @@ public class SpeckApplication {
     @Value("${days-back-spazzino}")
     Integer daysBackSpazzino;
 
+    @Value("${mail.upload.number-of-threads}")
+    Integer numberOfThreads;
+
     @Autowired
     MessageRepository messageRepository;
 
@@ -128,9 +133,9 @@ public class SpeckApplication {
 
 //                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
-//                ArrayList<Pec> pecAttive = new ArrayList<>();
-//                pecAttive.add(pecRepository.findById(494).get());
-//                log.info("Pec attive #: " + pecAttive.size());
+                //ArrayList<Pec> pecAttive = new ArrayList<>();
+                //pecAttive.add(pecRepository.findById(1502).get());
+                log.info("Pec attive #: " + pecAttive.size());
                 if (testMode) {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
                     filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
@@ -145,6 +150,10 @@ public class SpeckApplication {
 
                 faiGliImapWorker(pecAttive, applicazione);
                 faiGliSMTPWorker(pecAttive);
+                accodaCheckerRecepitWorker();
+
+                avviaImportWorker();
+
                 Runtime.getRuntime().addShutdownHook(shutdownThread);
             }
         };
@@ -222,10 +231,13 @@ public class SpeckApplication {
     public void faiGliUploadWorker() {
         log.info("Creo l'uploadWorker");
 
-        UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
-        uploadWorker.setThreadName("uploadWorker");
-        scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, 0, 5, TimeUnit.SECONDS);
-        log.info(uploadWorker.getThreadName() + " schedulato correttamente");
+        for (int i = 0; i < numberOfThreads; i++) {
+            UploadWorker uploadWorker = beanFactory.getBean(UploadWorker.class);
+            uploadWorker.setThreadName("uploadWorker" + i);
+            uploadWorker.setIdentifier(i);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(uploadWorker, i + 3, 5, TimeUnit.SECONDS);
+        }
+        log.info("creazione degli UploadWorker eseguita con successo");
 
         log.info("Creo CheckUploadedRepositoryWorker");
         CheckUploadedRepositoryWorker c = beanFactory.getBean(CheckUploadedRepositoryWorker.class);
@@ -268,12 +280,35 @@ public class SpeckApplication {
         log.info(cleanerWorker.getThreadName() + " schedulato correttamente");
     }
 
+    public void accodaCheckerRecepitWorker() {
+        log.info("Creazione e schedulazione del worker di checker delle ricevute (CheckerRecepitWorker)");
+        CheckerRecepitWorker checkerWorker = beanFactory.getBean(CheckerRecepitWorker.class);
+        checkerWorker.setThreadName("checkerRecepitWorker");
+        scheduledThreadPoolExecutor.scheduleAtFixedRate(checkerWorker, getInitialDelay(), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        log.info(checkerWorker.getThreadName() + " schedulato correttamente");
+    }
+
     public void accodaCleanerBackupWorker() {
         log.info("Creazione e schedulazione del worker di pulizia della cartella di Backup");
         CleanerBackupWorker cleanerBackupWorker = beanFactory.getBean(CleanerBackupWorker.class);
         cleanerBackupWorker.setThreadName("cleanerBackupWorker");
         scheduledThreadPoolExecutor.scheduleAtFixedRate(cleanerBackupWorker, 0, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
         log.info(cleanerBackupWorker.getThreadName() + " schedulato correttamente");
+    }
+
+    public void avviaImportWorker() {
+        log.info("creazione degli ImportWorker sulle caselle che necessitano importazione");
+        // prendi le caselle attive che devono essere importate
+        ArrayList<Pec> list = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNullAndImportaCasellaTrue();
+//        DEBUG: ArrayList<Pec> list = new ArrayList<>(); list.add(pecRepository.findById(ID).get());
+        for (int i = 0; i < list.size(); i++) {
+            ImportWorker importWorker = beanFactory.getBean(ImportWorker.class);
+            importWorker.setThreadName("IMPORT_" + list.get(i).getIndirizzo());
+            importWorker.setIdPec(list.get(i).getId());
+            scheduledThreadPoolExecutor.schedule(importWorker, i + 5, TimeUnit.SECONDS);
+            log.info(importWorker.getThreadName() + " su PEC " + list.get(i).getIndirizzo() + " schedulato correttamente");
+        }
+        log.info("creazione degli ImportWorker eseguita con successo");
     }
 
 }

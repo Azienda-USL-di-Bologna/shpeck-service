@@ -12,12 +12,14 @@ public class StoreResponse {
     private MailMessage mailMessage;
     private Message message;
     private boolean toUpload;
+    private Message messaggioSbustato;
 
-    public StoreResponse(String status, MailMessage mailMessage, Message message, boolean toUpload) {
+    public StoreResponse(String status, MailMessage mailMessage, Message message, boolean toUpload, Message messaggioSbustato) {
         this.status = status;
         this.mailMessage = mailMessage;
         this.message = message;
         this.toUpload = toUpload;
+        this.messaggioSbustato = messaggioSbustato;
     }
 
     public String getStatus() {
@@ -50,6 +52,14 @@ public class StoreResponse {
 
     public void setToUpload(boolean toUpload) {
         this.toUpload = toUpload;
+    }
+
+    public Message getMessaggioSbustato() {
+        return messaggioSbustato;
+    }
+
+    public void setMessaggioSbustato(Message messaggioSbustato) {
+        this.messaggioSbustato = messaggioSbustato;
     }
 
     @Override

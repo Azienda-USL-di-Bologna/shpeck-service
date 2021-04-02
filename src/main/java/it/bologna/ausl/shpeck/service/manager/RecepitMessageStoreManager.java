@@ -88,7 +88,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         if (messagePresentInDB != null) {
             if (isValidRecord(messagePresentInDB)) {
                 log.info("Messaggio di ricevuta già presente in tabella Messages: " + messagePresentInDB.toString());
-                return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, false);
+                return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, false, null);
             } else {
                 log.info("messaggio presente in DB ma non valido, procedo a reperire istanza presente");
                 // uso l'istanza che ho già in DB così viene fatto UPDATE al posto di INSERT
@@ -159,7 +159,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
 
         boolean isToUpload = ((messaggioDiRicevuta.getUuidRepository() != null && !messaggioDiRicevuta.getUuidRepository().equals("")) ? false : true);
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, isToUpload);
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, isToUpload, null);
     }
 
     //@Transactional(rollbackFor = Throwable.class)
@@ -178,7 +178,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 
         if (relatedMessage == null) {
             log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
-            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload());
+            return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload(), null);
         }
 
         switch (pecRecepit.getxRicevuta()) {
@@ -234,6 +234,6 @@ public class RecepitMessageStoreManager extends StoreManager {
         String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
         jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
 //        }
-        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload());
+        return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload(), null);
     }
 }

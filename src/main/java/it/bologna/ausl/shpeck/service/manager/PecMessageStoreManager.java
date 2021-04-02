@@ -1,11 +1,14 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.shpeck.Folder;
 import it.bologna.ausl.model.entities.shpeck.Message;
+import it.bologna.ausl.model.entities.shpeck.MessageFolder;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.MailMessageException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.exceptions.StoreManagerExeption;
+import it.bologna.ausl.shpeck.service.repository.MessageFolderRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import it.bologna.ausl.shpeck.service.transformers.StoreResponse;
@@ -31,6 +34,8 @@ public class PecMessageStoreManager extends StoreManager {
     @Autowired
     MessageTagStoreManager messageTagStoreManager;
 
+//    @Autowired
+//    MessageFolderRepository messageFolderRepository;
     private static final Logger log = LoggerFactory.getLogger(PecMessageStoreManager.class);
 
     private PecMessage pecMessage;
@@ -169,9 +174,14 @@ public class PecMessageStoreManager extends StoreManager {
                     && (messaggioBustato.getUuidRepository() != null && !messaggioBustato.getUuidRepository().equals(""))) {
                 isToUpload = false;
             }
-            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, isToUpload);
+
+            if (skipSbustato) {
+                return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, isToUpload, null);
+            }
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, isToUpload, ((skipSbustato == true) ? null : messaggioSbustato));
+
         } else {
-            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, false);
+            return new StoreResponse(ApplicationConstant.OK_KEY, pecMessage, messaggioBustato, false, ((skipSbustato == true) ? null : messaggioSbustato));
         }
     }
 }
