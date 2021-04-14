@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.repository;
 
 import it.bologna.ausl.model.entities.configuration.ParametroAziende;
@@ -20,7 +15,10 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(collectionResourceRel = "parametroaziende", path = "parametroaziende", exported = false, excerptProjection = ParametroAziendeWithPlainFields.class)
 public interface ParametroAziendeRepository extends JpaRepository<ParametroAziende, Integer> {
 
-    @Query(value = "select * from configurazione.parametri_aziende where nome = 'minIOConfig' and id_aziende @> ARRAY[?1]", nativeQuery = true)
+    @Query(value = "select * from configurazione.parametri_aziende where nome = 'minIOConfig' and (id_aziende @> ARRAY[?1] or id_aziende = '{}')", nativeQuery = true)
     public ArrayList<ParametroAziende> getMinIOParametroAziendeListByIdAzienda(Integer idAzienda);
+
+    @Query(value = "select * from configurazione.parametri_aziende where nome = 'mongoAndMinIOActive' and id_aziende @> ARRAY[?1]", nativeQuery = true)
+    public ArrayList<ParametroAziende> getMinIOActiveByIdAzienda(Integer idAzienda);
 
 }

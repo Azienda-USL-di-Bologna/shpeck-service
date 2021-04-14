@@ -36,8 +36,9 @@ public class MongoStorage implements StorageStrategy {
     public MongoStorage(String mongouri, String folderPath,
             Map<String, Object> minIOConfigurationObject,
             ObjectMapper om,
-            String codiceAzienda) throws UnknownHostException, MongoWrapperException {
-        mongo = MongoWrapper.getWrapper((Boolean) minIOConfigurationObject.get("active"),
+            String codiceAzienda,
+            boolean mongoAndMinIOActive) throws UnknownHostException, MongoWrapperException {
+        mongo = MongoWrapper.getWrapper(mongoAndMinIOActive,
                 mongouri, (String) minIOConfigurationObject.get("DBDriver"),
                 (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
                 (String) minIOConfigurationObject.get("DBPassword"), codiceAzienda, om);

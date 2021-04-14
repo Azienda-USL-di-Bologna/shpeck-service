@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.factory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -50,10 +45,23 @@ public class MongoStorageFactory {
         return minIOConfigMap;
     }
 
+    private Boolean getMinIOActive(Integer idAzienda) throws IOException, ShpeckServiceException {
+        Boolean res = null;
+        ArrayList<ParametroAziende> minIOParametroAziendeListByIdAzienda = parametroAziendeRepository.getMinIOActiveByIdAzienda(idAzienda);
+        if (minIOParametroAziendeListByIdAzienda.size() == 1) {
+            for (ParametroAziende parametroAziende : minIOParametroAziendeListByIdAzienda) {
+                res = objectMapper.readValue(parametroAziende.getValore(), Boolean.class);
+            }
+        } else if (minIOParametroAziendeListByIdAzienda.size() > 1) {
+            throw new ShpeckServiceException("Parametro mongoMinIOActive doppio per l'azienda " + idAzienda);
+        }
+        return res;
+    }
+
     private MongoStorage getMinIOMongoWrapper(Azienda azienda, AziendaParametriJson.MongoParams mongoParams,
-            Map<String, Object> minIOConfigurationObject) throws IOException,
+            Map<String, Object> minIOConfigurationObject, boolean mongoAndMinIOActive) throws IOException,
             ShpeckServiceException, UnknownHostException, MongoException, MongoWrapperException {
-        MongoWrapper wrapper = MongoWrapper.getWrapper((Boolean) minIOConfigurationObject.get("active"),
+        MongoWrapper wrapper = MongoWrapper.getWrapper(mongoAndMinIOActive,
                 mongoParams.getConnectionString(), (String) minIOConfigurationObject.get("DBDriver"),
                 (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
                 (String) minIOConfigurationObject.get("DBPassword"), azienda.getCodice(), objectMapper);
@@ -72,8 +80,9 @@ public class MongoStorageFactory {
         MongoStorage mongoStorage;
         AziendaParametriJson.MongoParams mongoParams = getMongoParams(azienda);
         Map<String, Object> minIOConfigurationObject = getMinIOConfigurationObject(azienda.getId());
+        Boolean mongoAndMinIOActive = getMinIOActive(azienda.getId());
         if (minIOConfigurationObject != null) {
-            mongoStorage = getMinIOMongoWrapper(azienda, mongoParams, minIOConfigurationObject);
+            mongoStorage = getMinIOMongoWrapper(azienda, mongoParams, minIOConfigurationObject, mongoAndMinIOActive);
         } else {
             mongoStorage = new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot());
         }
