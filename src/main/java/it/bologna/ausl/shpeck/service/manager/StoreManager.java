@@ -10,6 +10,7 @@ import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
 import java.util.ArrayList;
 import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
+import it.bologna.ausl.model.entities.shpeck.MessageExtension;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckIllegalRecepitException;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
+import it.bologna.ausl.shpeck.service.repository.MessageExtensionRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -54,6 +56,8 @@ public class StoreManager implements StoreInterface {
 
     @Autowired
     MessageRepository messageRepository;
+    @Autowired
+    MessageExtensionRepository messageExtensionRepository;
 
     @Autowired
     MessageAddressRepository messageAddressRepository;
@@ -134,6 +138,44 @@ public class StoreManager implements StoreInterface {
     @Override
     public Message storeMessage(Message message) {
         return messageRepository.save(message);
+    }
+
+    public void updateMessageExtension(Message message,
+            MailMessage mailMessage) throws StoreManagerExeption {
+        try {
+            MessageExtension messageExtension = messageExtensionRepository
+                    .findById(message.getId()).get();
+
+            javax.mail.Address[] from = retrieveFromAddresses(mailMessage);
+
+            if (from != null) {
+                String stringAddressToSave = "";
+                for (javax.mail.Address address : from) {
+
+                    if (address.toString() != null && !address.toString().equals("")) {
+                        stringAddressToSave
+                                += (stringAddressToSave.length() != 0 ? "; " : "") // se non è vuoto aggiungo ;
+                                + address.toString();
+                    }
+
+                    InternetAddress internetAddress = (InternetAddress) address;
+                    if (internetAddress.getPersonal() != null
+                            && !internetAddress.getPersonal().equals("")
+                            && !internetAddress.getPersonal().equals(stringAddressToSave)) {
+                        stringAddressToSave
+                                += (stringAddressToSave.length() != 0 ? "; " : "") // se non è vuoto aggiungo ;
+                                + internetAddress.getPersonal();
+                    }
+                }
+                if (!stringAddressToSave.equals("")) {
+                    messageExtension.setFullAddressFrom(stringAddressToSave);
+                    messageExtension = messageExtensionRepository.save(messageExtension);
+                }
+            }
+
+        } catch (Throwable ex) {
+            log.error("Impossibible aggiornare il MessageExtesione", ex);
+        }
     }
 
     @Override
@@ -389,13 +431,7 @@ public class StoreManager implements StoreInterface {
         }
     }
 
-    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
-
-        boolean ricevutaConsegnaType = false;
-
-        log.info("---Inizio upsertAddresses---");
-        HashMap<String, ArrayList> map = new HashMap<>();
-        log.debug("Verifico presenza di mittenti...");
+    private javax.mail.Address[] retrieveFromAddresses(MailMessage mailMessage) throws StoreManagerExeption {
         javax.mail.Address[] from = mailMessage.getFrom();
         if (from == null) {
             try {
@@ -411,6 +447,17 @@ public class StoreManager implements StoreInterface {
 
             }
         }
+        return from;
+    }
+
+    public HashMap upsertAddresses(MailMessage mailMessage) throws StoreManagerExeption, ShpeckServiceException {
+
+        boolean ricevutaConsegnaType = false;
+
+        log.info("---Inizio upsertAddresses---");
+        HashMap<String, ArrayList> map = new HashMap<>();
+        log.debug("Verifico presenza di mittenti...");
+        javax.mail.Address[] from = retrieveFromAddresses(mailMessage);
 
         if (from != null) {
             ArrayList<Address> fromArrayList;
