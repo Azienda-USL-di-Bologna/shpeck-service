@@ -117,6 +117,7 @@ public class RegularMessageStoreManager extends StoreManager {
             HashMap mapMessagesAddress = upsertAddresses(mailMessage);
             log.debug("salvo/aggiorno sulla cross il regular message e indirizzi");
             storeMessagesAddresses(regularMessage, mapMessagesAddress);
+            updateMessageExtension(regularMessage, mailMessage);
         }
 
         boolean isToUpload = ((regularMessage.getUuidRepository() != null && !regularMessage.getUuidRepository().equals("")) ? false : true);

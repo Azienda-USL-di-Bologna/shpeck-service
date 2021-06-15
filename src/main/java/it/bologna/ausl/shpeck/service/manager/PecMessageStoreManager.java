@@ -116,6 +116,7 @@ public class PecMessageStoreManager extends StoreManager {
             log.debug("salvo sulla cross messaggio sbustato e indirizzi...");
             storeMessagesAddresses(messaggioSbustato, mapSbustato);
             log.debug("salvataggio avvenuto con successo");
+            updateMessageExtension(messaggioSbustato, pecMessage);
         }
 
         // prendo la busta
@@ -168,7 +169,7 @@ public class PecMessageStoreManager extends StoreManager {
             log.debug("Salvo sulla cross messaggio bustato e indirizzi...");
             storeMessagesAddresses(messaggioBustato, mapBusta);
             log.debug("salvataggio avvenuto con successo");
-
+            updateMessageExtension(messaggioBustato, envelope);
             boolean isToUpload = true;
             if ((messaggioSbustato.getUuidRepository() != null && !messaggioSbustato.getUuidRepository().equals(""))
                     && (messaggioBustato.getUuidRepository() != null && !messaggioBustato.getUuidRepository().equals(""))) {

@@ -30,12 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecepitMessageStoreManager extends StoreManager {
-
+    
     private static final Logger log = LoggerFactory.getLogger(RecepitMessageStoreManager.class);
-
+    
     private PecRecepit pecRecepit;
     private Pec pec;
-
+    
     @Autowired
     MessageTagStoreManager messageTagStoreManager;
 
@@ -43,29 +43,29 @@ public class RecepitMessageStoreManager extends StoreManager {
 //    private EntityManager em;
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
+    
     public RecepitMessageStoreManager() {
     }
-
+    
     public PecRecepit getPecRecepit() {
         return pecRecepit;
     }
-
+    
     public void setPecRecepit(PecRecepit pecRecepit) {
         this.pecRecepit = pecRecepit;
     }
-
+    
     public Pec getPec() {
         return pec;
     }
-
+    
     public void setPec(Pec pec) {
         this.pec = pec;
     }
-
+    
     @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public StoreResponse store() throws MailMessageException, StoreManagerExeption, ShpeckServiceException, Exception {
-
+        
         StoreResponse recepitResponse = gestioneRicevuta();
         if (!recepitResponse.isToUpload()) {
             log.info("Il messaggio non è da uploadare probabilmente perché ce l'ho già, quindi non aggiorno la ricevuta.");
@@ -73,16 +73,16 @@ public class RecepitMessageStoreManager extends StoreManager {
         }
         return gestioneRelated(recepitResponse);
     }
-
+    
     @Transactional(rollbackFor = Throwable.class)
     public StoreResponse gestioneRicevuta() throws MailMessageException, ShpeckServiceException {
         log.info("--- inizio RecepitMessageStoreManager.store() ---");
-
+        
         Message messaggioDiRicevuta = createMessageForStorage((MailMessage) pecRecepit, pec);
         messaggioDiRicevuta.setIdApplicazione(getApplicazione());
         messaggioDiRicevuta.setMessageType(Message.MessageType.RECEPIT);
         messaggioDiRicevuta.setIsPec(Boolean.TRUE);
-
+        
         log.info("Verfico presenza messaggio...");
         Message messagePresentInDB = getMessageFromDb(messaggioDiRicevuta);
         if (messagePresentInDB != null) {
@@ -93,7 +93,7 @@ public class RecepitMessageStoreManager extends StoreManager {
                 log.info("messaggio presente in DB ma non valido, procedo a reperire istanza presente");
                 // uso l'istanza che ho già in DB così viene fatto UPDATE al posto di INSERT
                 List<Message> tmpList = messageRepository.findByUuidMessageAndIdPecAndMessageType(messagePresentInDB.getUuidMessage(), pec, Message.MessageType.RECEPIT.toString());
-
+                
                 if (tmpList != null && tmpList.size() == 1) {
                     messaggioDiRicevuta = tmpList.get(0);
                 } else {
@@ -104,7 +104,7 @@ public class RecepitMessageStoreManager extends StoreManager {
         } else {
             messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
         }
-
+        
         try {
             log.debug("Salvo il RawMessage della RICEVUTA");
             storeRawMessage(messaggioDiRicevuta, pecRecepit.getRaw_message());
@@ -112,17 +112,18 @@ public class RecepitMessageStoreManager extends StoreManager {
             log.error("Errore nel retrieving data del rawMessage dal pecRecepit " + e.getMessage());
             throw new MailMessageException("Errore nel retrieving data del rawMessage dal pecRecepit", e);
         }
-
+        
         log.debug("Salvo gli indirizzi della ricevuta");
         HashMap mapRicevuta = upsertAddresses(pecRecepit);
-
+        
         log.debug("Salvo sulla cross messaggio ricevuta e indirizzi");
         storeMessagesAddresses(messaggioDiRicevuta, mapRicevuta);
-
+        updateMessageExtension(messaggioDiRicevuta, pecRecepit);
+        
         if (messaggioDiRicevuta.getIdRecepit() == null) {
             Recepit recepit = new Recepit();
             recepit.setIdMessage(messaggioDiRicevuta);
-
+            
             switch (pecRecepit.getxRicevuta()) {
                 case "accettazione":
                     recepit.setRecepitType(Recepit.RecepitType.ACCETTAZIONE);
@@ -150,37 +151,37 @@ public class RecepitMessageStoreManager extends StoreManager {
                     log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
                     break;
             }
-
+            
             log.debug("Setto la ricevuta del messaggio di ricevuta");
             messaggioDiRicevuta.setIdRecepit(recepit);
         }
-
+        
         log.debug("Salvo il messaggio di ricevuta...");
         messaggioDiRicevuta = storeMessage(messaggioDiRicevuta);
-
+        
         boolean isToUpload = ((messaggioDiRicevuta.getUuidRepository() != null && !messaggioDiRicevuta.getUuidRepository().equals("")) ? false : true);
         return new StoreResponse(ApplicationConstant.OK_KEY, pecRecepit, messaggioDiRicevuta, isToUpload, null);
     }
 
     //@Transactional(rollbackFor = Throwable.class)
     public StoreResponse gestioneRelated(StoreResponse recepitResponse) throws Exception {
-
+        
         Message messaggioDiRicevuta = recepitResponse.getMessage();
-
+        
         String referredMessageIdFromRecepit = null;
         try {
             referredMessageIdFromRecepit = PecRecepit.getReferredMessageIdFromRecepit(pecRecepit.getOriginal());
         } catch (Throwable e) {
             log.error("referredMessageIdFromRecepit = null", e);
         }
-
+        
         Message relatedMessage = messageRepository.findByUuidMessageAndIsPecFalse(referredMessageIdFromRecepit);
-
+        
         if (relatedMessage == null) {
             log.warn("ricevuta orfana - si riferisce a " + pecRecepit.getReference());
             return new StoreResponse(ApplicationConstant.ORPHAN_KEY, pecRecepit, messaggioDiRicevuta, recepitResponse.isToUpload(), null);
         }
-
+        
         switch (pecRecepit.getxRicevuta()) {
             case "accettazione":
                 if (!(relatedMessage.getMessageStatus().toString().equalsIgnoreCase(Message.MessageStatus.CONFIRMED.toString()))
@@ -214,7 +215,7 @@ public class RecepitMessageStoreManager extends StoreManager {
                 log.error("X-RICEVUTA UNKNOWN!!!! (boh)");
                 break;
         }
-
+        
         log.debug("Faccio update dello stato del messaggio related -> " + relatedMessage.getMessageStatus().toString());
 
 //        if (relatedMessage.getMessageStatus() != Message.MessageStatus.ERROR) {
@@ -230,7 +231,7 @@ public class RecepitMessageStoreManager extends StoreManager {
 //            em.merge(messaggioDiRicevuta);
         String updateQuery1 = "update shpeck.messages set message_status = ?, update_time = now() where id = ?";
         jdbcTemplate.update(updateQuery1, relatedMessage.getMessageStatus().toString(), relatedMessage.getId());
-
+        
         String updateQuery2 = "update shpeck.messages set id_related = ?, update_time = now() where id = ?";
         jdbcTemplate.update(updateQuery2, relatedMessage.getId(), messaggioDiRicevuta.getId());
 //        }
