@@ -187,7 +187,7 @@ public class IMAPManager {
                 this.store.connect();
             }
 
-            return store.getDefaultFolder();
+            return store.getFolder("INBOX");
 
         } catch (Throwable e) {
             log.error("errore durante il recupero della folder di default da imap server " + store.getURLName().toString(), e);
@@ -196,7 +196,8 @@ public class IMAPManager {
     }
 
     /**
-     * Ottiene i messaggi in INBOX (tutti o a partire da un determinato ID)
+     * Ottiene i messaggi in INBOX o una particolare cartella passata (tutti o a
+     * partire da un determinato ID)
      *
      * @return messaggi presenti in inbox
      * @throws ShpeckServiceException
@@ -554,9 +555,7 @@ public class IMAPManager {
         if (!store.isConnected()) {
             store.connect();
         }
-        try (
-                IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
-                IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
+        try ( IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);  IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
             List<Message> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();

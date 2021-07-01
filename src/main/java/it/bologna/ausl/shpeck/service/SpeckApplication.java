@@ -126,31 +126,31 @@ public class SpeckApplication {
                 Applicazione applicazione = applicazioneRepository.findById(idApplicazione);
 
                 log.info("Creo e schedulo l'Upload Worker");
-                faiGliUploadWorker();
+//                faiGliUploadWorker();
 
                 log.info("Recupero le pec attive");
-                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
+//                ArrayList<Pec> pecAttive = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNull();
 
 //                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
-                //ArrayList<Pec> pecAttive = new ArrayList<>();
-                //pecAttive.add(pecRepository.findById(1502).get());
+                ArrayList<Pec> pecAttive = new ArrayList<>();
+                pecAttive.add(pecRepository.findById(741).get());
                 log.info("Pec attive #: " + pecAttive.size());
-                if (testMode) {
-                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
-                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
-                }
-
-                if (cleanerAttivo) {
-                    log.info("Schedulo e accodo il CleanerWorker");
-                    accodaCleanerWorker();
-                    log.info("Schedulo e accodo il CleanerBackupWorker");
-                    accodaCleanerBackupWorker();
-                }
-
-                faiGliImapWorker(pecAttive, applicazione);
-                faiGliSMTPWorker(pecAttive);
-                accodaCheckerRecepitWorker();
+//                if (testMode) {
+//                    log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");
+//                    filtraPecAttiveDiProdAndMantieniQuelleDiTest(pecAttive);
+//                }
+//
+//                if (cleanerAttivo) {
+//                    log.info("Schedulo e accodo il CleanerWorker");
+//                    accodaCleanerWorker();
+//                    log.info("Schedulo e accodo il CleanerBackupWorker");
+//                    accodaCleanerBackupWorker();
+//                }
+//
+//                faiGliImapWorker(pecAttive, applicazione);
+//                faiGliSMTPWorker(pecAttive);
+//                accodaCheckerRecepitWorker();
 
                 avviaImportWorker();
 
@@ -299,8 +299,10 @@ public class SpeckApplication {
     public void avviaImportWorker() {
         log.info("creazione degli ImportWorker sulle caselle che necessitano importazione");
         // prendi le caselle attive che devono essere importate
-        ArrayList<Pec> list = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNullAndImportaCasellaTrue();
-//        DEBUG: ArrayList<Pec> list = new ArrayList<>(); list.add(pecRepository.findById(ID).get());
+        //ArrayList<Pec> list = pecRepository.findByAttivaTrueAndIdAziendaRepositoryNotNullAndImportaCasellaTrue();
+//        DEBUG:
+        ArrayList<Pec> list = new ArrayList<>();
+        list.add(pecRepository.findById(741).get());
         for (int i = 0; i < list.size(); i++) {
             ImportWorker importWorker = beanFactory.getBean(ImportWorker.class);
             importWorker.setThreadName("IMPORT_" + list.get(i).getIndirizzo());
