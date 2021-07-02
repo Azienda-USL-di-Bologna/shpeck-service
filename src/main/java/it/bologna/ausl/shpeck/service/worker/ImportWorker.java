@@ -167,6 +167,7 @@ public class ImportWorker implements Runnable {
 
             for (it.bologna.ausl.model.entities.shpeck.Folder folder : folders) {
                 if (folder.getFullnameInProvider() != null && !folder.getFullnameInProvider().equals("")) {
+                    imapManager.setLastUID(0);
                     ArrayList<MailMessage> messages = imapManager.getMessages(folder.getFullnameInProvider());
                     log.info("=== START importazione cartella " + folder.getFullnameInProvider() + " ===");
                     importMessages(messages, pec, folder.getFullnameInProvider());
