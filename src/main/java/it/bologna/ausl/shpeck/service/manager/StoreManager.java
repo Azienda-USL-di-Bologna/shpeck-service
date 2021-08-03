@@ -316,7 +316,7 @@ public class StoreManager implements StoreInterface {
             log.debug("Ciclo gli indirizzi REPLY_TO e li salvo su messages_addresses");
             for (Address address : list) {
                 MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.REPLY_TO);
-                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", CC) " + "inserito"));
+                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "inserito"));
             }
         }
         log.info("--- fine storeMessagesAddress ---");
