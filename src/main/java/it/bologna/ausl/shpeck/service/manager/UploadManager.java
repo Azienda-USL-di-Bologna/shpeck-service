@@ -135,6 +135,10 @@ public class UploadManager {
                 log.error("ERRORE: Message con id " + messageToStore.getIdRawMessage().getIdMessage().getId() + " non presente");
             }
 
+        } catch (ShpeckServiceException e) {
+            log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
+            log.error("con errore: ", e);
+            throw e;
         } catch (Throwable e) {
             log.error("errore nell'upload del messaggio con id su upload_queue: " + messageToStore.getId());
             log.error("con errore: ", e);

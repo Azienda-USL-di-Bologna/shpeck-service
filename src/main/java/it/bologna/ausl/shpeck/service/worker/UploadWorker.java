@@ -14,11 +14,13 @@ import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.RawMessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
+import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -62,6 +64,9 @@ public class UploadWorker implements Runnable {
 
     @Autowired
     UploadManager uploadManager;
+    
+    @Autowired
+    Diagnostica diagnostica;
 
     @Value("${mail.upload.number-of-threads}")
     Integer numberOfThreads;
@@ -99,6 +104,31 @@ public class UploadWorker implements Runnable {
         }
         MDC.remove("logFileName");
     }
+    private boolean isErroreMongoloide(Throwable e){
+        if(ShpeckServiceException.class.isAssignableFrom(e.getClass())){ 
+            ShpeckServiceException shpeckServiceException = (ShpeckServiceException)e;
+            if(shpeckServiceException.getErrorType() == ShpeckServiceException.ErrorTypes.STOREGE_ERROR){
+                return true;
+            }
+        }
+        return false;
+    }
+    private void writeReportDiagnostica(Throwable e, Integer idUploadQueue) {
+        // creazione messaggio di errore
+        JSONObject json = new JSONObject();
+        if (idUploadQueue != null) {
+            json.put("id_upload_queue", idUploadQueue.toString());
+        }
+        json.put("Thread_id", Thread.currentThread().getId());
+        json.put("Exception", e.toString());
+        json.put("ExceptionMessage", e.getMessage());
+        
+        if(isErroreMongoloide(e)){ 
+            diagnostica.writeInDiagnoticaReport("UPLOAD_WORKER_ERROR_MONGOLOIDE", json);
+        }else{
+            diagnostica.writeInDiagnoticaReport("UPLOAD_WORKER_ERROR", json);
+        }
+    }
 
     public void doWork() throws ShpeckServiceException, UnknownHostException {
         log.info("------------------------------------------------------------------------");
@@ -112,25 +142,37 @@ public class UploadWorker implements Runnable {
         log.info("messaggi da uploadare: " + messagesToUpload.size());
 
         for (Integer uq : messagesToUpload) {
-            UploadQueue u = uploadQueueRepository.findById(uq).get();
-            log.info("oggetto UploadQueue creato");
-            RawMessage rm = rawMessageRepository.findById(u.getIdRawMessage().getId()).get();
-            log.info("oggetto RawMessage creato");
-            Message m = messageRepository.findById(rm.getIdMessage().getId()).get();
-            log.info("oggetto Message creato");
-            Pec p = pecRepository.findById(m.getIdPec().getId()).get();
-            log.info("oggetto Pec creato");
-            if (p.getIdAziendaRepository() == null) {
-                log.warn("la pec con indirizzo " + p.getIndirizzo() + " non ha un id_repository associato");
-                continue;
+            try{
+                UploadQueue u = uploadQueueRepository.findById(uq).get();
+                log.info("oggetto UploadQueue creato");
+                RawMessage rm = rawMessageRepository.findById(u.getIdRawMessage().getId()).get();
+                log.info("oggetto RawMessage creato");
+                Message m = messageRepository.findById(rm.getIdMessage().getId()).get();
+                log.info("oggetto Message creato");
+                Pec p = pecRepository.findById(m.getIdPec().getId()).get();
+                log.info("oggetto Pec creato");
+                if (p.getIdAziendaRepository() == null) {
+                    log.warn("la pec con indirizzo " + p.getIndirizzo() + " non ha un id_repository associato");
+                    continue;
+                }
+                Azienda a = aziendaRepository.findById(p.getIdAziendaRepository().getId()).get();
+                log.info("oggetto Azienda creato");
+                p.setIdAziendaRepository(a);
+                m.setIdPec(p);
+                rm.setIdMessage(m);
+                u.setIdRawMessage(rm);
+                uploadManager.manage(u);
+            } catch (ShpeckServiceException e) {
+                log.error("ERRORE", e);
+                log.info("Inserisco nel ReportDiagnostica");
+                writeReportDiagnostica(e, uq);
+                if(isErroreMongoloide(e)){
+                    throw new ShpeckServiceException("Errore con il server di mongo");
+                }
+            } catch (Throwable e) {
+                writeReportDiagnostica(e, uq);
+                log.error("ERRORE", e);
             }
-            Azienda a = aziendaRepository.findById(p.getIdAziendaRepository().getId()).get();
-            log.info("oggetto Azienda creato");
-            p.setIdAziendaRepository(a);
-            m.setIdPec(p);
-            rm.setIdMessage(m);
-            u.setIdRawMessage(rm);
-            uploadManager.manage(u);
         }
 
         log.info("STOP -> doWork()," + " time: " + new Date());

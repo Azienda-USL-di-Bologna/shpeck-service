@@ -17,7 +17,7 @@ public interface UploadQueueRepository extends JpaRepository<UploadQueue, Intege
 
 //    @Query(value = "select id from shpeck.upload_queue where uploaded = false", nativeQuery = true)
 //    public ArrayList<Integer> getIdToUpload();
-    @Query(value = "select id from shpeck.upload_queue where uploaded = false and MOD(id,?1)=?2", nativeQuery = true)
+    @Query(value = "select id from shpeck.upload_queue where uploaded = false and MOD(id,?1)=?2 order by id", nativeQuery = true)
     public ArrayList<Integer> getIdToUpload(int numberOfThreads, int threadNumber);
 
     @Query(value = "select u.* from shpeck.upload_queue u, shpeck.raw_messages r where r.id = u.id_raw_message and r.id_message = ?1", nativeQuery = true)
