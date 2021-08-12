@@ -313,10 +313,22 @@ public class StoreManager implements StoreInterface {
 
         list = (ArrayList<Address>) addresses.get("replyTo");
         if (list != null && list.size() > 0) {
+            ArrayList<Address> froms = (ArrayList<Address>) addresses.get("from");
             log.debug("Ciclo gli indirizzi REPLY_TO e li salvo su messages_addresses");
             for (Address address : list) {
-                MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.REPLY_TO);
-                log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "inserito"));
+                if (froms == null || froms.isEmpty()) {
+                    log.debug("Il messageAddress di tipo FROM non c'è, quindi setto quello di tipo in REPLY_TO come FROM");
+                    MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.FROM);
+                    if (froms == null) {
+                        froms = new ArrayList<Address>();
+                    }
+                    froms.add(address);
+                    log.debug("Come FROM del messageAddress(" + message.getId() + "è stato salvato l'address del REPLY_TO" + address.getId());
+                } else if (!froms.stream().anyMatch(a -> a.getMailAddress().equals(address.getMailAddress()))) {
+                    MessageAddress ma = storeMessageAddress(message, address, MessageAddress.AddressRoleType.REPLY_TO);
+                    log.debug((ma == null ? "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "già presente" : "messageAddress (" + message.getId() + "," + address.getId() + ", REPLY_TO) " + "inserito"));
+                }
+
             }
         }
         log.info("--- fine storeMessagesAddress ---");
