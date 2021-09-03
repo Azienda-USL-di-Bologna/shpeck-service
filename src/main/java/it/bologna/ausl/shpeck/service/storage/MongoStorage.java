@@ -104,9 +104,9 @@ public class MongoStorage implements StorageStrategy {
             objectToUpload.setUuid(uuidMongo);
 
         } catch (MessagingException e) {
-            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", e);
+            throw new ShpeckServiceException("Errore nella lettura del MimeMessage", e);
         } catch (MongoWrapperException ex) {
-            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex);
+            throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex, ShpeckServiceException.ErrorTypes.STOREGE_ERROR);
         } catch (IOException e) {
             throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
         }
