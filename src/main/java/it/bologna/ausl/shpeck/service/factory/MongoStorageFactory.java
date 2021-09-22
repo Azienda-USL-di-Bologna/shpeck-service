@@ -64,7 +64,8 @@ public class MongoStorageFactory {
         MongoWrapper wrapper = MongoWrapper.getWrapper(mongoAndMinIOActive,
                 mongoParams.getConnectionString(), (String) minIOConfigurationObject.get("DBDriver"),
                 (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
-                (String) minIOConfigurationObject.get("DBPassword"), azienda.getCodice(), objectMapper);
+                (String) minIOConfigurationObject.get("DBPassword"), azienda.getCodice(),
+                (Integer) minIOConfigurationObject.get("maxPoolSize"), objectMapper);
         MongoStorage mongoStorage = new MongoStorage();
         mongoStorage.setMongo(wrapper);
         mongoStorage.setFolderPath(mongoParams.getRoot());

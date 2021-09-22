@@ -41,7 +41,8 @@ public class MongoStorage implements StorageStrategy {
         mongo = MongoWrapper.getWrapper(mongoAndMinIOActive,
                 mongouri, (String) minIOConfigurationObject.get("DBDriver"),
                 (String) minIOConfigurationObject.get("DBUrl"), (String) minIOConfigurationObject.get("DBUsername"),
-                (String) minIOConfigurationObject.get("DBPassword"), codiceAzienda, om);
+                (String) minIOConfigurationObject.get("DBPassword"), codiceAzienda,
+                (Integer) minIOConfigurationObject.get("maxPoolSize"), om);
         //mongo = new MongoWrapper(mongouri);
         this.folderPath = folderPath;
     }
