@@ -19,7 +19,21 @@ import javax.mail.internet.MimeMessage;
 import it.bologna.ausl.model.entities.shpeck.Message.MessageType;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.mail.Header;
+import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MailDateFormat;
+import org.hibernate.internal.util.ZonedDateTimeComparator;
 
 public class MailMessage implements MailIdentity {
 
@@ -30,6 +44,7 @@ public class MailMessage implements MailIdentity {
     protected HashMap<String, String> headers;
     protected Date sendDate, receiveDate;
     protected Long providerUid;
+    protected ZonedDateTime receiveDateProvider;
 
     public MailMessage(MimeMessage m) throws MailMessageException {
         this.original = m;
@@ -42,7 +57,8 @@ public class MailMessage implements MailIdentity {
             this.receiveDate = original.getReceivedDate();
             this.sendDate = original.getSentDate();
             this.id = MessageBuilder.defineMessageID(original);
-
+            ZonedDateTime extractReceiveDateProvider = extractReceiveDateProvider(original);
+            this.receiveDateProvider = extractReceiveDateProvider != null ? extractReceiveDateProvider : null;
         } catch (Exception ex) {
             throw new MailMessageException("Errore nella creazione del MailMessage" + ex.getMessage());
         }
@@ -234,6 +250,10 @@ public class MailMessage implements MailIdentity {
     @Override
     public MessageType getType() throws ShpeckServiceException {
         return MessageType.MAIL;
+    }
+
+    public ZonedDateTime getReceiveDateProvider() {
+        return receiveDateProvider;
     }
 
     @Override
@@ -570,6 +590,34 @@ public class MailMessage implements MailIdentity {
         }
         return mimeMessage.getSentDate().getTime();
 
+    }
+
+    private ZonedDateTime extractReceiveDateProvider(MimeMessage original) {
+        ZonedDateTime dataMax = ZonedDateTime.of(1970, 12, 25, 0, 0, 0, 0, ZoneId.of("Europe/Rome"));
+        List<String> headers = new ArrayList<String>();
+        try {
+            Enumeration<?> enumeration = original.getAllHeaders();
+            while (enumeration.hasMoreElements()) {
+                Header header = (Header) enumeration.nextElement();
+                if (header.getName().equalsIgnoreCase("received")) {
+                    headers.add(header.getValue());
+                }
+            }
+            for (String header : headers) {
+                String dateStr = header.substring(header.lastIndexOf(";") + 1);
+                ZonedDateTime data = ZonedDateTime.ofInstant((new Date(dateStr)).toInstant(),ZoneId.of("Europe/Rome"));
+                if (data.isAfter(dataMax)) {
+                    dataMax = data;
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        if (dataMax.isAfter(ZonedDateTime.of(1970, 12, 25, 0, 0, 0, 0, ZoneId.of("Europe/Rome")))) {
+            return dataMax;
+        } else {
+            return null;
+        }
     }
 
 }
