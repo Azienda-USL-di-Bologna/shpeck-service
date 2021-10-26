@@ -98,22 +98,17 @@ public class StoreManager implements StoreInterface {
             message.setMessageStatus(Message.MessageStatus.RECEIVED);
             message.setInOut(Message.InOut.IN);
             message.setIsPec(mailMessage.getIsPec());
-            if (mailMessage.getReceiveDateProvider() != null) {
+            if (mailMessage.getSendDate() != null) {
                 try {
                     message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
                 } catch (Exception ex) {
                     message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
                 }
             } else {
-                if (mailMessage.getSendDate() != null) {
-                    try {
-                        message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
-                    } catch (Exception ex) {
-                        message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
-                    }
-                } else {
-                    message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
-                }
+                message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
+            }
+            if (mailMessage.getReceiveDateProvider() != null) {
+                message.setReceiveDateProvider(mailMessage.getReceiveDateProvider());
             }
         } else {
             message.setMessageStatus(Message.MessageStatus.TO_SEND);
