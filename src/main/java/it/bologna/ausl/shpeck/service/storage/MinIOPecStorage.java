@@ -106,7 +106,7 @@ public class MinIOPecStorage implements StorageStrategy {
             objectToUpload.setPath(path);
             objectToUpload.setName(filename);
             MinIOWrapperFileInfo fileInfo = minIOWrapper.put(new ByteArrayInputStream(baos.toByteArray()), pec.getIdAziendaRepository().getCodice(), path, filename, null, false);
-            uuidMinIO = fileInfo.getMongoUuid();
+            uuidMinIO = fileInfo.getGeneratedUuid();
 
             objectToUpload.setUploaded(Boolean.TRUE);
             objectToUpload.setUuid(uuidMinIO);
