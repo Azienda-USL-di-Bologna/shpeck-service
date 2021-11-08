@@ -14,5 +14,5 @@ public interface StorageStrategy {
 
     public void setFolderPath(Pec pec);
 
-    public void setAzienda(Pec pec);
+    public void setAzienda(Pec pec) throws ShpeckServiceException;
 }

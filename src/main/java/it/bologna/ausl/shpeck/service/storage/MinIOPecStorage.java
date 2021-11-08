@@ -1,6 +1,7 @@
 package it.bologna.ausl.shpeck.service.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -24,6 +25,7 @@ import java.util.logging.Logger;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -33,18 +35,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class MinIOPecStorage implements StorageStrategy {
 
-    private String folderPath;
-    private Azienda azienda;
-    private MinIOWrapper minIOWrapper;
-
     @Autowired
-    MinIOStorageFactory minIOStorageFactory;
+    MinIOStorageFactory mongoStorageFactory;
+
+    private String folderPath;
+    private MinIOWrapper minIOWrapper;
 
     public MinIOPecStorage() {
     }
 
     public MinIOPecStorage(Pec pec, String folderPath) throws UnknownHostException, MongoWrapperException, IOException, ShpeckServiceException {
-        this.minIOWrapper = minIOStorageFactory.getMinIOWrapper(pec.getIdAziendaRepository().getId());
+        minIOWrapper = mongoStorageFactory.getMinIOWrapper(pec.getIdAziendaRepository().getId());
         this.folderPath = pec.getRepositoryRootPath();
     }
 
@@ -54,8 +55,12 @@ public class MinIOPecStorage implements StorageStrategy {
     }
 
     @Override
-    public void setAzienda(Pec pec) {
-        this.azienda = pec.getIdAziendaRepository();
+    public void setAzienda(Pec pec) throws ShpeckServiceException {
+        try {
+            this.minIOWrapper = mongoStorageFactory.getMinIOWrapper(pec.getIdAziendaRepository().getId());
+        } catch (IOException | MongoException | MongoWrapperException ex) {
+            throw new ShpeckServiceException("errore setAzienda su MinIOPecStorage", ex);
+        }
     }
 
     @Override
@@ -100,15 +105,18 @@ public class MinIOPecStorage implements StorageStrategy {
             String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo() + "/" + folderName;
             objectToUpload.setPath(path);
             objectToUpload.setName(filename);
-            this.azienda = pec.getIdAziendaRepository();
-            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(new ByteArrayInputStream(baos.toByteArray()), azienda.getCodice(), path, filename, null, false);
-            uuidMinIO = fileInfo.getGeneratedUuid();
+            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(new ByteArrayInputStream(baos.toByteArray()), pec.getIdAziendaRepository().getCodice(), path, filename, null, false);
+            uuidMinIO = fileInfo.getMongoUuid();
 
             objectToUpload.setUploaded(Boolean.TRUE);
             objectToUpload.setUuid(uuidMinIO);
 
-        } catch (MessagingException | MinIOWrapperException | IOException ex) {
+        } catch (MessagingException e) {
+            throw new ShpeckServiceException("Errore nella lettura del MimeMessage", e);
+        } catch (MinIOWrapperException ex) {
             throw new ShpeckServiceException("Errore nell'upload del MimeMessage", ex, ShpeckServiceException.ErrorTypes.STOREGE_ERROR);
+        } catch (IOException e) {
+            throw new ShpeckServiceException("Errore nella serializzazione del MimeMessage", e);
         }
 
         return objectToUpload;
