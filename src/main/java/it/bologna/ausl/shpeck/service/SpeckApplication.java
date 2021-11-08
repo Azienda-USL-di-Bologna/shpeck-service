@@ -2,7 +2,7 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;

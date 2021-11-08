@@ -1,8 +1,7 @@
 package it.bologna.ausl.shpeck.service.repository;
 
-import it.bologna.ausl.model.entities.configuration.ParametroAziende;
-import it.bologna.ausl.model.entities.configuration.QParametroAziende;
-import it.bologna.ausl.model.entities.configuration.projections.generated.ParametroAziendeWithPlainFields;
+import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
+import it.bologna.ausl.model.entities.configurazione.projections.generated.ParametroAziendeWithPlainFields;
 import java.util.ArrayList;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

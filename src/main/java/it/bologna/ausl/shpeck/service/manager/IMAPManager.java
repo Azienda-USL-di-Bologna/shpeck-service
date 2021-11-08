@@ -3,7 +3,6 @@ package it.bologna.ausl.shpeck.service.manager;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import com.sun.mail.imap.IMAPStore;
-import com.sun.mail.imap.OlderTerm;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.PecRepository;
@@ -11,9 +10,9 @@ import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -29,7 +28,6 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.search.AndTerm;
 import javax.mail.search.ComparisonTerm;
-import javax.mail.search.OrTerm;
 import javax.mail.search.ReceivedDateTerm;
 import javax.mail.search.SearchTerm;
 import org.json.simple.JSONObject;
@@ -555,8 +553,7 @@ public class IMAPManager {
             store.connect();
         }
         try (
-                IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);
-                IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
+                 IMAPFolder srcFolder = (IMAPFolder) store.getFolder(sourceFolder);  IMAPFolder dstFolder = (IMAPFolder) store.getFolder(destFolder)) {
             srcFolder.open(IMAPFolder.READ_WRITE);
             List<Message> messageToMove = new ArrayList<>();
             Message[] messages = srcFolder.getMessages();
@@ -698,7 +695,7 @@ public class IMAPManager {
 
         if (pec.getResetLastuidTime() == null) {
             // prima volta che fa run e il reset_lastuid_time non è settato, quindi si setta now()
-            pec.setResetLastuidTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
+            pec.setResetLastuidTime(ZonedDateTime.now());
             pec.setLastuid(getLastUID());
         } else {
             // calcolo la differenza (in minuti) per capire se riazzerare la sequenza o meno

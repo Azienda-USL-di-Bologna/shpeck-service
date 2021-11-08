@@ -109,7 +109,7 @@ public class CleanerManager {
             log.info("Trovato " + m.toString());
 
             // verifico se il messaggio (receiveTime) è posteriore alla data limite dello spazzino (endTime)
-            if (m.getReceiveTime().toInstant(ZoneOffset.UTC).isAfter(getEndTime().toInstant())) {
+            if (m.getReceiveTime().toInstant().isAfter(getEndTime().toInstant())) {
                 log.info("\t\t\t SPAZZINO INTERRUPT");
                 log.info("Receive Time: " + m.getReceiveTime().toString());
                 log.info("End Time: " + getEndTime().toString());

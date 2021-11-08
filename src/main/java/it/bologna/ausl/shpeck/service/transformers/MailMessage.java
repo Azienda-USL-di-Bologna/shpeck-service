@@ -20,20 +20,13 @@ import it.bologna.ausl.model.entities.shpeck.Message.MessageType;
 import it.bologna.ausl.shpeck.service.utils.MessageBuilder;
 import java.text.ParseException;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.mail.Header;
-import javax.mail.internet.InternetHeaders;
 import javax.mail.internet.MailDateFormat;
-import org.hibernate.internal.util.ZonedDateTimeComparator;
 
 public class MailMessage implements MailIdentity {
 
@@ -42,9 +35,16 @@ public class MailMessage implements MailIdentity {
     protected Boolean ispec = false;
     protected String subject, string_headers, id, raw_message, message = null;
     protected HashMap<String, String> headers;
-    protected Date sendDate, receiveDate;
-    protected Long providerUid;
+
+    protected ZonedDateTime sendDate;
+
+    // Data di creazione della email (= sendDate)
+    protected ZonedDateTime receiveDate;
+
+    // Data di ricezione della mail sui sistemi del nostro provider
     protected ZonedDateTime receiveDateProvider;
+
+    protected Long providerUid;
 
     public MailMessage(MimeMessage m) throws MailMessageException {
         this.original = m;
@@ -54,8 +54,8 @@ public class MailMessage implements MailIdentity {
             this.cc = original.getRecipients(Message.RecipientType.CC);
             this.reply_to = original.getReplyTo();
             this.subject = original.getSubject();
-            this.receiveDate = original.getReceivedDate();
-            this.sendDate = original.getSentDate();
+            this.receiveDate = (original.getReceivedDate() != null ? ZonedDateTime.ofInstant(original.getReceivedDate().toInstant(), ZoneId.systemDefault()) : (original.getSentDate() != null ? ZonedDateTime.ofInstant(original.getSentDate().toInstant(), ZoneId.systemDefault()) : null));
+            this.sendDate = (original.getSentDate() != null ? ZonedDateTime.ofInstant(original.getSentDate().toInstant(), ZoneId.systemDefault()) : null);
             this.id = MessageBuilder.defineMessageID(original);
             ZonedDateTime extractReceiveDateProvider = extractReceiveDateProvider(original);
             this.receiveDateProvider = extractReceiveDateProvider != null ? extractReceiveDateProvider : null;
@@ -132,7 +132,7 @@ public class MailMessage implements MailIdentity {
         return raw_message;
     }
 
-    public Date getReceiveDate() {
+    public ZonedDateTime getReceiveDate() {
         return receiveDate;
     }
 
@@ -150,8 +150,7 @@ public class MailMessage implements MailIdentity {
         return reply_to;
     }
 
-    public Date getSendDate() {
-
+    public ZonedDateTime getSendDate() {
         return sendDate;
     }
 
@@ -605,7 +604,7 @@ public class MailMessage implements MailIdentity {
             }
             for (String header : headers) {
                 String dateStr = header.substring(header.lastIndexOf(";") + 1);
-                ZonedDateTime data = ZonedDateTime.ofInstant((new Date(dateStr)).toInstant(),ZoneId.of("Europe/Rome"));
+                ZonedDateTime data = ZonedDateTime.ofInstant((new Date(dateStr)).toInstant(), ZoneId.of("Europe/Rome"));
                 if (data.isAfter(dataMax)) {
                     dataMax = data;
                 }
