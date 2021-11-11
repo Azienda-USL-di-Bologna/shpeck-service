@@ -1,14 +1,11 @@
 package it.bologna.ausl.shpeck.service.storage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
-import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.factory.MinIOStorageFactory;
@@ -19,13 +16,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.UUID;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -105,8 +99,9 @@ public class MinIOPecStorage implements StorageStrategy {
             String path = this.folderPath + "/" + objectToUpload.getIdRawMessage().getIdMessage().getIdPec().getIndirizzo() + "/" + folderName;
             objectToUpload.setPath(path);
             objectToUpload.setName(filename);
-            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(new ByteArrayInputStream(baos.toByteArray()), pec.getIdAziendaRepository().getCodice(), path, filename, null, false);
-            uuidMinIO = fileInfo.getGeneratedUuid();
+            uuidMinIO = UUID.randomUUID().toString();
+            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(new ByteArrayInputStream(baos.toByteArray()), pec.getIdAziendaRepository().getCodice(), path, filename, null, false,uuidMinIO);
+            
 
             objectToUpload.setUploaded(Boolean.TRUE);
             objectToUpload.setUuid(uuidMinIO);
