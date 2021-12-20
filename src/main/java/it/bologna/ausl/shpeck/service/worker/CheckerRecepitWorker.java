@@ -5,24 +5,11 @@
  */
 package it.bologna.ausl.shpeck.service.worker;
 
-import it.bologna.ausl.model.entities.configuration.Applicazione;
-import it.bologna.ausl.model.entities.shpeck.Recepit;
-import it.bologna.ausl.shpeck.service.manager.IMAPManager;
-import it.bologna.ausl.shpeck.service.manager.PecMessageStoreManager;
-import it.bologna.ausl.shpeck.service.manager.RecepitMessageStoreManager;
-import it.bologna.ausl.shpeck.service.manager.RegularMessageStoreManager;
-import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
-import it.bologna.ausl.shpeck.service.repository.PecProviderRepository;
-import it.bologna.ausl.shpeck.service.repository.PecRepository;
 import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
-import it.bologna.ausl.shpeck.service.transformers.MailMessage;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
-import it.bologna.ausl.shpeck.service.utils.ProviderConnectionHandler;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Component;
 
 /**
@@ -82,18 +68,18 @@ public class CheckerRecepitWorker implements Runnable {
             Integer tempId = errorMessageIds.get(i);
 
             recepitList = messageRepository.getAllRecepitError(tempId);
-            
+
             if (recepitList.isEmpty()) {
 
                 JSONObject json = new JSONObject();
 
                 log.info("Son entrato nel caso da segnalare");
-                
+
                 json.put("Id messaggio senza ricevuta d'accettazione: ", tempId.toString());
 
                 diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);
             }
-            
+
             //log.info(recepitList.toString());
         }
 
@@ -108,7 +94,7 @@ public class CheckerRecepitWorker implements Runnable {
                 JSONObject json = new JSONObject();
 
                 log.info("Son entrato nel caso da segnalare");
-                
+
                 json.put("Id messaggio senza ricevuta d'accettazione: ", tempId.toString());
 
                 diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_RECEPIT", json);

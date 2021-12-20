@@ -3,6 +3,7 @@ package it.bologna.ausl.shpeck.service.utils;
 import it.bologna.ausl.model.entities.diagnostica.Report;
 import it.bologna.ausl.shpeck.service.repository.ReportRepository;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -33,15 +34,15 @@ public class Diagnostica {
 
         // guarda che il messaggio non sia stato inserito
         String messageID = (String) json.get("messageID");
-        Integer idUploadQueue=null;
-        Integer idOutbox=null;
-        if (json.get("idOutbox")!=null){
+        Integer idUploadQueue = null;
+        Integer idOutbox = null;
+        if (json.get("idOutbox") != null) {
             idOutbox = Integer.parseInt(json.get("idOutbox").toString());
         }
-        if (json.get("id_upload_queue")!=null){
+        if (json.get("id_upload_queue") != null) {
             idUploadQueue = Integer.parseInt(json.get("id_upload_queue").toString());
-       }
-        
+        }
+
         if (messageID != null) {
             List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
@@ -53,14 +54,14 @@ public class Diagnostica {
                     break;
                 }
             }
-        }else if (idOutbox != null) {
+        } else if (idOutbox != null) {
             List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
-                Integer mid=null;
-                if (additionalData.get("idOutbox")!=null){
-                        mid = Integer.parseInt(additionalData.get("idOutbox").toString());
-                        
+                Integer mid = null;
+                if (additionalData.get("idOutbox") != null) {
+                    mid = Integer.parseInt(additionalData.get("idOutbox").toString());
+
                 }
                 if (mid != null && mid.equals(idOutbox)) {
                     log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
@@ -68,15 +69,15 @@ public class Diagnostica {
                     break;
                 }
             }
-        }else if (idUploadQueue != null) {
+        } else if (idUploadQueue != null) {
             List<Report> list = reportRepository.findByTipologiaAndRisoltoIsFalse(tipologiaErrore);
             for (Report report : list) {
                 JSONObject additionalData = (JSONObject) JSONValue.parse(report.getAdditionalData());
                 //Integer mid = Integer.parseInt(additionalData.get("id_upload_queue").toString());
                 Integer mid = null;
-                if (additionalData.get("id_upload_queue")!=null){
-                        mid = Integer.parseInt(additionalData.get("id_upload_queue").toString());
-                        
+                if (additionalData.get("id_upload_queue") != null) {
+                    mid = Integer.parseInt(additionalData.get("id_upload_queue").toString());
+
                 }
                 if (mid != null && mid.equals(idUploadQueue)) {
                     log.debug("messaggio di errore già presente su tabella report, non viene inserito nuovamente");
@@ -90,7 +91,7 @@ public class Diagnostica {
             log.debug("!!! inserimento dell'errore nella tabella di report !!!");
             Report report = new Report();
             report.setTipologia(tipologiaErrore);
-            report.setDataInserimentoRiga(LocalDateTime.now());
+            report.setDataInserimentoRiga(ZonedDateTime.now());
             report.setAdditionalData(json.toJSONString());
 
             reportRepository.save(report);

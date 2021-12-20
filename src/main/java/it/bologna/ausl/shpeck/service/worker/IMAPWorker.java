@@ -3,7 +3,8 @@ package it.bologna.ausl.shpeck.service.worker;
 import com.sun.mail.imap.IMAPStore;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.PecProvider;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.configurazione.Applicazione;
+
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.shpeck.service.constants.ApplicationConstant;
 import it.bologna.ausl.shpeck.service.exceptions.BeanCreationNotAllowedExceptionShpeck;
