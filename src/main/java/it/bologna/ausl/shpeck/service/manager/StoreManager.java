@@ -102,7 +102,11 @@ public class StoreManager implements StoreInterface {
                 try {
                     message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
                 } catch (Exception ex) {
+                    try {
                     message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                    } catch (Exception subEx) {
+                        message.setReceiveTime(new java.sql.Timestamp(mailMessage.getReceiveDate().getTime()).toLocalDateTime());
+                    }
                 }
             } else {
                 message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
