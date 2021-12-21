@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageExtensionRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import javax.mail.internet.MimeMessage;
@@ -101,9 +102,9 @@ public class StoreManager implements StoreInterface {
                     message.setReceiveTime(mailMessage.getReceiveDate());
                 } catch (Exception ex) {
                     try {
-                    message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                        message.setReceiveTime(mailMessage.getSendDate());
                     } catch (Exception subEx) {
-                        message.setReceiveTime(new java.sql.Timestamp(mailMessage.getReceiveDate().getTime()).toLocalDateTime());
+                        message.setReceiveTime(null);
                     }
                 }
             } else {
