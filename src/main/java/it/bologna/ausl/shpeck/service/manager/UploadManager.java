@@ -1,17 +1,13 @@
 package it.bologna.ausl.shpeck.service.manager;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.baborg.Azienda;
-import it.bologna.ausl.model.entities.configuration.ParametroAziende;
+import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.UploadQueue;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
-import it.bologna.ausl.shpeck.service.factory.MongoStorageFactory;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
-import it.bologna.ausl.shpeck.service.storage.MongoStorage;
-import it.bologna.ausl.shpeck.service.storage.StorageContext;
 import it.bologna.ausl.shpeck.service.worker.UploadWorker;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -22,9 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import it.bologna.ausl.shpeck.service.repository.ParametroAziendeRepository;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
+import it.bologna.ausl.shpeck.service.storage.MinIOPecStorage;
 
 /**
  *
@@ -37,9 +31,6 @@ public class UploadManager {
 
     @Autowired
     ObjectMapper objectMapper;
-
-    @Autowired
-    StorageContext storageContext;
 
     @Autowired
     MessageRepository messageRepository;
@@ -57,26 +48,13 @@ public class UploadManager {
     Semaphore messageSemaphore;
 
     @Autowired
-    MongoStorageFactory mongoStorageFactory;
+    MinIOPecStorage minIOPecStorage;
 
+//    @Autowired
+//    MinIOPecStorage minIOPecStorage;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private Map<String, Object> getMinIOConfigurationObject(Integer idAzienda) throws IOException, ShpeckServiceException {
-        Map<String, Object> minIOConfigMap = null;
-        ArrayList<ParametroAziende> minIOParametroAziendeListByIdAzienda = parametroAziendaRepository.getMinIOParametroAziendeListByIdAzienda(idAzienda);
-        if (minIOParametroAziendeListByIdAzienda != null && minIOParametroAziendeListByIdAzienda.size() == 1) {
-            for (ParametroAziende parametroAziende : minIOParametroAziendeListByIdAzienda) {
-                minIOConfigMap = objectMapper.readValue(parametroAziende.getValore(), new TypeReference<Map<String, Object>>() {
-                });
-            }
-        } else {
-            throw new ShpeckServiceException("Parametro minIOConfig non trovato o doppio per azienda " + idAzienda);
-        }
-        return minIOConfigMap;
-    }
-
-    //@Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
     public void manage(UploadQueue messageToStore) throws ShpeckServiceException {
         try {
             log.info("Entrato in manage con id su upload_queue: " + messageToStore.getId() + " carico i parametri azienda");
@@ -91,13 +69,17 @@ public class UploadManager {
 //            log.info("setto lo storageStrategy");
 //            // inizializzazione del context storage
 //            storageContext.setStorageStrategy(new MongoStorage(mongoParams.getConnectionString(), mongoParams.getRoot(), minIOConfigurationObject, objectMapper, messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository().getCodice()));
-            Azienda azienda = messageToStore.getIdRawMessage().getIdMessage().getIdPec().getIdAziendaRepository();
-            MongoStorage mongoStorage = mongoStorageFactory.getMongoStorageByAzienda(azienda);
-            storageContext.setStorageStrategy(mongoStorage);
+            Pec pec = messageToStore.getIdRawMessage().getIdMessage().getIdPec();
+            Azienda azienda = pec.getIdAziendaRepository();
+//            MongoStorage mongoStorage = mongoStorageFactory.getMongoStorageByAzienda(azienda);
+
+            minIOPecStorage.setAzienda(pec);
+            minIOPecStorage.setFolderPath(pec);
+//            storageContext.setStorageStrategy(minIOPecStorage);
 
             log.info("Fatto lo store del message");
             // esegue lo store del messaggio e ritorna l'oggetto con le proprietà settate (es: uuid, path, ...)
-            UploadQueue objectUploaded = storageContext.store(inboxForlder, messageToStore);
+            UploadQueue objectUploaded = minIOPecStorage.storeMessage(pec, inboxForlder, messageToStore);
 
             log.info("Carico il messaggio (optional)");
             // ottieni in messaggio associato al contenuto appena caricato
@@ -113,7 +95,6 @@ public class UploadManager {
                 log.info("messaggio setto il path");
                 messageToUpdate.setPathRepository(objectUploaded.getPath());
                 messageToUpdate.setName(objectUploaded.getName());
-                log.info("--> " + messageToUpdate.toString());
                 // update del mesaggio con i nuovi parametri
                 log.info("salvo");
                 //messageRepository.save(messageToUpdate);

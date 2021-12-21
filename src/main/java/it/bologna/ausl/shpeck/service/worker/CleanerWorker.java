@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.shpeck.service.worker;
 
 import it.bologna.ausl.model.entities.shpeck.Message;
@@ -17,6 +12,7 @@ import it.bologna.ausl.shpeck.service.repository.OutboxRepository;
 import it.bologna.ausl.shpeck.service.repository.UploadQueueRepository;
 import it.bologna.ausl.shpeck.service.utils.Diagnostica;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -53,6 +50,9 @@ public class CleanerWorker implements Runnable {
 
     @Autowired
     Diagnostica diagnostica;
+
+    @Value("${days-back-spazzino}")
+    Integer daysBackSpazzino;
 
     private String threadName;
 
@@ -137,6 +137,8 @@ public class CleanerWorker implements Runnable {
                     log.info("Interruzione del CleanerWorker: " + i.getMessage());
                     log.info("Interrompo spazzinoUploadQueue(): sono arrivato ai messaggi più nuovi");
                     log.info("VA TUTTO BENE, il resto l'ho salvato.");
+                    this.setEndTime(getTheseDaysAgoDate(daysBackSpazzino));
+                    log.info("aggiorno endTime: " + getEndTime().toString());
                     break;
                 } catch (CleanerWorkerException e) {
                     // entrando qua dentro dovrei rollbackare le cancellazioni avvenute usando questo uploadqueue
@@ -171,7 +173,7 @@ public class CleanerWorker implements Runnable {
 
             for (Integer idOutbox : outboxMessageToDelete) {
                 log.info("id Outbox ---> " + idOutbox.toString());
-                
+
                 Message message = messageRepository.getMessageByIdOutbox(idOutbox);
                 if (message != null && message.getUuidMessage() != null && !message.getUuidMessage().equals("")
                         && message.getUuidRepository() != null && !message.getUuidRepository().equals("")) {
@@ -179,8 +181,8 @@ public class CleanerWorker implements Runnable {
                     Outbox outbox = outboxRepository.findById(idOutbox).get();
                     outboxRepository.delete(outbox);
                 }
-                if (message==null){
-                    writeReportDiagnosticaOutbox(new ShpeckServiceException("Nessun message trovato con id outbox "+idOutbox.toString()), idOutbox);
+                if (message == null) {
+                    writeReportDiagnosticaOutbox(new ShpeckServiceException("Nessun message trovato con id outbox " + idOutbox.toString()), idOutbox);
                 }
             }
         } catch (Throwable e) {
@@ -232,7 +234,7 @@ public class CleanerWorker implements Runnable {
 
         diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_CLEANER_WORKER", json);
     }
-    
+
     private void writeReportDiagnosticaOutbox(Throwable e, Integer idOutbox) {
         // creazione messaggio di errore
         JSONObject json = new JSONObject();
@@ -243,6 +245,21 @@ public class CleanerWorker implements Runnable {
         json.put("ExceptionMessage", e.getMessage());
 
         diagnostica.writeInDiagnoticaReport("SHPECK_ERROR_CLEANER_WORKER", json);
+    }
+
+    /**
+     * Mi restituisce la data di due settimana fa da ora
+     */
+    private Date getTheseDaysAgoDate(Integer numberOfDays) {
+        log.info("getTheseDaysAgoDate");
+        log.info("tolgo " + numberOfDays);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        log.info("da: " + calendar.getTime().toString());
+        calendar.add(Calendar.DAY_OF_YEAR, -numberOfDays);
+        Date date = calendar.getTime();
+        log.info("ritorno: " + date.toString());
+        return date;
     }
 
 }

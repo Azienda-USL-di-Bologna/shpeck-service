@@ -1,7 +1,7 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.Outbox;
 import it.bologna.ausl.shpeck.service.exceptions.BeforeSendOuboxException;
@@ -20,7 +20,6 @@ import it.bologna.ausl.shpeck.service.utils.SmtpConnectionHandler;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,6 +160,8 @@ public class SMTPManager {
             log.info("test -> non eliminato (messo 'ignore' a " + outbox.getIgnore() + ")");
 
             log.info("aggiorno lo stato di message a " + m.getMessageStatus().toString() + "...");
+            Message tmp = messageRepository.findById(m.getId()).get();
+            tmp = m;
             messageRepository.save(m);
 
             log.info("sono pronto per mettere il messaggio in upload queue");

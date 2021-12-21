@@ -2,7 +2,7 @@ package it.bologna.ausl.shpeck.service;
 
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.shpeck.service.exceptions.ShpeckServiceException;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.ApplicazioneRepository;
@@ -134,7 +134,7 @@ public class SpeckApplication {
 //                filtraPecDiParmaProd(pecAttive);
                 //               --- PER DEBUG ---
 //                ArrayList<Pec> pecAttive = new ArrayList<>();
-//                pecAttive.add(pecRepository.findById(752).get());
+                //pecAttive.add(pecRepository.findById(1502).get());
                 log.info("Pec attive #: " + pecAttive.size());
                 if (testMode) {
                     log.info("CHECK TEST MODE POSITIVO, uso solo le pec di test");

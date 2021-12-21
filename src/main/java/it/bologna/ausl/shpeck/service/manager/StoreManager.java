@@ -1,14 +1,13 @@
 package it.bologna.ausl.shpeck.service.manager;
 
 import it.bologna.ausl.model.entities.baborg.Pec;
-import it.bologna.ausl.model.entities.configuration.Applicazione;
+import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.model.entities.shpeck.Message;
 import it.bologna.ausl.model.entities.shpeck.MessageAddress;
 import it.bologna.ausl.model.entities.shpeck.Recepit;
 import it.bologna.ausl.shpeck.service.repository.MessageRepository;
 import it.bologna.ausl.shpeck.service.repository.RecepitRepository;
 import java.util.ArrayList;
-import java.util.Date;
 import it.bologna.ausl.model.entities.shpeck.Address;
 import it.bologna.ausl.model.entities.shpeck.MessageExtension;
 import it.bologna.ausl.model.entities.shpeck.RawMessage;
@@ -36,8 +35,9 @@ import org.springframework.stereotype.Component;
 import it.bologna.ausl.shpeck.service.repository.AddressRepository;
 import it.bologna.ausl.shpeck.service.repository.MessageExtensionRepository;
 import it.bologna.ausl.shpeck.service.transformers.PecMessage;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Optional;
-import java.util.logging.Level;
 import javax.mail.internet.MimeMessage;
 
 /**
@@ -45,7 +45,6 @@ import javax.mail.internet.MimeMessage;
  * @author spritz
  */
 @Component
-//@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class StoreManager implements StoreInterface {
 
     private static final Logger log = LoggerFactory.getLogger(StoreManager.class);
@@ -100,12 +99,19 @@ public class StoreManager implements StoreInterface {
             message.setIsPec(mailMessage.getIsPec());
             if (mailMessage.getSendDate() != null) {
                 try {
-                    message.setReceiveTime(new java.sql.Timestamp(MailMessage.getSendDateInGMT(mailMessage.getOriginal())).toLocalDateTime());
+                    message.setReceiveTime(mailMessage.getReceiveDate());
                 } catch (Exception ex) {
-                    message.setReceiveTime(new java.sql.Timestamp(mailMessage.getSendDate().getTime()).toLocalDateTime());
+                    try {
+                        message.setReceiveTime(mailMessage.getSendDate());
+                    } catch (Exception subEx) {
+                        message.setReceiveTime(null);
+                    }
                 }
             } else {
-                message.setReceiveTime(new java.sql.Timestamp(new Date().getTime()).toLocalDateTime());
+                message.setReceiveTime(ZonedDateTime.now());
+            }
+            if (mailMessage.getReceiveDateProvider() != null) {
+                message.setReceiveDateProvider(mailMessage.getReceiveDateProvider());
             }
         } else {
             message.setMessageStatus(Message.MessageStatus.TO_SEND);
